@@ -135,11 +135,12 @@ parse_args(int argc, char *argv[])
             } else {
                 struct passwd *pwd = getpwnam(optarg);
                 if (!pwd) {
-                    fprintf(stderr, "User %s not found", optarg);
+                    fprintf(stderr, "User %s not found\n", optarg);
                     exit(-1);
                 }
                 user_id = pwd->pw_uid;
             }
+            break;
         default:
             abort();
         }
