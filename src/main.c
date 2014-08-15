@@ -5,6 +5,7 @@
 #include <pwd.h>
 #include <ctype.h>
 #include <string.h>
+#include <signal.h>
 
 #include "iotop.h"
 
@@ -160,6 +161,16 @@ filter1(struct xxxid_stats *s)
     return 0;
 }
 
+
+void
+sig_handler(int signo)
+{
+    if (signo == SIGINT) {
+        nl_term();
+        exit(EXIT_SUCCESS);
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -167,8 +178,10 @@ main(int argc, char *argv[])
     parse_args(argc, argv);
 
     check_priv();
-
     nl_init();
+
+    if (signal(SIGINT, sig_handler) == SIG_ERR)
+        fprintf(stderr, "Couldn't catch SIGINT\n");
 
     while (1)
     {
