@@ -162,6 +162,9 @@ sig_handler(int signo)
 {
     if (signo == SIGINT) {
         nl_term();
+        if (!config.batch_mode) {
+            view_curses_finish();
+        }
         exit(EXIT_SUCCESS);
     }
 }
@@ -184,12 +187,19 @@ main(int argc, char *argv[])
     if (config.timestamp || config.quite)
         config.batch_mode = 1;
 
-    view_callback view = (config.batch_mode) ? view_batch : view_curses;
+    view_callback view = view_batch;
+    how_to_sleep do_sleep = (how_to_sleep) sleep;
 
-    while (1)
+    if (!config.batch_mode) {
+        view = view_curses;
+        do_sleep = curses_sleep;
+    }
+
+    int stop = 0;
+    while (!stop)
     {
         cs = fetch_data(config.processes, filter1);
-        view(cs, ps);
+        stop = view(cs, ps);
 
         if (ps)
             free_stats_chain(ps);
@@ -200,10 +210,11 @@ main(int argc, char *argv[])
                 break;
         }
 
-        sleep(params.delay);
+        stop = do_sleep(params.delay);
     }
 
     free_stats_chain(cs);
-    nl_term();
+    sig_handler(SIGINT);
+
     return 0;
 }

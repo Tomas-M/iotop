@@ -4,4 +4,4 @@ project(IOTOP)
 file(GLOB SRC src/*)
 
 add_executable(iotop ${SRC})
-target_link_libraries(iotop procps)
+target_link_libraries(iotop procps ncurses)

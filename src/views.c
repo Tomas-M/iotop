@@ -1,5 +1,5 @@
 #include <pwd.h>
-#include <stdio.h>
+#include <curses.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -58,7 +58,7 @@ struct xxxid_stats *create_diff(struct xxxid_stats *cs, struct xxxid_stats *ps, 
         memcpy(&diff[n], c, sizeof(struct xxxid_stats));
 
         // round robin value
-        
+
 #define RRV(to, from) {\
     to = (to < from)\
         ? xxx - to + from\
@@ -78,7 +78,7 @@ struct xxxid_stats *create_diff(struct xxxid_stats *cs, struct xxxid_stats *ps, 
 
         diff[n].blkio_val =
             (double) diff[n].blkio_delay_total / pow_ten / params.delay * 100;
-    
+
         diff[n].swapin_val =
             (double) diff[n].swapin_delay_total / pow_ten / params.delay * 100;
 
@@ -133,10 +133,10 @@ void humanize_val(double *value, char **str)
     *str = config.accumulated ? prefix_acc[p] : prefix[p];
 }
 
-void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
+int view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
 {
     int diff_len = 0;
-    
+
     struct xxxid_stats *diff = create_diff(cs, ps, &diff_len);
     struct xxxid_stats *s;
 
@@ -149,7 +149,7 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
     humanize_val(&total_write, &str_write);
 
     printf("Total DISK READ: %7.2f %s | Total DISK WRITE: %7.2f %s",
-        total_read, 
+        total_read,
         str_read,
         total_write,
         str_write
@@ -210,12 +210,78 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
             s->cmdline
         );
     }
-    
+
     free(diff);
+    return 0;
 }
 
-void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
+int view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
 {
-    fprintf(stderr, "###### VIEW CURSES IS NOT IMPLEMENTED YET ######\n");
-    view_batch(cs, ps);
+    static int initilized = 0;
+    static WINDOW *top_bar = NULL;
+
+    if (!initilized) {
+        initscr();
+        keypad(stdscr, TRUE);
+        nonl();
+        cbreak();
+        noecho();
+        curs_set(FALSE);
+        nodelay(stdscr, TRUE);
+    }
+
+    int diff_len = 0;
+
+    struct xxxid_stats *diff = create_diff(cs, ps, &diff_len);
+    struct xxxid_stats *s;
+
+    double total_read, total_write;
+    char *str_read, *str_write;
+
+    calc_total(diff, &total_read, &total_write);
+
+    humanize_val(&total_read, &str_read);
+    humanize_val(&total_write, &str_write);
+
+    static int k = 0;
+
+    clear();
+    mvprintw(0, 0, "Total DISK READ: %7.2f %s | Total DISK WRITE: %7.2f %s",
+        total_read,
+        str_read,
+        total_write,
+        str_write
+    );
+
+    refresh();
+
+    return 1;
+}
+
+void view_curses_finish(void)
+{
+    endwin();
+}
+
+int curses_sleep(unsigned int seconds)
+{
+    fd_set fds;
+    struct timeval tv;
+
+    FD_ZERO(&fds);
+    FD_SET(0, &fds);
+
+    tv.tv_sec = seconds;
+    tv.tv_usec = 0;
+
+    int rv = select(1, &fds, NULL, NULL, &tv);
+
+    if (rv) {
+        int ch = getch();
+
+        if (ch == 'q')
+            return 1;
+    }
+
+    return 0;
 }
