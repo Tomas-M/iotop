@@ -224,19 +224,46 @@ nl_term(void)
 void
 dump_xxxid_stats(struct xxxid_stats *stats) {
     printf("%i %i CPU: %llu SWAPIN: %llu IO: %llu "
-           "READ: %llu WRITE: %llu IOPRIO: %i%s\n",
+           "READ: %llu WRITE: %llu IOPRIO: %i%s   %s\n",
            stats->tid, stats->euid,
            stats->cpu_run_real_total, stats->swapin_delay_total,
            stats->blkio_delay_total, stats->read_bytes,
            stats->write_bytes, stats->ioprio,
-           str_ioprio_class[stats->ioprio_class]);
+           str_ioprio_class[stats->ioprio_class],
+           stats->cmdline);
 }
 
+void
+update_stats(proc_t *pi, struct xxxid_stats *s)
+{
+    s->euid = pi->euid;
+    s->cmdline = malloc(strlen(pi->cmdline[0]) + 1);
+    strcpy(s->cmdline, pi->cmdline[0]);
+}
 
 void
-update_stats(proc_t *pi, struct xxxid_stats *stats)
+free_stats(struct xxxid_stats *s)
 {
-    stats->euid = pi->euid;
+    if (s->cmdline)
+        free(s->cmdline);
+    free(s);
+}
+
+struct xxxid_stats *
+make_stats(proc_t *p, int processes)
+{
+    struct xxxid_stats *s = malloc(sizeof(struct xxxid_stats));
+    memset(s, 0, sizeof(struct xxxid_stats));
+
+    if (nl_xxxid_info(p->tid, processes, s))
+        goto error;
+
+    update_stats(p, s);
+    return s;
+
+error:
+    free_stats(s);
+    return NULL;
 }
 
 void
@@ -259,20 +286,16 @@ fetch_data(int processes, int (*filter)(struct xxxid_stats *))
     memset(&pi, 0, sizeof(proc_t));
 
     while (readproc(proc, &pi)) {
-        static struct xxxid_stats stats;
-
         if (processes) {
-            memset(&stats, 0, sizeof(struct xxxid_stats));
+            struct xxxid_stats *s = make_stats(&pi, processes);
 
-            if (nl_xxxid_info(pi.tid, processes, &stats))
+            if (filter && filter(s)) {
+                free_stats(s);
                 continue;
+            }
 
-            update_stats(&pi, &stats);
-
-            if (filter && filter(&stats))
-                continue;
-
-            dump_xxxid_stats(&stats);
+            dump_xxxid_stats(s);
+            free_stats(s);
             continue;
         }
 
@@ -280,17 +303,15 @@ fetch_data(int processes, int (*filter)(struct xxxid_stats *))
         memset(&ti, 0, sizeof(proc_t));
 
         while (readtask(proc, &pi, &ti)) {
-            memset(&stats, 0, sizeof(struct xxxid_stats));
+            struct xxxid_stats *s = make_stats(&ti, processes);
 
-            if (nl_xxxid_info(ti.tid, processes, &stats))
+            if (filter && filter(s)) {
+                free_stats(s);
                 continue;
+            }
 
-            update_stats(&ti, &stats);
-
-            if (filter && filter(&stats))
-                continue;
-
-            dump_xxxid_stats(&stats);
+            dump_xxxid_stats(s);
+            free_stats(s);
         }
     }
 }
