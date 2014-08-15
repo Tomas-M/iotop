@@ -183,6 +183,8 @@ main(int argc, char *argv[])
     if (signal(SIGINT, sig_handler) == SIG_ERR)
         fprintf(stderr, "Couldn't catch SIGINT\n");
 
+    struct xxxid_stats *prev = NULL;
+
     while (1)
     {
         struct xxxid_stats *chain = fetch_data(config.processes, filter1);

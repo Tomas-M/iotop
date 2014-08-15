@@ -279,7 +279,7 @@ error:
 }
 
 struct xxxid_stats *
-fetch_data(int processes, int (*filter)(struct xxxid_stats *))
+fetch_data(int processes, filter_callback filter)
 {
     PROCTAB *proc = openproc(
             PROC_FILLCOM |
