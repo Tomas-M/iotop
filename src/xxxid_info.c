@@ -35,11 +35,11 @@ struct msgtemplate {
 
 const char *str_ioprio_class[] = { "-", "rt", "be", "id" };
 
-static int _nl_sock = -1;
-static int _nl_fam_id = 0;
+static int nl_sock = -1;
+static int nl_fam_id = 0;
 
 int
-_send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
+send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
          __u8 genl_cmd, __u16 nla_type,
          void *nla_data, int nla_len)
 {
@@ -79,7 +79,7 @@ _send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
 }
 
 int
-_get_family_id(int sock_fd)
+get_family_id(int sock_fd)
 {
     static char name[256];
 
@@ -94,7 +94,7 @@ _get_family_id(int sock_fd)
     int rep_len;
 
     strcpy(name, TASKSTATS_GENL_NAME);
-    rc = _send_cmd(sock_fd, GENL_ID_CTRL, getpid(), CTRL_CMD_GETFAMILY,
+    rc = send_cmd(sock_fd, GENL_ID_CTRL, getpid(), CTRL_CMD_GETFAMILY,
                     CTRL_ATTR_FAMILY_NAME, (void *)name,
                     strlen(TASKSTATS_GENL_NAME)+1);
 
@@ -126,8 +126,8 @@ nl_init(void)
     if (bind(sock_fd, (struct sockaddr *) &addr, sizeof(addr)) < 0)
         goto error;
 
-    _nl_sock = sock_fd;
-    _nl_fam_id = _get_family_id(sock_fd);
+    nl_sock = sock_fd;
+    nl_fam_id = get_family_id(sock_fd);
 
     return;
 
@@ -142,17 +142,17 @@ error:
 int
 nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
 {
-    assert(_nl_sock > -1);
+    assert(nl_sock > -1);
     int cmd_type = isp ? TASKSTATS_CMD_ATTR_PID : TASKSTATS_CMD_ATTR_TGID;
 
-    if (_send_cmd(_nl_sock, _nl_fam_id, xxxid, TASKSTATS_CMD_GET,
+    if (send_cmd(nl_sock, nl_fam_id, xxxid, TASKSTATS_CMD_GET,
                     cmd_type, &xxxid, sizeof(__u32))) {
         fprintf(stderr, "get_xxxid_info: %s\n", strerror(errno));
         return -1;
     }
 
     struct msgtemplate msg;
-    int rv = recv(_nl_sock, &msg, sizeof(msg), 0);
+    int rv = recv(nl_sock, &msg, sizeof(msg), 0);
 
     if (msg.n.nlmsg_type == NLMSG_ERROR ||
             !NLMSG_OK((&msg.n), rv)) {
@@ -183,7 +183,6 @@ nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
                     case TASKSTATS_TYPE_STATS:
                         {
                             struct taskstats *ts = NLA_DATA(na);
-
 #define COPY(field) { stats->field = ts->field; }
                             COPY(cpu_run_real_total);
                             COPY(read_bytes);
@@ -191,7 +190,6 @@ nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
                             COPY(swapin_delay_total);
                             COPY(blkio_delay_total);
 #undef COPY
-
                         }
                         break;
                     }
@@ -214,8 +212,8 @@ nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
 void
 nl_term(void)
 {
-    if (_nl_sock > -1)
-        close(_nl_sock);
+    if (nl_sock > -1)
+        close(nl_sock);
 }
 
 void

@@ -6,7 +6,7 @@
 static char *progname = NULL;
 
 void
-_check_priv(void)
+check_priv(void)
 {
     if (geteuid()) {
         fprintf(stderr, "%s requires root privileges\n", progname);
@@ -18,7 +18,7 @@ int
 main(int argc, char *argv[])
 {
     progname = argv[0];
-    _check_priv();
+    check_priv();
 
     if (argc < 2) {
         fprintf(stderr, "USAGE: %s PID\n", progname);
