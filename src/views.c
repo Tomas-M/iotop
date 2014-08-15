@@ -7,6 +7,8 @@
 
 #include "iotop.h"
 
+#define HEADER_FORMAT "Total DISK READ: %7.2f %s | Total DISK WRITE: %7.2f %s"
+
 struct xxxid_stats *findpid(struct xxxid_stats *chain, int tid)
 {
     struct xxxid_stats *s;
@@ -133,7 +135,7 @@ void humanize_val(double *value, char **str)
     *str = config.accumulated ? prefix_acc[p] : prefix[p];
 }
 
-int view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
+void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
 {
     int diff_len = 0;
 
@@ -148,7 +150,7 @@ int view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
     humanize_val(&total_read, &str_read);
     humanize_val(&total_write, &str_write);
 
-    printf("Total DISK READ: %7.2f %s | Total DISK WRITE: %7.2f %s",
+    printf(HEADER_FORMAT,
         total_read,
         str_read,
         total_write,
@@ -212,16 +214,16 @@ int view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
     }
 
     free(diff);
-    return 0;
 }
 
-int view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
+void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
 {
     static int initilized = 0;
     static WINDOW *top_bar = NULL;
 
     if (!initilized) {
         initscr();
+        start_color();
         keypad(stdscr, TRUE);
         nonl();
         cbreak();
@@ -243,19 +245,18 @@ int view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
     humanize_val(&total_read, &str_read);
     humanize_val(&total_write, &str_write);
 
-    static int k = 0;
-
     clear();
-    mvprintw(0, 0, "Total DISK READ: %7.2f %s | Total DISK WRITE: %7.2f %s",
+
+    mvprintw(0, 0, HEADER_FORMAT,
         total_read,
         str_read,
         total_write,
         str_write
     );
 
-    refresh();
 
-    return 1;
+
+    refresh();
 }
 
 void view_curses_finish(void)
@@ -278,7 +279,6 @@ int curses_sleep(unsigned int seconds)
 
     if (rv) {
         int ch = getch();
-
         if (ch == 'q')
             return 1;
     }

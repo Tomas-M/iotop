@@ -199,7 +199,7 @@ main(int argc, char *argv[])
     while (!stop)
     {
         cs = fetch_data(config.processes, filter1);
-        stop = view(cs, ps);
+        view(cs, ps);
 
         if (ps)
             free_stats_chain(ps);
