@@ -268,6 +268,7 @@ fetch_data(int processes, int (*filter)(struct xxxid_stats *))
                 continue;
 
             update_stats(&pi, &stats);
+
             if (filter && filter(&stats))
                 continue;
 
@@ -285,6 +286,7 @@ fetch_data(int processes, int (*filter)(struct xxxid_stats *))
                 continue;
 
             update_stats(&ti, &stats);
+
             if (filter && filter(&stats))
                 continue;
 

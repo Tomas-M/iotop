@@ -149,6 +149,18 @@ parse_args(int argc, char *argv[])
 }
 
 int
+filter1(struct xxxid_stats *s)
+{
+    if ((user_id != -1) && (s->euid != user_id))
+        return 1;
+
+    if ((pid != -1) && (s->tid != pid))
+        return 1;
+
+    return 0;
+}
+
+int
 main(int argc, char *argv[])
 {
     progname = argv[0];
@@ -157,7 +169,7 @@ main(int argc, char *argv[])
     check_priv();
 
     nl_init();
-    fetch_data(config.processes, NULL);
+    fetch_data(config.processes, filter1);
 
     nl_term();
 
