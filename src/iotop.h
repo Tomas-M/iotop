@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <asm/types.h>
 
+#define VERSION "0.1"
+
 // const char *str_ioprio_class[] = { "-", "rt", "be", "id" };
 extern const char *str_ioprio_class[];
 
