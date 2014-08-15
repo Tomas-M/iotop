@@ -314,5 +314,7 @@ fetch_data(int processes, int (*filter)(struct xxxid_stats *))
             free_stats(s);
         }
     }
+
+    closeproc(proc);
 }
 
