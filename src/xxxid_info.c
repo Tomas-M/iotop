@@ -1,3 +1,4 @@
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +10,8 @@
 #include <linux/taskstats.h>
 #include <sys/syscall.h>
 #include <assert.h>
+
+#include <proc/readproc.h>
 
 #include "iotop.h"
 
@@ -151,6 +154,8 @@ nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
         return -1;
     }
 
+    stats->tid = xxxid;
+
     struct msgtemplate msg;
     int rv = recv(nl_sock, &msg, sizeof(msg), 0);
 
@@ -218,11 +223,73 @@ nl_term(void)
 
 void
 dump_xxxid_stats(struct xxxid_stats *stats) {
-    printf("CPU: %llu\nSWAPIN: %llu\nIO: %llu\n"
-           "READ: %llu\nWRITE: %llu\nIOPRIO: %i%s\n",
+    printf("%i %i CPU: %llu SWAPIN: %llu IO: %llu "
+           "READ: %llu WRITE: %llu IOPRIO: %i%s\n",
+           stats->tid, stats->euid,
            stats->cpu_run_real_total, stats->swapin_delay_total,
            stats->blkio_delay_total, stats->read_bytes,
            stats->write_bytes, stats->ioprio,
            str_ioprio_class[stats->ioprio_class]);
+}
+
+
+void
+update_stats(proc_t *pi, struct xxxid_stats *stats)
+{
+    stats->euid = pi->euid;
+}
+
+void
+fetch_data(int processes, int (*filter)(struct xxxid_stats *))
+{
+    PROCTAB *proc = openproc(
+            PROC_FILLCOM |
+            PROC_FILLUSR |
+            PROC_FILLARG |
+            PROC_EDITCMDLCVT |
+            PROC_FILLSTATUS
+        );
+
+    if (!proc) {
+        perror("openproc");
+        exit(EXIT_FAILURE);
+    }
+
+    proc_t pi;
+    memset(&pi, 0, sizeof(proc_t));
+
+    while (readproc(proc, &pi)) {
+        static struct xxxid_stats stats;
+
+        if (processes) {
+            memset(&stats, 0, sizeof(struct xxxid_stats));
+
+            if (nl_xxxid_info(pi.tid, processes, &stats))
+                continue;
+
+            update_stats(&pi, &stats);
+            if (filter && filter(&stats))
+                continue;
+
+            dump_xxxid_stats(&stats);
+            continue;
+        }
+
+        proc_t ti;
+        memset(&ti, 0, sizeof(proc_t));
+
+        while (readtask(proc, &pi, &ti)) {
+            memset(&stats, 0, sizeof(struct xxxid_stats));
+
+            if (nl_xxxid_info(ti.tid, processes, &stats))
+                continue;
+
+            update_stats(&ti, &stats);
+            if (filter && filter(&stats))
+                continue;
+
+            dump_xxxid_stats(&stats);
+        }
+    }
 }
 

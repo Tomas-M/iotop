@@ -156,12 +156,9 @@ main(int argc, char *argv[])
 
     check_priv();
 
-    int pid = atoi(argv[1]);
-    struct xxxid_stats stats;
-
     nl_init();
-    nl_xxxid_info(pid, 1, &stats);
-    dump_xxxid_stats(&stats);
+    fetch_data(config.processes, NULL);
+
     nl_term();
 
     return 0;

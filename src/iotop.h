@@ -6,7 +6,6 @@
 
 #define VERSION "0.1"
 
-// const char *str_ioprio_class[] = { "-", "rt", "be", "id" };
 extern const char *str_ioprio_class[];
 
 enum {
@@ -23,6 +22,7 @@ enum {
 };
 
 struct xxxid_stats {
+    pid_t tid;
     __u64 cpu_run_real_total;
     __u64 swapin_delay_total;
     __u64 blkio_delay_total;
@@ -30,6 +30,9 @@ struct xxxid_stats {
     __u64 write_bytes;
     int ioprio;
     int ioprio_class;
+
+    int euid;
+    char *cmdline;
 };
 
 void nl_init(void);
@@ -37,6 +40,8 @@ void nl_term(void);
 
 int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats);
 void dump_xxxid_stats(struct xxxid_stats *stats);
+
+void fetch_data(int processes, int (*filter)(struct xxxid_stats *));
 
 #endif // __IOTOP_H__
 
