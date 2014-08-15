@@ -249,6 +249,18 @@ free_stats(struct xxxid_stats *s)
     free(s);
 }
 
+void
+free_stats_chain(struct xxxid_stats *chain)
+{
+    struct xxxid_stats *s = chain;
+
+    while (s) {
+        struct xxxid_stats *next = s->__next;
+        free_stats(s);
+        s = next;
+    }
+}
+
 struct xxxid_stats *
 make_stats(proc_t *p, int processes)
 {
@@ -266,7 +278,7 @@ error:
     return NULL;
 }
 
-void
+struct xxxid_stats *
 fetch_data(int processes, int (*filter)(struct xxxid_stats *))
 {
     PROCTAB *proc = openproc(
@@ -282,39 +294,48 @@ fetch_data(int processes, int (*filter)(struct xxxid_stats *))
         exit(EXIT_FAILURE);
     }
 
+    struct xxxid_stats *schain = NULL;
+    struct xxxid_stats *p = NULL;
+
+#define ADD_TO_CHAIN(s) {\
+    if (!schain) {\
+        schain = s;\
+        p = s;\
+    } else {\
+        p->__next = s;\
+        p = s;\
+    }\
+}
+
+#define FILTER_ON_CHAIN(s) {\
+    if (filter && filter(s))\
+        free_stats(s);\
+    else\
+        ADD_TO_CHAIN(s)\
+}
+
     proc_t pi;
     memset(&pi, 0, sizeof(proc_t));
 
     while (readproc(proc, &pi)) {
         if (processes) {
             struct xxxid_stats *s = make_stats(&pi, processes);
+            FILTER_ON_CHAIN(s);
+        } else {
+            proc_t ti;
+            memset(&ti, 0, sizeof(proc_t));
 
-            if (filter && filter(s)) {
-                free_stats(s);
-                continue;
+            while (readtask(proc, &pi, &ti)) {
+                struct xxxid_stats *s = make_stats(&ti, processes);
+                FILTER_ON_CHAIN(s);
             }
-
-            dump_xxxid_stats(s);
-            free_stats(s);
-            continue;
-        }
-
-        proc_t ti;
-        memset(&ti, 0, sizeof(proc_t));
-
-        while (readtask(proc, &pi, &ti)) {
-            struct xxxid_stats *s = make_stats(&ti, processes);
-
-            if (filter && filter(s)) {
-                free_stats(s);
-                continue;
-            }
-
-            dump_xxxid_stats(s);
-            free_stats(s);
         }
     }
 
+#undef ADD_TO_CHAIN
+#undef FILTER_ON_CHAIN
+
     closeproc(proc);
+    return schain;
 }
 

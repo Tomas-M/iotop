@@ -169,9 +169,24 @@ main(int argc, char *argv[])
     check_priv();
 
     nl_init();
-    fetch_data(config.processes, filter1);
+
+    while (1)
+    {
+        struct xxxid_stats *chain = fetch_data(config.processes, filter1);
+        struct xxxid_stats *s;
+
+        for (s = chain; s; s = s->__next)
+            dump_xxxid_stats(s);
+
+        free_stats_chain(chain);
+
+        if (iter > -1) {
+            if (--iter == 0)
+                break;
+        }
+        sleep(delay);
+    }
 
     nl_term();
-
     return 0;
 }

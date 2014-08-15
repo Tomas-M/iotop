@@ -33,6 +33,8 @@ struct xxxid_stats {
 
     int euid;
     char *cmdline;
+
+    void *__next;
 };
 
 void nl_init(void);
@@ -41,7 +43,8 @@ void nl_term(void);
 int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats);
 void dump_xxxid_stats(struct xxxid_stats *stats);
 
-void fetch_data(int processes, int (*filter)(struct xxxid_stats *));
+struct xxxid_stats* fetch_data(int processes, int (*filter)(struct xxxid_stats *));
+void free_stats_chain(struct xxxid_stats *chain);
 
 #endif // __IOTOP_H__
 
