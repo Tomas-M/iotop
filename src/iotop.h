@@ -45,6 +45,8 @@ enum {
     IOPRIO_WHO_USER
 };
 
+#define IOPRIO_CLASS_SHIFT 13
+
 struct xxxid_stats {
     pid_t tid;
     __u64 swapin_delay_total;  // nanoseconds
@@ -65,6 +67,10 @@ struct xxxid_stats {
 
     void *__next;
 };
+
+#define ABS_PRIO(stats) (\
+    (stats.ioprio_class << IOPRIO_CLASS_SHIFT) | stats.ioprio\
+)
 
 void nl_init(void);
 void nl_term(void);

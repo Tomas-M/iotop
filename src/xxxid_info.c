@@ -15,7 +15,6 @@
 
 #include "iotop.h"
 
-#define IOPRIO_CLASS_SHIFT 13
 
 /*
  * Generic macros for dealing with netlink sockets. Might be duplicated

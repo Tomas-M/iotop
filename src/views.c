@@ -228,12 +228,80 @@ enum {
 };
 
 enum {
-    SORT_ASC,
-    SORT_DESC
+    SORT_DESC,
+    SORT_ASC
 };
 
-static int sort_by = SORT_BY_PID;
-static int sort_order = SORT_ASC;
+static int sort_by = SORT_BY_IO;
+static int sort_order = SORT_DESC;
+
+void sort_diff(struct xxxid_stats *d)
+{
+    int len = chainlen(d);
+    int i;
+
+    for (i = 0; i < len; i++) {
+        int max_id = i;
+        int k;
+
+        for (k = i; k < len; k++) {
+            int found = 0;
+
+#define CMP_FIELDS(field_name) (d[k].field_name > d[i].field_name)
+
+            switch (sort_by) {
+                case SORT_BY_PRIO:
+                    found = (ABS_PRIO(d[k]) > ABS_PRIO(d[i]));
+                    break;
+                case SORT_BY_COMMAND:
+                    found = (strcmp(d[k].cmdline, d[i].cmdline) > 0);
+                    break;
+                case SORT_BY_PID:
+                    found = CMP_FIELDS(tid);
+                    break;
+                case SORT_BY_USER:
+                    found = CMP_FIELDS(euid);
+                    break;
+                case SORT_BY_READ:
+                    found = CMP_FIELDS(read_val);
+                    break;
+                case SORT_BY_WRITE:
+                    found = CMP_FIELDS(write_val);
+                    break;
+                case SORT_BY_SWAPIN:
+                    found = CMP_FIELDS(swapin_val);
+                    break;
+                case SORT_BY_IO:
+                    found = CMP_FIELDS(blkio_val);
+                    break;
+            }
+#undef CMP_FIELDS
+
+            if (found) {
+                static struct xxxid_stats tmp;
+
+                memcpy(&tmp, &d[i], sizeof(struct xxxid_stats));
+                memcpy(&d[i], &d[k], sizeof(struct xxxid_stats));
+                memcpy(&d[k], &tmp, sizeof(struct xxxid_stats));
+            }
+        }
+    }
+
+    if (sort_order == SORT_ASC) {
+        struct xxxid_stats *rev = malloc(sizeof(struct xxxid_stats) * len);
+        for (i = 0; i < len; i++) {
+            memcpy(&rev[i], &d[len - i - 1], sizeof(struct xxxid_stats));
+        }
+        memcpy(d, rev, sizeof(struct xxxid_stats) * len);
+        free(rev);
+    }
+
+    for (i = 0; i < len; i++) {
+        d[i].__next = &d[i + 1];
+    }
+
+    d[len - 1].__next = NULL;
+}
 
 void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
 {
@@ -287,6 +355,45 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
     );
     attroff(A_REVERSE);
 
+    sort_diff(diff);
+
+    int line = 2;
+    for (s = diff; s; s = s->__next, line++) {
+        struct passwd *pwd = getpwuid(s->euid);
+
+        double read_val = s->read_val;
+        double write_val = s->write_val;
+
+        if (config.only && (!read_val || !write_val)) {
+            continue;
+        }
+
+        char *read_str, *write_str;
+
+        if (config.kilobytes) {
+            read_val /= 1000;
+            write_val /= 1000;
+            read_str = config.accumulated ? "K" : "K/s";
+            write_str = config.accumulated ? "K" : "K/s";
+        } else {
+            humanize_val(&read_val, &read_str);
+            humanize_val(&write_val, &write_str);
+        }
+
+        mvprintw(line, 0, "%5i  %2s/%1i %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s  %2.2f %%  %2.2f %%  %s\n",
+            s->tid,
+            str_ioprio_class[s->ioprio_class],
+            s->ioprio,
+            pwd ? pwd->pw_name : "UNKNOWN",
+            read_val,
+            read_str,
+            write_val,
+            write_str,
+            s->swapin_val,
+            s->blkio_val,
+            s->cmdline
+        );
+    }
     refresh();
 }
 
