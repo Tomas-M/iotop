@@ -189,7 +189,6 @@ nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
                         {
                             struct taskstats *ts = NLA_DATA(na);
 #define COPY(field) { stats->field = ts->field; }
-                            COPY(cpu_run_real_total);
                             COPY(read_bytes);
                             COPY(write_bytes);
                             COPY(swapin_delay_total);
@@ -223,10 +222,10 @@ nl_term(void)
 
 void
 dump_xxxid_stats(struct xxxid_stats *stats) {
-    printf("%i %i CPU: %llu SWAPIN: %llu IO: %llu "
+    printf("%i %i SWAPIN: %llu IO: %llu "
            "READ: %llu WRITE: %llu IOPRIO: %i%s   %s\n",
            stats->tid, stats->euid,
-           stats->cpu_run_real_total, stats->swapin_delay_total,
+           stats->swapin_delay_total,
            stats->blkio_delay_total, stats->read_bytes,
            stats->write_bytes, stats->ioprio,
            str_ioprio_class[stats->ioprio_class],

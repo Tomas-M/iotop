@@ -11,23 +11,17 @@
 
 static char *progname = NULL;
 
-static union {
-    struct {
-        int batch_mode;
-        int only;
-        int processes;
-        int accumulated;
-        int kilobytes;
-        int timestamp;
-        int quite;
-    };
-    int opts[7];
-} config;
+config_t config;
+params_t params;
 
-static int iter = -1;
-static int delay = 1;
-static int pid = -1;
-static int user_id = -1;
+void
+init_params(void)
+{
+    params.iter = -1;
+    params.delay = 1;
+    params.pid = -1;
+    params.user_id = -1;
+}
 
 static char str_opt[] = "boPaktq";
 
@@ -74,9 +68,11 @@ print_help(void)
 void
 parse_args(int argc, char *argv[])
 {
-    int c;
+    init_params();
 
+    int c;
     memset(&config, 0, sizeof(config));
+
     while (1)
     {
         static struct option long_options[] =
@@ -122,24 +118,24 @@ parse_args(int argc, char *argv[])
             config.opts[(unsigned int) (strchr(str_opt, c) - str_opt)] = 1;
             break;
         case 'n':
-            iter = atoi(optarg);
+            params.iter = atoi(optarg);
             break;
         case 'd':
-            delay = atoi(optarg);
+            params.delay = atoi(optarg);
             break;
         case 'p':
-            pid = atoi(optarg);
+            params.pid = atoi(optarg);
             break;
         case 'u':
             if (isdigit(optarg[0])) {
-                user_id = atoi(optarg);
+                params.user_id = atoi(optarg);
             } else {
                 struct passwd *pwd = getpwnam(optarg);
                 if (!pwd) {
                     fprintf(stderr, "User %s not found\n", optarg);
                     exit(EXIT_FAILURE);
                 }
-                user_id = pwd->pw_uid;
+                params.user_id = pwd->pw_uid;
             }
             break;
         default:
@@ -152,10 +148,10 @@ parse_args(int argc, char *argv[])
 int
 filter1(struct xxxid_stats *s)
 {
-    if ((user_id != -1) && (s->euid != user_id))
+    if ((params.user_id != -1) && (s->euid != params.user_id))
         return 1;
 
-    if ((pid != -1) && (s->tid != pid))
+    if ((params.pid != -1) && (s->tid != params.pid))
         return 1;
 
     return 0;
@@ -183,25 +179,28 @@ main(int argc, char *argv[])
         fprintf(stderr, "Couldn't catch SIGINT\n");
 
     struct xxxid_stats *ps = NULL;
+    struct xxxid_stats *cs = NULL;
+
     view_callback view = (config.batch_mode) ? view_batch : view_curses;
 
     while (1)
     {
-        struct xxxid_stats *cs = fetch_data(config.processes, filter1);
+        cs = fetch_data(config.processes, filter1);
         view(cs, ps);
 
         if (ps)
             free_stats_chain(ps);
 
         ps = cs;
-
-        if (iter > -1) {
-            if (--iter == 0)
+        if (params.iter > -1) {
+            if ((--params.iter) == 0)
                 break;
         }
-        sleep(delay);
+
+        sleep(params.delay);
     }
 
+    free_stats_chain(cs);
     nl_term();
     return 0;
 }

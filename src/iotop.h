@@ -6,6 +6,30 @@
 
 #define VERSION "0.1"
 
+typedef union {
+    struct {
+        int batch_mode;
+        int only;
+        int processes;
+        int accumulated;
+        int kilobytes;
+        int timestamp;
+        int quite;
+    };
+    int opts[7];
+} config_t;
+
+typedef struct {
+    int iter;
+    int delay;
+    int pid;
+    int user_id;
+} params_t;
+
+extern config_t config;
+extern params_t params;
+
+
 extern const char *str_ioprio_class[];
 
 enum {
@@ -23,9 +47,8 @@ enum {
 
 struct xxxid_stats {
     pid_t tid;
-    __u64 cpu_run_real_total;
-    __u64 swapin_delay_total;
-    __u64 blkio_delay_total;
+    __u64 swapin_delay_total;  // nanoseconds
+    __u64 blkio_delay_total;  // nanoseconds
     __u64 read_bytes;
     __u64 write_bytes;
     int ioprio;
