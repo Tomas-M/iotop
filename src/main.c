@@ -161,7 +161,6 @@ filter1(struct xxxid_stats *s)
     return 0;
 }
 
-
 void
 sig_handler(int signo)
 {
@@ -183,17 +182,18 @@ main(int argc, char *argv[])
     if (signal(SIGINT, sig_handler) == SIG_ERR)
         fprintf(stderr, "Couldn't catch SIGINT\n");
 
-    struct xxxid_stats *prev = NULL;
+    struct xxxid_stats *ps = NULL;
+    view_callback view = (config.batch_mode) ? view_batch : view_curses;
 
     while (1)
     {
-        struct xxxid_stats *chain = fetch_data(config.processes, filter1);
-        struct xxxid_stats *s;
+        struct xxxid_stats *cs = fetch_data(config.processes, filter1);
+        view(cs, ps);
 
-        for (s = chain; s; s = s->__next)
-            dump_xxxid_stats(s);
+        if (ps)
+            free_stats_chain(ps);
 
-        free_stats_chain(chain);
+        ps = cs;
 
         if (iter > -1) {
             if (--iter == 0)
