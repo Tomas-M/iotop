@@ -36,7 +36,7 @@ check_priv(void)
 {
     if (geteuid()) {
         fprintf(stderr, "%s requires root privileges\n", progname);
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -108,10 +108,10 @@ parse_args(int argc, char *argv[])
         {
         case 'v':
             printf("%s %s\n", argv[0], VERSION);
-            exit(0);
+            exit(EXIT_SUCCESS);
         case 'h':
             print_help();
-            exit(0);
+            exit(EXIT_SUCCESS);
         case 'o':
         case 'b':
         case 'P':
@@ -137,7 +137,7 @@ parse_args(int argc, char *argv[])
                 struct passwd *pwd = getpwnam(optarg);
                 if (!pwd) {
                     fprintf(stderr, "User %s not found\n", optarg);
-                    exit(-1);
+                    exit(EXIT_FAILURE);
                 }
                 user_id = pwd->pw_uid;
             }

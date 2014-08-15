@@ -139,7 +139,7 @@ error:
         close(sock_fd);
 
     fprintf(stderr, "nl_init: %s\n", strerror(errno));
-    exit(-1);
+    exit(EXIT_FAILURE);
 }
 
 int
