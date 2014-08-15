@@ -160,12 +160,11 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
     if (config.timestamp) {
         time_t t = time(NULL);
         printf(" | %s", ctime(&t));
-    } else {
+    } else
         printf("\n");
-    }
 
     if (!config.quite)
-        printf("%5s %4s %-8s %11s %11s %6s %6s %s\n",
+        printf("%5s %4s %8s %11s %11s %6s %6s %s\n",
             config.processes ? "PID" : "TID",
             "PRIO",
             "USER",
@@ -198,7 +197,7 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
             humanize_val(&write_val, &write_str);
         }
 
-        printf("%5i %2s/%1i %-8.8s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
+        printf("%5i %2s/%1i %8s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
             s->tid,
             str_ioprio_class[s->ioprio_class],
             s->ioprio,
@@ -216,6 +215,26 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
     free(diff);
 }
 
+enum {
+    SORT_BY_PID,
+    SORT_BY_PRIO,
+    SORT_BY_USER,
+    SORT_BY_READ,
+    SORT_BY_WRITE,
+    SORT_BY_SWAPIN,
+    SORT_BY_IO,
+    SORT_BY_COMMAND,
+    SORT_BY_MAX
+};
+
+enum {
+    SORT_ASC,
+    SORT_DESC
+};
+
+static int sort_by = SORT_BY_PID;
+static int sort_order = SORT_ASC;
+
 void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
 {
     static int initilized = 0;
@@ -223,7 +242,6 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
 
     if (!initilized) {
         initscr();
-        start_color();
         keypad(stdscr, TRUE);
         nonl();
         cbreak();
@@ -254,7 +272,20 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
         str_write
     );
 
-
+#define SORT_CHAR(x) ((sort_by == x) ? (sort_order == SORT_ASC ? '<' : '>') : ' ')
+    attron(A_REVERSE);
+    mvhline(1, 0, ' ', 1000);
+    mvprintw(1, 0, "%5s%c %4s%c %8s%c %11s%c %11s%c %6s%c %6s%c %s%c",
+        config.processes ? "PID" : "TID", SORT_CHAR(SORT_BY_PID),
+        "PRIO", SORT_CHAR(SORT_BY_PRIO),
+        "USER", SORT_CHAR(SORT_BY_USER),
+        "DISK READ", SORT_CHAR(SORT_BY_READ),
+        "DISK WRITE", SORT_CHAR(SORT_BY_WRITE),
+        "SWAPIN", SORT_CHAR(SORT_BY_SWAPIN),
+        "IO", SORT_CHAR(SORT_BY_IO),
+        "COMMAND", SORT_CHAR(SORT_BY_COMMAND)
+    );
+    attroff(A_REVERSE);
 
     refresh();
 }
@@ -278,9 +309,23 @@ int curses_sleep(unsigned int seconds)
     int rv = select(1, &fds, NULL, NULL, &tv);
 
     if (rv) {
-        int ch = getch();
-        if (ch == 'q')
-            return 1;
+        switch (getch()) {
+            case 'q':
+                return 1;
+            case ' ':
+                sort_order = (sort_order == SORT_ASC) ? SORT_DESC : SORT_ASC;
+                return 0;
+            case KEY_RIGHT:
+                if (++sort_by == SORT_BY_MAX) {
+                    sort_by = SORT_BY_PID;
+                }
+                return 0;
+            case KEY_LEFT:
+                if (--sort_by == -1) {
+                    sort_by = SORT_BY_MAX - 1;
+                }
+                return 0;
+        }
     }
 
     return 0;
