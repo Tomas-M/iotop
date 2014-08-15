@@ -181,6 +181,9 @@ main(int argc, char *argv[])
     struct xxxid_stats *ps = NULL;
     struct xxxid_stats *cs = NULL;
 
+    if (config.timestamp || config.quite)
+        config.batch_mode = 1;
+
     view_callback view = (config.batch_mode) ? view_batch : view_curses;
 
     while (1)

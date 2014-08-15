@@ -51,6 +51,12 @@ struct xxxid_stats {
     __u64 blkio_delay_total;  // nanoseconds
     __u64 read_bytes;
     __u64 write_bytes;
+
+    double blkio_val;
+    double swapin_val;
+    double read_val;
+    double write_val;
+
     int ioprio;
     int ioprio_class;
 

@@ -1,6 +1,9 @@
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <math.h>
 
 #include "iotop.h"
 
@@ -61,14 +64,29 @@ struct xxxid_stats *create_diff(struct xxxid_stats *cs, struct xxxid_stats *ps, 
         ? xxx - to + from\
         : to - from;\
 }
-
         RRV(diff[n].read_bytes, p->read_bytes);
         RRV(diff[n].write_bytes, p->write_bytes);
 
         RRV(diff[n].swapin_delay_total, p->swapin_delay_total);
         RRV(diff[n].blkio_delay_total, p->blkio_delay_total);
 
+        static double pow_ten = 0;
+        if (!pow_ten)
+            pow_ten = pow(10, 9);
+
 #undef RRV
+
+        diff[n].blkio_val =
+            (double) diff[n].blkio_delay_total / pow_ten / params.delay * 100;
+    
+        diff[n].swapin_val =
+            (double) diff[n].swapin_delay_total / pow_ten / params.delay * 100;
+
+        diff[n].read_val = (double) diff[n].read_bytes
+            / (config.accumulated ? 1 : params.delay);
+
+        diff[n].write_val = (double) diff[n].write_bytes
+            / (config.accumulated ? 1 : params.delay);
 
         diff[n].__next = &diff[n + 1];
     }
@@ -85,15 +103,114 @@ struct xxxid_stats *create_diff(struct xxxid_stats *cs, struct xxxid_stats *ps, 
     return diff;
 }
 
+void calc_total(struct xxxid_stats *diff, double *read, double *write)
+{
+    struct xxxid_stats *s;
+    *read = *write = 0;
+
+    for (s = diff; s; s = s->__next) {
+        *read += s->read_bytes;
+        *write += s->write_bytes;
+    }
+
+    if (!config.accumulated) {
+        *read /= params.delay;
+        *write /= params.delay;
+    }
+}
+
+void humanize_val(double *value, char **str)
+{
+    static char *prefix_acc[] = {"B", "K", "M", "G", "T"};
+    static char *prefix[] = {"B/s", "K/s", "M/s", "G/s", "T/s"};
+
+    int p = 0;
+    while (*value > 10000 && p < 5) {
+        *value /= 1000.0;
+        p++;
+    }
+
+    *str = config.accumulated ? prefix_acc[p] : prefix[p];
+}
+
 void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
 {
     int diff_len = 0;
+    
     struct xxxid_stats *diff = create_diff(cs, ps, &diff_len);
     struct xxxid_stats *s;
 
-    for (s = diff; s; s = s->__next)
-        dump_xxxid_stats(s);
+    double total_read, total_write;
+    char *str_read, *str_write;
 
+    calc_total(diff, &total_read, &total_write);
+
+    humanize_val(&total_read, &str_read);
+    humanize_val(&total_write, &str_write);
+
+    printf("Total DISK READ: %7.2f %s | Total DISK WRITE: %7.2f %s",
+        total_read, 
+        str_read,
+        total_write,
+        str_write
+    );
+
+    if (config.timestamp) {
+        time_t t = time(NULL);
+        printf(" | %s", ctime(&t));
+    } else {
+        printf("\n");
+    }
+
+    if (!config.quite)
+        printf("%5s %4s %-8s %11s %11s %6s %6s %s\n",
+            config.processes ? "PID" : "TID",
+            "PRIO",
+            "USER",
+            "DISK READ",
+            "DISK WRITE",
+            "SWAPIN",
+            "IO",
+            "COMMAND"
+        );
+
+    for (s = diff; s; s = s->__next) {
+        struct passwd *pwd = getpwuid(s->euid);
+
+        double read_val = s->read_val;
+        double write_val = s->write_val;
+
+        if (config.only && (!read_val || !write_val)) {
+            continue;
+        }
+
+        char *read_str, *write_str;
+
+        if (config.kilobytes) {
+            read_val /= 1000;
+            write_val /= 1000;
+            read_str = config.accumulated ? "K" : "K/s";
+            write_str = config.accumulated ? "K" : "K/s";
+        } else {
+            humanize_val(&read_val, &read_str);
+            humanize_val(&write_val, &write_str);
+        }
+
+        printf("%5i %2s/%1i %-8.8s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
+            s->tid,
+            str_ioprio_class[s->ioprio_class],
+            s->ioprio,
+            pwd ? pwd->pw_name : "UNKNOWN",
+            read_val,
+            read_str,
+            write_val,
+            write_str,
+            s->swapin_val,
+            s->blkio_val,
+            s->cmdline
+        );
+    }
+    
     free(diff);
 }
 
