@@ -245,7 +245,7 @@ update_stats(proc_t *pi, struct xxxid_stats *s)
         s->cmdline = calloc(BUFSIZ, 1);
         while (pi->cmdline[n]) {
             strcpy(&(s->cmdline[i]), pi->cmdline[n]);
-            i = i + strlen(pi->cmdline[n]) + 1;
+            i += strlen(pi->cmdline[n]) + 1;
             n++;
         }
         s->cmdline = realloc(s->cmdline, strlen(s->cmdline) - 1);
@@ -253,12 +253,14 @@ update_stats(proc_t *pi, struct xxxid_stats *s)
     } else {
         // kernel task
         sprintf(buf, "/proc/%i/status", pi->tid);
+
         FILE *fp = fopen(buf, "r");
         if (!fgets(buf, BUFSIZ, fp)) {
             s->cmdline = strdup(unknown);
         } else {
             char *name = &(strchr(buf, ':')[2]);
-            s->cmdline = malloc(strlen(buf) - (name - buf));
+
+            s->cmdline = calloc(strlen(buf) - (name - buf) + 1, 1);
             sprintf(s->cmdline, "[%s", name);
             s->cmdline[strlen(s->cmdline) - 1] = ']';
         }

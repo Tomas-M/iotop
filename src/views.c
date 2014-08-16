@@ -197,7 +197,7 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
             humanize_val(&write_val, &write_str);
         }
 
-        printf("%5i %2s/%1i %-8.8s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
+        printf("%5i %2s/%1i %-8.8s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% >%s<\n",
             s->tid,
             str_ioprio_class[s->ioprio_class],
             s->ioprio,
