@@ -234,38 +234,9 @@ dump_xxxid_stats(struct xxxid_stats *stats) {
 void
 update_stats(proc_t *pi, struct xxxid_stats *s)
 {
-    char buf[BUFSIZ];
-    const static char *unknown = "<UNKNOWN>";
-
     s->euid = pi->euid;
-
-    if (pi->cmdline) {
-        int n = 0;
-        int i = 0;
-        s->cmdline = calloc(BUFSIZ, 1);
-        while (pi->cmdline[n]) {
-            strcpy(&(s->cmdline[i]), pi->cmdline[n]);
-            i += strlen(pi->cmdline[n]) + 1;
-            n++;
-        }
-        s->cmdline = realloc(s->cmdline, strlen(s->cmdline) - 1);
-        s->cmdline[i] = 0;
-    } else {
-        // kernel task
-        sprintf(buf, "/proc/%i/status", pi->tid);
-
-        FILE *fp = fopen(buf, "r");
-        if (!fgets(buf, BUFSIZ, fp)) {
-            s->cmdline = strdup(unknown);
-        } else {
-            char *name = &(strchr(buf, ':')[2]);
-
-            s->cmdline = calloc(strlen(buf) - (name - buf) + 1, 1);
-            sprintf(s->cmdline, "[%s", name);
-            s->cmdline[strlen(s->cmdline) - 1] = ']';
-        }
-        fclose(fp);
-    }
+    s->cmdline = malloc(strlen(pi->cmdline[0]) + 1);
+    strcpy(s->cmdline, pi->cmdline[0]);
 }
 
 void
@@ -312,7 +283,7 @@ fetch_data(int processes, filter_callback filter)
             PROC_FILLCOM |
             PROC_FILLUSR |
             PROC_FILLARG |
-//            PROC_EDITCMDLCVT |
+            PROC_EDITCMDLCVT |
             PROC_FILLSTATUS
         );
 
