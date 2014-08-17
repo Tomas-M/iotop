@@ -344,10 +344,7 @@ struct xxxid_stats *fetch_data(int processes, filter_callback filter)
 {
     PROCTAB *proc = openproc(
             PROC_FILLCOM |
-            PROC_FILLUSR |
-            PROC_FILLARG |
-            PROC_EDITCMDLCVT |
-            PROC_FILLSTATUS
+            PROC_FILLUSR
         );
 
     if (!proc) {
