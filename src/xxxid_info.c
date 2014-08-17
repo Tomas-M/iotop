@@ -1,8 +1,9 @@
-#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <pwd.h>
+#include <stdarg.h>
 
 #include <sys/socket.h>
 #include <linux/genetlink.h>
@@ -40,8 +41,7 @@ const char *str_ioprio_class[] = { "-", "rt", "be", "id" };
 static int nl_sock = -1;
 static int nl_fam_id = 0;
 
-int
-send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
+int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
          __u8 genl_cmd, __u16 nla_type,
          void *nla_data, int nla_len)
 {
@@ -80,8 +80,7 @@ send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
     return 0;
 }
 
-int
-get_family_id(int sock_fd)
+int get_family_id(int sock_fd)
 {
     static char name[256];
 
@@ -113,8 +112,7 @@ get_family_id(int sock_fd)
     return id;
 }
 
-void
-nl_init(void)
+void nl_init(void)
 {
     struct sockaddr_nl addr;
     int sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
@@ -141,8 +139,7 @@ error:
     exit(EXIT_FAILURE);
 }
 
-int
-nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
+int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
 {
     assert(nl_sock > -1);
     int cmd_type = isp ? TASKSTATS_CMD_ATTR_PID : TASKSTATS_CMD_ATTR_TGID;
@@ -212,15 +209,14 @@ nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
     return 0;
 }
 
-void
-nl_term(void)
+void nl_term(void)
 {
     if (nl_sock > -1)
         close(nl_sock);
 }
 
-void
-dump_xxxid_stats(struct xxxid_stats *stats) {
+void dump_xxxid_stats(struct xxxid_stats *stats)
+{
     printf("%i %i SWAPIN: %llu IO: %llu "
            "READ: %llu WRITE: %llu IOPRIO: %i%s   %s\n",
            stats->tid, stats->euid,
@@ -231,36 +227,104 @@ dump_xxxid_stats(struct xxxid_stats *stats) {
            stats->cmdline);
 }
 
-void
-update_stats(proc_t *pi, struct xxxid_stats *s)
+char *file_to_str(const char *filepath)
 {
-    s->euid = pi->euid;
-    s->cmdline = malloc(strlen(pi->cmdline[0]) + 1);
-    strcpy(s->cmdline, pi->cmdline[0]);
+    static char buf[BUFSIZ];
+    char *rv = buf;
+    FILE *fd = fopen(filepath, "r");
+
+    if (!fd)
+        return NULL;
+
+    if (!fgets(buf, BUFSIZ, fd))
+        rv = NULL;
+
+    fclose(fd);
+    return rv;
 }
 
-void
-free_stats(struct xxxid_stats *s)
+char *xprintf(const char *format, ...)
+{
+    va_list args;
+    static char buf[BUFSIZ];
+
+    int s;
+
+    va_start(args, format);
+    s = vsnprintf(buf, BUFSIZ, format, args);
+    va_end(args);
+
+    if (s < 0 || s >= BUFSIZ)
+        return NULL;
+
+    return buf;
+}
+
+char *kernel_cmdline(int pid)
+{
+    static char buf[BUFSIZ];
+    char *s, *f;
+    char *tmp = file_to_str(xprintf("/proc/%d/status", pid));
+
+    if (!tmp)
+        return NULL;
+
+    s = strchr(tmp, '\t');
+    f = strchr(tmp, '\n');
+
+    if (!s || !f)
+        return NULL;
+
+    memset(buf, 0, BUFSIZ);
+
+    if (strncpy(&buf[1], &s[1], f - s - 1) != &buf[1])
+        return NULL;
+
+    buf[0] = '[';
+    buf[f - s] = ']';
+
+    return buf;
+}
+
+char *get_cmdline(int pid)
+{
+    char *cmdline = file_to_str(xprintf("/proc/%d/cmdline", pid));
+
+    if (cmdline)
+        return cmdline;
+
+    return kernel_cmdline(pid);
+}
+
+void update_stats(proc_t *pi, struct xxxid_stats *s)
+{
+    static char unknown[] = "<unknown>";
+
+    s->euid = pi->euid;
+    s->cmdline = (s->cmdline = get_cmdline(pi->tid))
+        ? strdup(s->cmdline)
+        : strdup(unknown);
+}
+
+void free_stats(struct xxxid_stats *s)
 {
     if (s->cmdline)
         free(s->cmdline);
+
     free(s);
 }
 
-void
-free_stats_chain(struct xxxid_stats *chain)
+void free_stats_chain(struct xxxid_stats *chain)
 {
-    struct xxxid_stats *s = chain;
+    while (chain) {
+        struct xxxid_stats *next = chain->__next;
 
-    while (s) {
-        struct xxxid_stats *next = s->__next;
-        free_stats(s);
-        s = next;
+        free_stats(chain);
+        chain = next;
     }
 }
 
-struct xxxid_stats *
-make_stats(proc_t *p, int processes)
+struct xxxid_stats *make_stats(proc_t *p, int processes)
 {
     struct xxxid_stats *s = malloc(sizeof(struct xxxid_stats));
     memset(s, 0, sizeof(struct xxxid_stats));
@@ -276,8 +340,7 @@ error:
     return NULL;
 }
 
-struct xxxid_stats *
-fetch_data(int processes, filter_callback filter)
+struct xxxid_stats *fetch_data(int processes, filter_callback filter)
 {
     PROCTAB *proc = openproc(
             PROC_FILLCOM |
