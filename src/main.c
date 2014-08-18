@@ -80,19 +80,20 @@ parse_args(int argc, char *argv[])
     {
         static struct option long_options[] =
         {
-            {"version",     no_argument, 0, 'v'},
-            {"help",        no_argument, 0, 'h'},
-            {"batch",       no_argument, 0, 'b'},
-            {"only",        no_argument, 0, 'o'},
-            {"iter",        required_argument, 0, 'n'},
-            {"delay",       required_argument, 0, 'd'},
-            {"pid",         required_argument, 0, 'p'},
-            {"user",        required_argument, 0, 'u'},
-            {"processes",   no_argument, 0, 'P'},
-            {"accumulated", no_argument, 0, 'a'},
-            {"kilobytes",   no_argument, 0, 'k'},
-            {"timestamp",   no_argument, 0, 't'},
-            {"quite",       no_argument, 0, 'q'}
+            {"version",     no_argument, NULL, 'v'},
+            {"help",        no_argument, NULL, 'h'},
+            {"batch",       no_argument, NULL, 'b'},
+            {"only",        no_argument, NULL, 'o'},
+            {"iter",        required_argument, NULL, 'n'},
+            {"delay",       required_argument, NULL, 'd'},
+            {"pid",         required_argument, NULL, 'p'},
+            {"user",        required_argument, NULL, 'u'},
+            {"processes",   no_argument, NULL, 'P'},
+            {"accumulated", no_argument, NULL, 'a'},
+            {"kilobytes",   no_argument, NULL, 'k'},
+            {"timestamp",   no_argument, NULL, 't'},
+            {"quite",       no_argument, NULL, 'q'},
+            {NULL, 0, NULL, 0}
         };
 
         int c = getopt_long(argc, argv, "vhbon:d:p:u:Paktq",

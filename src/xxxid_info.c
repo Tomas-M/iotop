@@ -141,8 +141,6 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
         exit(EXIT_FAILURE);
     }
 
-    int cmd_type = isp ? TASKSTATS_CMD_ATTR_PID : TASKSTATS_CMD_ATTR_TGID;
-
     if (send_cmd(nl_sock, nl_fam_id, xxxid, TASKSTATS_CMD_GET,
                     TASKSTATS_CMD_ATTR_PID, &xxxid, sizeof(__u32))) {
         fprintf(stderr, "get_xxxid_info: %s\n", strerror(errno));
