@@ -6,4 +6,4 @@ file(GLOB SRC src/*)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -Wall --pedantic --std=c99")
 
 add_executable(iotop ${SRC})
-target_link_libraries(iotop procps ncurses)
+target_link_libraries(iotop ncurses)

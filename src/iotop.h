@@ -75,8 +75,23 @@ int curses_sleep(unsigned int seconds);
 
 /* utils.c */
 
+enum {
+    PIDGEN_FLAGS_PROC,
+    PIDGEN_FLAGS_TASK
+};
+
+struct pidgen {
+    void *__proc;
+    void *__task;
+    int __flags;
+};
+
 const char *xprintf(const char *format, ...);
 const char *read_cmdline2(int pid);
+
+struct pidgen *openpidgen(int flags);
+void closepidgen(struct pidgen *pg);
+int pidgen_next(struct pidgen *pg);
 
 /* ioprio.h */
 

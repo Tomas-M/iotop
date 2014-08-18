@@ -4,7 +4,6 @@
 #include <linux/genetlink.h>
 #include <linux/netlink.h>
 #include <linux/taskstats.h>
-#include <proc/readproc.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -145,7 +144,7 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
     int cmd_type = isp ? TASKSTATS_CMD_ATTR_PID : TASKSTATS_CMD_ATTR_TGID;
 
     if (send_cmd(nl_sock, nl_fam_id, xxxid, TASKSTATS_CMD_GET,
-                    cmd_type, &xxxid, sizeof(__u32))) {
+                    TASKSTATS_CMD_ATTR_PID, &xxxid, sizeof(__u32))) {
         fprintf(stderr, "get_xxxid_info: %s\n", strerror(errno));
         return -1;
     }
@@ -189,6 +188,7 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
                             COPY(swapin_delay_total);
                             COPY(blkio_delay_total);
 #undef COPY
+                            stats->euid = ts->ac_uid;
                         }
                         break;
                     }
@@ -224,15 +224,6 @@ void dump_xxxid_stats(struct xxxid_stats *stats)
            stats->cmdline);
 }
 
-void update_stats(proc_t *pi, struct xxxid_stats *s)
-{
-    const static char unknown[] = "<unknown>";
-    const char *cmdline = read_cmdline2(pi->tid);
-
-    s->euid = pi->euid;
-    s->cmdline = strdup(cmdline ? cmdline : unknown);
-}
-
 void free_stats(struct xxxid_stats *s)
 {
     if (s->cmdline)
@@ -251,15 +242,19 @@ void free_stats_chain(struct xxxid_stats *chain)
     }
 }
 
-struct xxxid_stats *make_stats(proc_t *p, int processes)
+struct xxxid_stats *make_stats(int pid, int processes)
 {
     struct xxxid_stats *s = malloc(sizeof(struct xxxid_stats));
     memset(s, 0, sizeof(struct xxxid_stats));
 
-    if (nl_xxxid_info(p->tid, processes, s))
+    if (nl_xxxid_info(pid, processes, s))
         goto error;
 
-    update_stats(p, s);
+    const static char unknown[] = "<unknown>";
+    const char *cmdline = read_cmdline2(pid);
+
+    s->cmdline = strdup(cmdline ? cmdline : unknown);
+
     return s;
 
 error:
@@ -269,59 +264,37 @@ error:
 
 struct xxxid_stats *fetch_data(int processes, filter_callback filter)
 {
-    PROCTAB *proc = openproc(
-            PROC_FILLCOM |
-            PROC_FILLUSR
-        );
+    struct pidgen *pg = openpidgen(
+            processes ? PIDGEN_FLAGS_PROC : PIDGEN_FLAGS_TASK);
 
-    if (!proc) {
-        perror("openproc");
+    if (!pg) {
+        perror("openpidgen");
         exit(EXIT_FAILURE);
     }
 
     struct xxxid_stats *schain = NULL;
     struct xxxid_stats *p = NULL;
 
-#define ADD_TO_CHAIN(s) {\
-    if (!schain) {\
-        schain = s;\
-        p = s;\
-    } else {\
-        p->__next = s;\
-        p = s;\
-    }\
-}
+    int pid;
 
-#define FILTER_ON_CHAIN(s) {\
-    if (filter && filter(s))\
-        free_stats(s);\
-    else\
-        ADD_TO_CHAIN(s)\
-}
+    while ((pid = pidgen_next(pg)) > 0) {
+        struct xxxid_stats *s = make_stats(pid, processes);
 
-    proc_t pi;
-    memset(&pi, 0, sizeof(proc_t));
+        if (filter && filter(s))
+            free_stats(s);
+        else {
+            if (!schain) {
 
-    while (readproc(proc, &pi)) {
-        struct xxxid_stats *s = make_stats(&pi, processes);
-        FILTER_ON_CHAIN(s);
-
-        if (!processes) {
-            proc_t ti;
-            memset(&ti, 0, sizeof(proc_t));
-
-            while (readtask(proc, &pi, &ti)) {
-                struct xxxid_stats *k = make_stats(&ti, processes);
-                if (k->tid != s->tid)
-                    FILTER_ON_CHAIN(k);
+                schain = s;
+                p = s;
+            } else {
+                p->__next = s;
+                p = s;
             }
         }
     }
 
-#undef ADD_TO_CHAIN
-#undef FILTER_ON_CHAIN
-
-    closeproc(proc);
+    closepidgen(pg);
     return schain;
 }
 

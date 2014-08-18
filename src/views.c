@@ -341,7 +341,7 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
 #define SORT_CHAR(x) ((sort_by == x) ? (sort_order == SORT_ASC ? '<' : '>') : ' ')
     attron(A_REVERSE);
     mvhline(1, 0, ' ', 1000);
-    mvprintw(1, 0, "%5s%c %4s%c %8s%c %11s%c %11s%c %6s%c %6s%c %s%c",
+    mvprintw(1, 0, "%5s%c %4s%c  %6s%c   %11s%c %11s%c %6s%c %6s%c %s%c",
         config.f.processes ? "PID" : "TID", SORT_CHAR(SORT_BY_PID),
         "PRIO", SORT_CHAR(SORT_BY_PRIO),
         "USER", SORT_CHAR(SORT_BY_USER),
@@ -378,7 +378,7 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
             humanize_val(&write_val, &write_str);
         }
 
-        mvprintw(line, 0, "%5i  %4s %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s  %5.2f %%  %5.2f %%  %s\n",
+        mvprintw(line, 0, "%5i  %4s  %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s %5.2f %% %5.2f %%  %s\n",
             s->tid,
             str_ioprio(s->io_prio),
             pwd ? pwd->pw_name : "UNKNOWN",
@@ -418,6 +418,9 @@ int curses_sleep(unsigned int seconds)
                 return 1;
             case ' ':
                 sort_order = (sort_order == SORT_ASC) ? SORT_DESC : SORT_ASC;
+                return 0;
+            case 'p':
+                config.f.processes = ~config.f.processes;
                 return 0;
             case KEY_RIGHT:
                 if (++sort_by == SORT_BY_MAX) {
