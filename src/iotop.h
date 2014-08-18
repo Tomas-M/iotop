@@ -91,5 +91,10 @@ void view_curses(struct xxxid_stats *, struct xxxid_stats *);
 typedef int (*how_to_sleep)(unsigned int seconds);
 int curses_sleep(unsigned int seconds);
 
+/* utils.c */
+
+const char *xprintf(const char *format, ...);
+const char *file2str(const char *filepath);
+
 #endif // __IOTOP_H__
 

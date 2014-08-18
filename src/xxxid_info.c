@@ -227,44 +227,11 @@ void dump_xxxid_stats(struct xxxid_stats *stats)
            stats->cmdline);
 }
 
-char *file_to_str(const char *filepath)
-{
-    static char buf[BUFSIZ];
-    char *rv = buf;
-    FILE *fd = fopen(filepath, "r");
-
-    if (!fd)
-        return NULL;
-
-    if (!fgets(buf, BUFSIZ, fd))
-        rv = NULL;
-
-    fclose(fd);
-    return rv;
-}
-
-char *xprintf(const char *format, ...)
-{
-    va_list args;
-    static char buf[BUFSIZ];
-
-    int s;
-
-    va_start(args, format);
-    s = vsnprintf(buf, BUFSIZ, format, args);
-    va_end(args);
-
-    if (s < 0 || s >= BUFSIZ)
-        return NULL;
-
-    return buf;
-}
-
 char *kernel_cmdline(int pid)
 {
     static char buf[BUFSIZ];
     char *s, *f;
-    char *tmp = file_to_str(xprintf("/proc/%d/status", pid));
+    const char *tmp = file2str(xprintf("/proc/%d/status", pid));
 
     if (!tmp)
         return NULL;
@@ -286,9 +253,9 @@ char *kernel_cmdline(int pid)
     return buf;
 }
 
-char *get_cmdline(int pid)
+const char *get_cmdline(int pid)
 {
-    char *cmdline = file_to_str(xprintf("/proc/%d/cmdline", pid));
+    const char *cmdline = file2str(xprintf("/proc/%d/cmdline", pid));
 
     if (cmdline)
         return cmdline;
@@ -299,11 +266,10 @@ char *get_cmdline(int pid)
 void update_stats(proc_t *pi, struct xxxid_stats *s)
 {
     static char unknown[] = "<unknown>";
+    const char *cmdline = get_cmdline(pi->tid);
 
     s->euid = pi->euid;
-    s->cmdline = (s->cmdline = get_cmdline(pi->tid))
-        ? strdup(s->cmdline)
-        : strdup(unknown);
+    s->cmdline = cmdline ? strdup(cmdline) : strdup(unknown);
 }
 
 void free_stats(struct xxxid_stats *s)
