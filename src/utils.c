@@ -26,6 +26,7 @@ const char *read_cmdline2(int pid)
     FILE *fp = fopen(xprintf("/proc/%d/cmdline", pid), "rb");
     char *rv = NULL;
 
+    memset(buf, 0, BUFSIZ);
     if (fp) {
         size_t n = fread(buf, sizeof(char), BUFSIZ, fp);
         if (n > 0) {
@@ -41,6 +42,8 @@ const char *read_cmdline2(int pid)
         return rv;
 
     fp = fopen(xprintf("/proc/%d/status", pid), "rb");
+
+    memset(buf, 0, BUFSIZ);
     if (fp) {
         size_t n = fread(buf, sizeof(char), BUFSIZ, fp);
         char *eol = NULL;

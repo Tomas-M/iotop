@@ -142,9 +142,7 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
         exit(EXIT_FAILURE);
     }
 
-    int cmd_type = config.f.processes
-        ? TASKSTATS_CMD_ATTR_PID
-        : TASKSTATS_CMD_ATTR_TGID;
+    int cmd_type = isp ? TASKSTATS_CMD_ATTR_PID : TASKSTATS_CMD_ATTR_TGID;
 
     if (send_cmd(nl_sock, nl_fam_id, xxxid, TASKSTATS_CMD_GET,
                     cmd_type, &xxxid, sizeof(__u32))) {
@@ -305,16 +303,17 @@ struct xxxid_stats *fetch_data(int processes, filter_callback filter)
     memset(&pi, 0, sizeof(proc_t));
 
     while (readproc(proc, &pi)) {
-        if (processes) {
-            struct xxxid_stats *s = make_stats(&pi, processes);
-            FILTER_ON_CHAIN(s);
-        } else {
+        struct xxxid_stats *s = make_stats(&pi, processes);
+        FILTER_ON_CHAIN(s);
+
+        if (!processes) {
             proc_t ti;
             memset(&ti, 0, sizeof(proc_t));
 
             while (readtask(proc, &pi, &ti)) {
-                struct xxxid_stats *s = make_stats(&ti, processes);
-                FILTER_ON_CHAIN(s);
+                struct xxxid_stats *k = make_stats(&ti, processes);
+                if (k->tid != s->tid)
+                    FILTER_ON_CHAIN(k);
             }
         }
     }
