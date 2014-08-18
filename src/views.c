@@ -378,7 +378,7 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
             humanize_val(&write_val, &write_str);
         }
 
-        mvprintw(line, 0, "%5i  %4s %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s  %2.2f %%  %2.2f %%  %s\n",
+        mvprintw(line, 0, "%5i  %4s %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s  %5.2f %%  %5.2f %%  %s\n",
             s->tid,
             str_ioprio(s->io_prio),
             pwd ? pwd->pw_name : "UNKNOWN",

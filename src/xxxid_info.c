@@ -142,8 +142,12 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
         exit(EXIT_FAILURE);
     }
 
+    int cmd_type = config.f.processes
+        ? TASKSTATS_CMD_ATTR_PID
+        : TASKSTATS_CMD_ATTR_TGID;
+
     if (send_cmd(nl_sock, nl_fam_id, xxxid, TASKSTATS_CMD_GET,
-                    TASKSTATS_CMD_ATTR_PID, &xxxid, sizeof(__u32))) {
+                    cmd_type, &xxxid, sizeof(__u32))) {
         fprintf(stderr, "get_xxxid_info: %s\n", strerror(errno));
         return -1;
     }
@@ -222,49 +226,13 @@ void dump_xxxid_stats(struct xxxid_stats *stats)
            stats->cmdline);
 }
 
-char *kernel_cmdline(int pid)
-{
-    static char buf[BUFSIZ];
-    char *s, *f;
-    const char *tmp = file2str(xprintf("/proc/%d/status", pid));
-
-    if (!tmp)
-        return NULL;
-
-    s = strchr(tmp, '\t');
-    f = strchr(tmp, '\n');
-
-    if (!s || !f)
-        return NULL;
-
-    memset(buf, 0, BUFSIZ);
-
-    if (strncpy(&buf[1], &s[1], f - s - 1) != &buf[1])
-        return NULL;
-
-    buf[0] = '[';
-    buf[f - s] = ']';
-
-    return buf;
-}
-
-const char *get_cmdline(int pid)
-{
-    const char *cmdline = file2str(xprintf("/proc/%d/cmdline", pid));
-
-    if (cmdline)
-        return cmdline;
-
-    return kernel_cmdline(pid);
-}
-
 void update_stats(proc_t *pi, struct xxxid_stats *s)
 {
-    static char unknown[] = "<unknown>";
-    const char *cmdline = get_cmdline(pi->tid);
+    const static char unknown[] = "<unknown>";
+    const char *cmdline = read_cmdline2(pi->tid);
 
     s->euid = pi->euid;
-    s->cmdline = cmdline ? strdup(cmdline) : strdup(unknown);
+    s->cmdline = strdup(cmdline ? cmdline : unknown);
 }
 
 void free_stats(struct xxxid_stats *s)

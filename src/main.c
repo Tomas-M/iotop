@@ -74,8 +74,6 @@ void
 parse_args(int argc, char *argv[])
 {
     init_params();
-
-    int c;
     memset(&config, 0, sizeof(config));
 
     while (1)
@@ -97,10 +95,8 @@ parse_args(int argc, char *argv[])
             {"quite",       no_argument, 0, 'q'}
         };
 
-        int option_index = 0;
-
-        c = getopt_long(argc, argv, "vhbon:d:p:u:Paktq",
-                        long_options, &option_index);
+        int c = getopt_long(argc, argv, "vhbon:d:p:u:Paktq",
+                        long_options, NULL);
 
         if (c == -1)
             break;
@@ -145,9 +141,9 @@ parse_args(int argc, char *argv[])
             }
             break;
         default:
-            abort();
+            fprintf(stderr, "%s: unknown option\n", progname);
+            exit(EXIT_FAILURE);
         }
-
     }
 }
 
@@ -180,8 +176,8 @@ main(int argc, char *argv[])
 {
     progname = argv[0];
 
-    check_priv();
     parse_args(argc, argv);
+    check_priv();
 
     nl_init();
 
