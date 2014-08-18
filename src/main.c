@@ -179,9 +179,10 @@ int
 main(int argc, char *argv[])
 {
     progname = argv[0];
-    parse_args(argc, argv);
 
     check_priv();
+    parse_args(argc, argv);
+
     nl_init();
 
     if (signal(SIGINT, sig_handler) == SIG_ERR)
