@@ -1,6 +1,7 @@
 #include "iotop.h"
 
 #include <ctype.h>
+#include <errno.h>
 #include <getopt.h>
 #include <pwd.h>
 #include <signal.h>
@@ -29,10 +30,13 @@ static char str_opt[] = "boPaktq";
 void
 check_priv(void)
 {
-    if (geteuid()) {
-        fprintf(stderr, "%s requires root privileges\n", progname);
-        exit(EXIT_FAILURE);
-    }
+    if (geteuid() == 0)
+        return;
+
+    errno = EACCES;
+    perror(progname);
+
+    exit(EXIT_FAILURE);
 }
 
 void
@@ -133,7 +137,8 @@ parse_args(int argc, char *argv[])
             } else {
                 struct passwd *pwd = getpwnam(optarg);
                 if (!pwd) {
-                    fprintf(stderr, "User %s not found\n", optarg);
+                    fprintf(stderr, "%s: user %s not found\n",
+                            progname, optarg);
                     exit(EXIT_FAILURE);
                 }
                 params.user_id = pwd->pw_uid;
@@ -180,7 +185,7 @@ main(int argc, char *argv[])
     nl_init();
 
     if (signal(SIGINT, sig_handler) == SIG_ERR)
-        fprintf(stderr, "Couldn't catch SIGINT\n");
+        perror("signal");
 
     struct xxxid_stats *ps = NULL;
     struct xxxid_stats *cs = NULL;
