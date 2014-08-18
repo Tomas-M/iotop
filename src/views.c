@@ -1,11 +1,12 @@
-#include <pwd.h>
+#include "iotop.h"
+
 #include <curses.h>
+#include <math.h>
+#include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
 #include <time.h>
-#include <math.h>
-
-#include "iotop.h"
 
 #define HEADER_FORMAT "Total DISK READ: %7.2f %s | Total DISK WRITE: %7.2f %s"
 
@@ -38,7 +39,7 @@ struct xxxid_stats *create_diff(struct xxxid_stats *cs, struct xxxid_stats *ps, 
     struct xxxid_stats *diff = malloc(diff_size);
     struct xxxid_stats *c;
     int n = 0;
-    __u64 xxx = ~0;
+    uint64_t xxx = ~0;
 
     memset(diff, 0, diff_size);
 
@@ -85,10 +86,10 @@ struct xxxid_stats *create_diff(struct xxxid_stats *cs, struct xxxid_stats *ps, 
             (double) diff[n].swapin_delay_total / pow_ten / params.delay * 100;
 
         diff[n].read_val = (double) diff[n].read_bytes
-            / (config.accumulated ? 1 : params.delay);
+            / (config.f.accumulated ? 1 : params.delay);
 
         diff[n].write_val = (double) diff[n].write_bytes
-            / (config.accumulated ? 1 : params.delay);
+            / (config.f.accumulated ? 1 : params.delay);
 
         diff[n].__next = &diff[n + 1];
     }
@@ -115,7 +116,7 @@ void calc_total(struct xxxid_stats *diff, double *read, double *write)
         *write += s->write_bytes;
     }
 
-    if (!config.accumulated) {
+    if (!config.f.accumulated) {
         *read /= params.delay;
         *write /= params.delay;
     }
@@ -132,7 +133,7 @@ void humanize_val(double *value, char **str)
         p++;
     }
 
-    *str = config.accumulated ? prefix_acc[p] : prefix[p];
+    *str = config.f.accumulated ? prefix_acc[p] : prefix[p];
 }
 
 void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
@@ -157,15 +158,15 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
         str_write
     );
 
-    if (config.timestamp) {
+    if (config.f.timestamp) {
         time_t t = time(NULL);
         printf(" | %s", ctime(&t));
     } else
         printf("\n");
 
-    if (!config.quite)
+    if (!config.f.quite)
         printf("%5s %4s %8s %11s %11s %6s %6s %s\n",
-            config.processes ? "PID" : "TID",
+            config.f.processes ? "PID" : "TID",
             "PRIO",
             "USER",
             "DISK READ",
@@ -181,17 +182,17 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
         double read_val = s->read_val;
         double write_val = s->write_val;
 
-        if (config.only && (!read_val || !write_val)) {
+        if (config.f.only && (!read_val || !write_val)) {
             continue;
         }
 
         char *read_str, *write_str;
 
-        if (config.kilobytes) {
+        if (config.f.kilobytes) {
             read_val /= 1000;
             write_val /= 1000;
-            read_str = config.accumulated ? "K" : "K/s";
-            write_str = config.accumulated ? "K" : "K/s";
+            read_str = config.f.accumulated ? "K" : "K/s";
+            write_str = config.f.accumulated ? "K" : "K/s";
         } else {
             humanize_val(&read_val, &read_str);
             humanize_val(&write_val, &write_str);
@@ -241,7 +242,6 @@ void sort_diff(struct xxxid_stats *d)
     int i;
 
     for (i = 0; i < len; i++) {
-        int max_id = i;
         int k;
 
         for (k = i; k < len; k++) {
@@ -306,7 +306,6 @@ void sort_diff(struct xxxid_stats *d)
 void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
 {
     static int initilized = 0;
-    static WINDOW *top_bar = NULL;
 
     if (!initilized) {
         initscr();
@@ -342,7 +341,7 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
     attron(A_REVERSE);
     mvhline(1, 0, ' ', 1000);
     mvprintw(1, 0, "%5s%c %4s%c %8s%c %11s%c %11s%c %6s%c %6s%c %s%c",
-        config.processes ? "PID" : "TID", SORT_CHAR(SORT_BY_PID),
+        config.f.processes ? "PID" : "TID", SORT_CHAR(SORT_BY_PID),
         "PRIO", SORT_CHAR(SORT_BY_PRIO),
         "USER", SORT_CHAR(SORT_BY_USER),
         "DISK READ", SORT_CHAR(SORT_BY_READ),
@@ -362,17 +361,17 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
         double read_val = s->read_val;
         double write_val = s->write_val;
 
-        if (config.only && (!read_val || !write_val)) {
+        if (config.f.only && (!read_val || !write_val)) {
             continue;
         }
 
         char *read_str, *write_str;
 
-        if (config.kilobytes) {
+        if (config.f.kilobytes) {
             read_val /= 1000;
             write_val /= 1000;
-            read_str = config.accumulated ? "K" : "K/s";
-            write_str = config.accumulated ? "K" : "K/s";
+            read_str = config.f.accumulated ? "K" : "K/s";
+            write_str = config.f.accumulated ? "K" : "K/s";
         } else {
             humanize_val(&read_val, &read_str);
             humanize_val(&write_val, &write_str);

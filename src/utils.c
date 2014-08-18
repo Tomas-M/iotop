@@ -1,7 +1,9 @@
+#include "iotop.h"
+
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
 const char *xprintf(const char *format, ...)
 {

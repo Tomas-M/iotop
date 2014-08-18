@@ -1,13 +1,15 @@
 #ifndef __IOTOP_H__
 #define __IOTOP_H__
 
-#include <unistd.h>
-#include <asm/types.h>
+#define _BSD_SOURCE
+
+#include <sys/types.h>
+#include <stdint.h>
 
 #define VERSION "0.1"
 
 typedef union {
-    struct {
+    struct _flags {
         int batch_mode;
         int only;
         int processes;
@@ -15,7 +17,7 @@ typedef union {
         int kilobytes;
         int timestamp;
         int quite;
-    };
+    } f;
     int opts[7];
 } config_t;
 
@@ -49,10 +51,10 @@ enum {
 
 struct xxxid_stats {
     pid_t tid;
-    __u64 swapin_delay_total;  // nanoseconds
-    __u64 blkio_delay_total;  // nanoseconds
-    __u64 read_bytes;
-    __u64 write_bytes;
+    uint64_t swapin_delay_total;  // nanoseconds
+    uint64_t blkio_delay_total;  // nanoseconds
+    uint64_t read_bytes;
+    uint64_t write_bytes;
 
     double blkio_val;
     double swapin_val;
@@ -87,6 +89,7 @@ typedef void (*view_callback)(struct xxxid_stats *current, struct xxxid_stats *p
 
 void view_batch(struct xxxid_stats *, struct xxxid_stats *);
 void view_curses(struct xxxid_stats *, struct xxxid_stats *);
+void view_curses_finish();
 
 typedef int (*how_to_sleep)(unsigned int seconds);
 int curses_sleep(unsigned int seconds);

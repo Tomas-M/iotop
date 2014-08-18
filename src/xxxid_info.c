@@ -1,20 +1,17 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <pwd.h>
-#include <stdarg.h>
+#include "iotop.h"
 
-#include <sys/socket.h>
+#include <errno.h>
 #include <linux/genetlink.h>
 #include <linux/netlink.h>
 #include <linux/taskstats.h>
-#include <sys/syscall.h>
-#include <assert.h>
-
 #include <proc/readproc.h>
-
-#include "iotop.h"
+#include <pwd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 
 /*
@@ -22,7 +19,7 @@
  * elsewhere. It is recommended that commercial grade applications use
  * libnl or libnetlink and use the interfaces provided by the library
  */
-#define GENLMSG_DATA(glh)       ((void *)(NLMSG_DATA(glh) + GENL_HDRLEN))
+#define GENLMSG_DATA(glh)       ((void *)((char*)NLMSG_DATA(glh) + GENL_HDRLEN))
 #define GENLMSG_PAYLOAD(glh)    (NLMSG_PAYLOAD(glh, 0) - GENL_HDRLEN)
 #define NLA_DATA(na)            ((void *)((char*)(na) + NLA_HDRLEN))
 #define NLA_PAYLOAD(len)        (len - NLA_HDRLEN)
@@ -90,19 +87,22 @@ int get_family_id(int sock_fd)
         char buf[256];
     } ans;
 
-    int id = 0, rc;
+    int id = 0;
     struct nlattr *na;
     int rep_len;
 
     strcpy(name, TASKSTATS_GENL_NAME);
-    rc = send_cmd(sock_fd, GENL_ID_CTRL, getpid(), CTRL_CMD_GETFAMILY,
-                    CTRL_ATTR_FAMILY_NAME, (void *)name,
-                    strlen(TASKSTATS_GENL_NAME)+1);
+    if (send_cmd(sock_fd, GENL_ID_CTRL, getpid(), CTRL_CMD_GETFAMILY,
+                    CTRL_ATTR_FAMILY_NAME, (void *) name,
+                    strlen(TASKSTATS_GENL_NAME) + 1)) {
+        return 0;
+    }
 
     rep_len = recv(sock_fd, &ans, sizeof(ans), 0);
     if (ans.n.nlmsg_type == NLMSG_ERROR
-    || (rep_len < 0) || !NLMSG_OK((&ans.n), rep_len))
+        || (rep_len < 0) || !NLMSG_OK((&ans.n), rep_len)) {
         return 0;
+    }
 
     na = (struct nlattr *) GENLMSG_DATA(&ans);
     na = (struct nlattr *) ((char *) na + NLA_ALIGN(na->nla_len));
@@ -141,7 +141,11 @@ error:
 
 int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
 {
-    assert(nl_sock > -1);
+    if (nl_sock < 0) {
+        perror("nl_xxxid_info");
+        exit(EXIT_FAILURE);
+    }
+
     int cmd_type = isp ? TASKSTATS_CMD_ATTR_PID : TASKSTATS_CMD_ATTR_TGID;
 
     if (send_cmd(nl_sock, nl_fam_id, xxxid, TASKSTATS_CMD_GET,
@@ -166,7 +170,6 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
 
     struct nlattr *na = (struct nlattr *) GENLMSG_DATA(&msg);
     int len = 0;
-    int i = 0;
 
     while (len < rv) {
         len += NLA_ALIGN(na->nla_len);
@@ -199,7 +202,7 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
             }
             break;
         }
-        na = (struct nlattr *) (GENLMSG_DATA(&msg) + len);
+        na = (struct nlattr *) ((char *) GENLMSG_DATA(&msg) + len);
     }
 
     stats->ioprio = syscall(SYS_ioprio_get, IOPRIO_WHO_PROCESS, xxxid);
@@ -217,8 +220,8 @@ void nl_term(void)
 
 void dump_xxxid_stats(struct xxxid_stats *stats)
 {
-    printf("%i %i SWAPIN: %llu IO: %llu "
-           "READ: %llu WRITE: %llu IOPRIO: %i%s   %s\n",
+    printf("%i %i SWAPIN: %lu IO: %lu "
+           "READ: %lu WRITE: %lu IOPRIO: %i%s   %s\n",
            stats->tid, stats->euid,
            stats->swapin_delay_total,
            stats->blkio_delay_total, stats->read_bytes,
