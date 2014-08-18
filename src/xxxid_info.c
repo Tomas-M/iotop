@@ -10,9 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/syscall.h>
 #include <unistd.h>
-
 
 /*
  * Generic macros for dealing with netlink sockets. Might be duplicated
@@ -32,8 +30,6 @@ struct msgtemplate {
     struct genlmsghdr g;
     char buf[MAX_MSG_SIZE];
 };
-
-const char *str_ioprio_class[] = { "-", "rt", "be", "id" };
 
 static int nl_sock = -1;
 static int nl_fam_id = 0;
@@ -205,9 +201,7 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
         na = (struct nlattr *) ((char *) GENLMSG_DATA(&msg) + len);
     }
 
-    stats->ioprio = syscall(SYS_ioprio_get, IOPRIO_WHO_PROCESS, xxxid);
-    stats->ioprio_class = stats->ioprio >> IOPRIO_CLASS_SHIFT;
-    stats->ioprio &= 0xff;
+    stats->io_prio = get_ioprio(xxxid);
 
     return 0;
 }
@@ -221,12 +215,12 @@ void nl_term(void)
 void dump_xxxid_stats(struct xxxid_stats *stats)
 {
     printf("%i %i SWAPIN: %lu IO: %lu "
-           "READ: %lu WRITE: %lu IOPRIO: %i%s   %s\n",
+           "READ: %lu WRITE: %lu IOPRIO: %s   %s\n",
            stats->tid, stats->euid,
            stats->swapin_delay_total,
            stats->blkio_delay_total, stats->read_bytes,
-           stats->write_bytes, stats->ioprio,
-           str_ioprio_class[stats->ioprio_class],
+           stats->write_bytes,
+           str_ioprio(stats->io_prio),
            stats->cmdline);
 }
 

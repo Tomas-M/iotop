@@ -198,10 +198,9 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
             humanize_val(&write_val, &write_str);
         }
 
-        printf("%5i %2s/%1i %-10.10s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
+        printf("%5i %4s %-10.10s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
             s->tid,
-            str_ioprio_class[s->ioprio_class],
-            s->ioprio,
+            str_ioprio(s->io_prio),
             pwd ? pwd->pw_name : "UNKNOWN",
             read_val,
             read_str,
@@ -251,7 +250,7 @@ void sort_diff(struct xxxid_stats *d)
 
             switch (sort_by) {
                 case SORT_BY_PRIO:
-                    found = (ABS_PRIO(d[k]) > ABS_PRIO(d[i]));
+                    found = d[k].io_prio > d[i].io_prio;
                     break;
                 case SORT_BY_COMMAND:
                     found = (strcmp(d[k].cmdline, d[i].cmdline) > 0);
@@ -275,6 +274,7 @@ void sort_diff(struct xxxid_stats *d)
                     found = CMP_FIELDS(blkio_val);
                     break;
             }
+
 #undef CMP_FIELDS
 
             if (found) {
@@ -377,10 +377,9 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
             humanize_val(&write_val, &write_str);
         }
 
-        mvprintw(line, 0, "%5i  %2s/%1i %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s  %2.2f %%  %2.2f %%  %s\n",
+        mvprintw(line, 0, "%5i  %4s %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s  %2.2f %%  %2.2f %%  %s\n",
             s->tid,
-            str_ioprio_class[s->ioprio_class],
-            s->ioprio,
+            str_ioprio(s->io_prio),
             pwd ? pwd->pw_name : "UNKNOWN",
             read_val,
             read_str,

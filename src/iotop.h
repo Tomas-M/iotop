@@ -32,23 +32,6 @@ extern config_t config;
 extern params_t params;
 
 
-extern const char *str_ioprio_class[];
-
-enum {
-    IOPRIO_CLASS_NONE,
-    IOPRIO_CLASS_RT,
-    IOPRIO_CLASS_BE,
-    IOPRIO_CLASS_IDLE
-};
-
-enum {
-    IOPRIO_WHO_PROCESS = 1,
-    IOPRIO_WHO_PGRP,
-    IOPRIO_WHO_USER
-};
-
-#define IOPRIO_CLASS_SHIFT 13
-
 struct xxxid_stats {
     pid_t tid;
     uint64_t swapin_delay_total;  // nanoseconds
@@ -61,18 +44,13 @@ struct xxxid_stats {
     double read_val;
     double write_val;
 
-    int ioprio;
-    int ioprio_class;
+    int io_prio;
 
     int euid;
     char *cmdline;
 
     void *__next;
 };
-
-#define ABS_PRIO(stats) (\
-    (stats.ioprio_class << IOPRIO_CLASS_SHIFT) | stats.ioprio\
-)
 
 void nl_init(void);
 void nl_term(void);
@@ -98,6 +76,11 @@ int curses_sleep(unsigned int seconds);
 
 const char *xprintf(const char *format, ...);
 const char *file2str(const char *filepath);
+
+/* ioprio.h */
+
+int get_ioprio(pid_t pid);
+const char *str_ioprio(int io_prio);
 
 #endif // __IOTOP_H__
 
