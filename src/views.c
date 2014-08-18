@@ -331,8 +331,6 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
     humanize_val(&total_read, &str_read);
     humanize_val(&total_write, &str_write);
 
-    clear();
-
     mvprintw(0, 0, HEADER_FORMAT,
         total_read,
         str_read,
