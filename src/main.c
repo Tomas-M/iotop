@@ -196,9 +196,7 @@ main(int argc, char *argv[])
         do_sleep = curses_sleep;
     }
 
-    int stop = 0;
-    while (!stop)
-    {
+    do {
         cs = fetch_data(config.f.processes, filter1);
         view(cs, ps);
 
@@ -210,9 +208,7 @@ main(int argc, char *argv[])
             if ((--params.iter) == 0)
                 break;
         }
-
-        stop = do_sleep(params.delay);
-    }
+    } while (!do_sleep(params.delay));
 
     free_stats_chain(cs);
     sig_handler(SIGINT);

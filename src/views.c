@@ -3,6 +3,7 @@
 #include <curses.h>
 #include <math.h>
 #include <pwd.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
@@ -404,7 +405,7 @@ int curses_sleep(unsigned int seconds)
     struct timeval tv;
 
     FD_ZERO(&fds);
-    FD_SET(0, &fds);
+    FD_SET(fileno(stdin), &fds);
 
     tv.tv_sec = seconds;
     tv.tv_usec = 0;

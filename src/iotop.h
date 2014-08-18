@@ -1,7 +1,8 @@
 #ifndef __IOTOP_H__
 #define __IOTOP_H__
 
-#define _BSD_SOURCE
+#define _POSIX_C_SOURCE 1
+#define _BSD_SOURCE 1
 
 #include <sys/types.h>
 #include <stdint.h>
