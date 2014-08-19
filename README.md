@@ -24,8 +24,8 @@ runs without python at all.
 How to make
 ===========
 
-   $ git clone
-   $ make
+   # git clone
+   # make
 
 
 Options
