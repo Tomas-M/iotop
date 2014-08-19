@@ -1,11 +1,18 @@
-# iotop (C implementation)
+Your Linux server is too slow or load is too high? One of the possible
+causes of such symptoms may be high IO (input/output) waiting time,
+which basically means that some of your processes need to read or write
+to a hard drive while it is too slow and not ready yet, serving data for
+some other processes.
 
-#### Building with CMake
+Common practice is to use vmstat -x in order to find out which block
+device (hard drive) is slow, but such information is not always much
+helpful. It could help you much more if you knew which process reads or
+writes the most data from your slow disk, so you could possibly renice
+it using ionice or even kill it.
 
-    git clone https://github.com/trushkin/iotop.git
-    cd iotop
-    mkdir build
-    cd build
-    cmake ..
-    make
-
+IOTop will identify processes, which use high amount of input/output
+requests on your machine. It is similar to the well known top utility,
+but instead of showing you what consumes CPU the most, it lists
+processes by their IO consumption. Inspired by iotop python script from
+Guillaume Chazarain, but rewritten to C by Vyacheslav Trushkin so it now
+runs without python at all.
