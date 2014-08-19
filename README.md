@@ -31,6 +31,7 @@ How to make
 Options
 =======
 
+```
 --version             show program's version number and exit
 -h, --help            show this help message and exit
 -o, --only            only show processes or threads actually doing I/O
@@ -44,3 +45,4 @@ Options
 -k, --kilobytes       use kilobytes instead of a human friendly unit
 -t, --time            add a timestamp on each line (implies --batch)
 -q, --quiet           suppress some lines of header (implies --batch)
+```
