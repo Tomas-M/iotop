@@ -7,7 +7,7 @@ which basically means that some of your processes need to read or write
 to a hard drive while it is too slow and not ready yet, serving data for
 some other processes.
 
-Common practice is to use vmstat -x in order to find out which block
+Common practice is to use iostat -x in order to find out which block
 device (hard drive) is slow, but such information is not always much
 helpful. It could help you much more if you knew which process reads or
 writes the most data from your slow disk, so you could possibly renice
