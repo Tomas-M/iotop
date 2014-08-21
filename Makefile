@@ -7,7 +7,7 @@ PREFIX=/usr
 
 
 $(TARGET): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: src/%.c
 	$(CC) -c $(CFLAGS) -o $@ $<
