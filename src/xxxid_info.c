@@ -24,7 +24,8 @@
 #define MAX_MSG_SIZE 1024
 #define MAX_CPUS     32
 
-struct msgtemplate {
+struct msgtemplate
+{
     struct nlmsghdr n;
     struct genlmsghdr g;
     char buf[MAX_MSG_SIZE];
@@ -34,8 +35,8 @@ static int nl_sock = -1;
 static int nl_fam_id = 0;
 
 int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
-         __u8 genl_cmd, __u16 nla_type,
-         void *nla_data, int nla_len)
+             __u8 genl_cmd, __u16 nla_type,
+             void *nla_data, int nla_len)
 {
     struct nlattr *na;
     struct sockaddr_nl nladdr;
@@ -44,6 +45,8 @@ int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
 
     struct msgtemplate msg;
 
+    memset(&msg, 0, sizeof(msg));
+
     msg.n.nlmsg_len = NLMSG_LENGTH(GENL_HDRLEN);
     msg.n.nlmsg_type = nlmsg_type;
     msg.n.nlmsg_flags = NLM_F_REQUEST;
@@ -51,9 +54,11 @@ int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
     msg.n.nlmsg_pid = nlmsg_pid;
     msg.g.cmd = genl_cmd;
     msg.g.version = 0x1;
+
     na = (struct nlattr *) GENLMSG_DATA(&msg);
     na->nla_type = nla_type;
     na->nla_len = nla_len + 1 + NLA_HDRLEN;
+
     memcpy(NLA_DATA(na), nla_data, nla_len);
     msg.n.nlmsg_len += NLMSG_ALIGN(na->nla_len);
 
@@ -62,11 +67,14 @@ int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
     memset(&nladdr, 0, sizeof(nladdr));
     nladdr.nl_family = AF_NETLINK;
     while ((r = sendto(sock_fd, buf, buflen, 0, (struct sockaddr *) &nladdr,
-                       sizeof(nladdr))) < buflen) {
-        if (r > 0) {
+                       sizeof(nladdr))) < buflen)
+    {
+        if (r > 0)
+        {
             buf += r;
             buflen -= r;
-        } else if (errno != EAGAIN)
+        }
+        else if (errno != EAGAIN)
             return -1;
     }
     return 0;
@@ -76,7 +84,8 @@ int get_family_id(int sock_fd)
 {
     static char name[256];
 
-    struct {
+    struct
+    {
         struct nlmsghdr n;
         struct genlmsghdr g;
         char buf[256];
@@ -88,22 +97,20 @@ int get_family_id(int sock_fd)
 
     strcpy(name, TASKSTATS_GENL_NAME);
     if (send_cmd(sock_fd, GENL_ID_CTRL, getpid(), CTRL_CMD_GETFAMILY,
-                    CTRL_ATTR_FAMILY_NAME, (void *) name,
-                    strlen(TASKSTATS_GENL_NAME) + 1)) {
+                 CTRL_ATTR_FAMILY_NAME, (void *) name,
+                 strlen(TASKSTATS_GENL_NAME) + 1))
         return 0;
-    }
 
     rep_len = recv(sock_fd, &ans, sizeof(ans), 0);
     if (ans.n.nlmsg_type == NLMSG_ERROR
-        || (rep_len < 0) || !NLMSG_OK((&ans.n), rep_len)) {
+            || (rep_len < 0) || !NLMSG_OK((&ans.n), rep_len))
         return 0;
-    }
 
     na = (struct nlattr *) GENLMSG_DATA(&ans);
     na = (struct nlattr *) ((char *) na + NLA_ALIGN(na->nla_len));
-    if (na->nla_type == CTRL_ATTR_FAMILY_ID) {
+    if (na->nla_type == CTRL_ATTR_FAMILY_ID)
         id = *(__u16 *) NLA_DATA(na);
-    }
+
     return id;
 }
 
@@ -136,13 +143,15 @@ error:
 
 int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
 {
-    if (nl_sock < 0) {
+    if (nl_sock < 0)
+    {
         perror("nl_xxxid_info");
         exit(EXIT_FAILURE);
     }
 
     if (send_cmd(nl_sock, nl_fam_id, xxxid, TASKSTATS_CMD_GET,
-                    TASKSTATS_CMD_ATTR_PID, &xxxid, sizeof(__u32))) {
+                 TASKSTATS_CMD_ATTR_PID, &xxxid, sizeof(pid_t)))
+    {
         fprintf(stderr, "get_xxxid_info: %s\n", strerror(errno));
         return -1;
     }
@@ -153,7 +162,8 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
     int rv = recv(nl_sock, &msg, sizeof(msg), 0);
 
     if (msg.n.nlmsg_type == NLMSG_ERROR ||
-            !NLMSG_OK((&msg.n), rv)) {
+            !NLMSG_OK((&msg.n), rv))
+    {
         struct nlmsgerr *err = NLMSG_DATA(&msg);
         fprintf(stderr, "fatal reply error, %d\n", err->error);
         return -1;
@@ -164,37 +174,33 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
     struct nlattr *na = (struct nlattr *) GENLMSG_DATA(&msg);
     int len = 0;
 
-    while (len < rv) {
+    while (len < rv)
+    {
         len += NLA_ALIGN(na->nla_len);
 
-        switch (na->nla_type) {
-        case TASKSTATS_TYPE_AGGR_TGID:
-        case TASKSTATS_TYPE_AGGR_PID:
-            {
-                int aggr_len = NLA_PAYLOAD(na->nla_len);
-                int len2 = 0;
+        if (na->nla_type == TASKSTATS_TYPE_AGGR_TGID
+                || na->nla_type == TASKSTATS_TYPE_AGGR_PID)
+        {
+            int aggr_len = NLA_PAYLOAD(na->nla_len);
+            int len2 = 0;
 
-                na = (struct nlattr *) NLA_DATA(na);
-                while (len2 < aggr_len) {
-                    switch (na->nla_type) {
-                    case TASKSTATS_TYPE_STATS:
-                        {
-                            struct taskstats *ts = NLA_DATA(na);
+            na = (struct nlattr *) NLA_DATA(na);
+            while (len2 < aggr_len)
+            {
+                if (na->nla_type == TASKSTATS_TYPE_STATS)
+                {
+                    struct taskstats *ts = NLA_DATA(na);
 #define COPY(field) { stats->field = ts->field; }
-                            COPY(read_bytes);
-                            COPY(write_bytes);
-                            COPY(swapin_delay_total);
-                            COPY(blkio_delay_total);
+                    COPY(read_bytes);
+                    COPY(write_bytes);
+                    COPY(swapin_delay_total);
+                    COPY(blkio_delay_total);
 #undef COPY
-                            stats->euid = ts->ac_uid;
-                        }
-                        break;
-                    }
-                    len2 += NLA_ALIGN(na->nla_len);
-                    na = (struct nlattr *) ((char *) na + len2);
+                    stats->euid = ts->ac_uid;
                 }
+                len2 += NLA_ALIGN(na->nla_len);
+                na = (struct nlattr *) ((char *) na + len2);
             }
-            break;
         }
         na = (struct nlattr *) ((char *) GENLMSG_DATA(&msg) + len);
     }
@@ -232,7 +238,8 @@ void free_stats(struct xxxid_stats *s)
 
 void free_stats_chain(struct xxxid_stats *chain)
 {
-    while (chain) {
+    while (chain)
+    {
         struct xxxid_stats *next = chain->__next;
 
         free_stats(chain);
@@ -263,9 +270,10 @@ error:
 struct xxxid_stats *fetch_data(int processes, filter_callback filter)
 {
     struct pidgen *pg = openpidgen(
-            processes ? PIDGEN_FLAGS_PROC : PIDGEN_FLAGS_TASK);
+                            processes ? PIDGEN_FLAGS_PROC : PIDGEN_FLAGS_TASK);
 
-    if (!pg) {
+    if (!pg)
+    {
         perror("openpidgen");
         exit(EXIT_FAILURE);
     }
@@ -275,17 +283,21 @@ struct xxxid_stats *fetch_data(int processes, filter_callback filter)
 
     int pid;
 
-    while ((pid = pidgen_next(pg)) > 0) {
+    while ((pid = pidgen_next(pg)) > 0)
+    {
         struct xxxid_stats *s = make_stats(pid, processes);
 
         if (filter && filter(s))
             free_stats(s);
-        else {
-            if (!schain) {
-
+        else
+        {
+            if (!schain)
+            {
                 schain = s;
                 p = s;
-            } else {
+            }
+            else
+            {
                 p->__next = s;
                 p = s;
             }

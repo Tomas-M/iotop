@@ -65,7 +65,7 @@ print_help(void)
         "  -a, --accumulated     show accumulated I/O instead of bandwidth\n"
         "  -k, --kilobytes       use kilobytes instead of a human friendly unit\n"
         "  -t, --time            add a timestamp on each line (implies --batch)\n"
-        "  -q, --quiet           suppress some lines of header (implies --batch)\n",
+        "  -q, --quiet           suppress header line output (implies --batch)\n",
         progname
     );
 }
@@ -97,7 +97,7 @@ parse_args(int argc, char *argv[])
         };
 
         int c = getopt_long(argc, argv, "vhbon:d:p:u:Paktq",
-                        long_options, NULL);
+                            long_options, NULL);
 
         if (c == -1)
             break;
@@ -129,11 +129,13 @@ parse_args(int argc, char *argv[])
             params.pid = atoi(optarg);
             break;
         case 'u':
-            if (isdigit(optarg[0])) {
+            if (isdigit(optarg[0]))
                 params.user_id = atoi(optarg);
-            } else {
+            else
+            {
                 struct passwd *pwd = getpwnam(optarg);
-                if (!pwd) {
+                if (!pwd)
+                {
                     fprintf(stderr, "%s: user %s not found\n",
                             progname, optarg);
                     exit(EXIT_FAILURE);
@@ -163,11 +165,12 @@ filter1(struct xxxid_stats *s)
 void
 sig_handler(int signo)
 {
-    if (signo == SIGINT) {
+    if (signo == SIGINT)
+    {
         nl_term();
-        if (!config.f.batch_mode) {
+        if (!config.f.batch_mode)
             view_curses_finish();
-        }
+
         exit(EXIT_SUCCESS);
     }
 }
@@ -194,12 +197,14 @@ main(int argc, char *argv[])
     view_callback view = view_batch;
     how_to_sleep do_sleep = (how_to_sleep) sleep;
 
-    if (!config.f.batch_mode) {
+    if (!config.f.batch_mode)
+    {
         view = view_curses;
         do_sleep = curses_sleep;
     }
 
-    do {
+    do
+    {
         cs = fetch_data(config.f.processes, filter1);
         view(cs, ps);
 
@@ -207,11 +212,10 @@ main(int argc, char *argv[])
             free_stats_chain(ps);
 
         ps = cs;
-        if (params.iter > -1) {
-            if ((--params.iter) == 0)
-                break;
-        }
-    } while (!do_sleep(params.delay));
+        if ((params.iter > -1) && ((--params.iter) == 0))
+            break;
+    }
+    while (!do_sleep(params.delay));
 
     free_stats_chain(cs);
     sig_handler(SIGINT);

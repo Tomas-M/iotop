@@ -9,8 +9,10 @@
 
 #define VERSION "0.1"
 
-typedef union {
-    struct _flags {
+typedef union
+{
+    struct _flags
+    {
         int batch_mode;
         int only;
         int processes;
@@ -22,7 +24,8 @@ typedef union {
     int opts[7];
 } config_t;
 
-typedef struct {
+typedef struct
+{
     int iter;
     int delay;
     int pid;
@@ -33,7 +36,8 @@ extern config_t config;
 extern params_t params;
 
 
-struct xxxid_stats {
+struct xxxid_stats
+{
     pid_t tid;
     uint64_t swapin_delay_total;  // nanoseconds
     uint64_t blkio_delay_total;  // nanoseconds
@@ -75,12 +79,14 @@ int curses_sleep(unsigned int seconds);
 
 /* utils.c */
 
-enum {
+enum
+{
     PIDGEN_FLAGS_PROC,
     PIDGEN_FLAGS_TASK
 };
 
-struct pidgen {
+struct pidgen
+{
     void *__proc;
     void *__task;
     int __flags;
