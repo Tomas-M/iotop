@@ -19,7 +19,7 @@ enum {
 };
 
 #define IOPRIO_CLASS_SHIFT 13
-#define IOPRIO_STR_MAXSIZ  5
+#define IOPRIO_STR_MAXSIZ  7
 #define IOPRIO_STR_FORMAT "%2s/%1i"
 
 const char *str_ioprio_class[] = { "-", "rt", "be", "id" };
