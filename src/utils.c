@@ -52,7 +52,7 @@ const char *read_cmdline2(int pid)
         size_t n = fread(buf, sizeof(char), BUFSIZ, fp);
         char *eol = NULL;
 
-        if (n > 0 && (eol = strchr(buf, '\n') - 1)
+        if (n > 0 && (eol = strchr(buf, '\n'))
                 && (eol > strchr(buf, '\t')))
         {
             eol[0] = 0;
