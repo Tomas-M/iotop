@@ -31,9 +31,22 @@ const char *read_cmdline2(int pid)
     if (fp)
     {
         size_t n = fread(buf, sizeof(char), BUFSIZ, fp);
+
         if (n > 0)
         {
             size_t k;
+            char *ep;
+
+            if (!0/* option to show full path */)
+            {
+                ep = strrchr(buf, '/');
+                if (ep && ep[1])
+                {
+                    memmove(buf, ep + 1, BUFSIZ - (ep - buf + 1));
+                    n -= ep - buf + 1;
+                }
+            }
+
             for (k = 0; k < n - 1; k++)
                 buf[k] = buf[k] ? buf[k] : ' ';
             rv = buf;
