@@ -58,6 +58,15 @@ struct xxxid_stats
     void *__next;
 };
 
+struct act_stats
+{
+    uint64_t read_bytes;
+    uint64_t write_bytes;
+    uint64_t read_bytes_o;
+    uint64_t write_bytes_o;
+    int have_o;
+};
+
 void nl_init(void);
 void nl_term(void);
 
@@ -69,10 +78,10 @@ typedef int (*filter_callback)(struct xxxid_stats *);
 struct xxxid_stats* fetch_data(int processes, filter_callback);
 void free_stats_chain(struct xxxid_stats *chain);
 
-typedef void (*view_callback)(struct xxxid_stats *current, struct xxxid_stats *prev);
+typedef void (*view_callback)(struct xxxid_stats *current, struct xxxid_stats *prev, struct act_stats *);
 
-void view_batch(struct xxxid_stats *, struct xxxid_stats *);
-void view_curses(struct xxxid_stats *, struct xxxid_stats *);
+void view_batch(struct xxxid_stats *, struct xxxid_stats *, struct act_stats *);
+void view_curses(struct xxxid_stats *, struct xxxid_stats *, struct act_stats *);
 void view_curses_finish();
 
 typedef int (*how_to_sleep)(unsigned int seconds);
