@@ -32,13 +32,13 @@ int get_vm_counters(uint64_t *pgpgin, uint64_t *pgpgout)
                 buf[strlen(buf) - 1] = 0;
             if (!strncmp(buf, PGIN, strlen(PGIN)))
             {
-                *pgpgin = strtoull(buf + strlen(PGIN), &t, 10);
+                *pgpgin = 1024 * strtoull(buf + strlen(PGIN), &t, 10);
                 if (!*t)
                     havein = 1;
             }
             if (!strncmp(buf, PGOUT, strlen(PGOUT)))
             {
-                *pgpgout = strtoull(buf + strlen(PGOUT), &t, 10);
+                *pgpgout = 1024 * strtoull(buf + strlen(PGOUT), &t, 10);
                 if (!*t)
                     haveout = 1;
             }
