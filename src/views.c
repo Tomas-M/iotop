@@ -42,10 +42,10 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
 
         // round robin value
         c->blkio_val =
-            (double) RRVf(c, p, blkio_delay_total) / 10e9 / time_s * 100;
+            (double) RRVf(c, p, blkio_delay_total) / (time_s * 10000000.0);
 
         c->swapin_val =
-            (double) RRVf(c, p, swapin_delay_total) / 10e9 / time_s * 100;
+            (double) RRVf(c, p, swapin_delay_total) / (time_s * 10000000.0);
 
         c->read_val = (double) RRVf(c, p, read_bytes)
                            / (config.f.accumulated ? 1 : time_s);
