@@ -1,31 +1,58 @@
 TARGET=iotop
-OBJS=main.o ioprio.o utils.o views.o xxxid_info.o checks.o vmstat.o arr.o
+
+SRCS:=$(wildcard src/*.c)
+OBJS:=$(patsubst %c,%o,$(patsubst src/%,bld/%,$(SRCS)))
+DEPS:=$(OBJS:.o=.d)
+
 CFLAGS=-Wall -O3 -std=gnu90 -fno-stack-protector -mno-stackrealign
 LDFLAGS=-lncurses
+
+PREFIX=/usr
+
+# use this to disable flto optimizations:
+#   make NO_FLTO=1
+# and this to enable verbose mode:
+#   make V=1
+
 ifndef NO_FLTO
 CFLAGS+=-flto
 LDFLAGS+=-flto -O3
 endif
-# -pedantic
 
-PREFIX=/usr
-
+ifeq ("$(V)","1")
+Q:=
+vecho:=@true
+else
+Q:=@
+VE:=@echo
+endif
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(VE) LD $@
+	$(Q)$(CC) -o $@ $^ $(LDFLAGS)
 
-%.o: src/%.c
-	$(CC) -c $(CFLAGS) -o $@ $<
-
-
-.PHONY: clean install
+bld/%.o: src/%.c bld/.mkdir
+	$(VE) DEP $@
+	$(Q)$(CC) $(CFLAGS) -MM -MT $@ -MF $(patsubst %.o,%.d,$@) $<
+	$(VE) CC $@
+	$(Q)$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	$(VE) CLEAN
+	$(Q)rm -rf ./bld $(TARGET)
 
 install:
-	cp $(TARGET) $(PREFIX)/bin/$(TARGET)
+	$(VE) STRIP $(TARGET)
+	$(Q)$(STRIP) $(TARGET)
+	$(Q)cp $(TARGET) $(PREFIX)/bin/$(TARGET)
 
 uninstall:
-	rm $(PREFIX)/bin/$(TARGET)
+	$(Q)rm $(PREFIX)/bin/$(TARGET)
 
+bld/.mkdir:
+	$(Q)mkdir -p bld
+	$(Q)touch bld/.mkdir
+
+-include $(DEPS)
+
+.PHONY: clean install uninstall
