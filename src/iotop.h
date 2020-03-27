@@ -20,8 +20,9 @@ typedef union
         int kilobytes;
         int timestamp;
         int quite;
+        int nohelp;
     } f;
-    int opts[7];
+    int opts[8];
 } config_t;
 
 typedef struct
@@ -99,10 +100,19 @@ struct pidgen *openpidgen(int flags);
 void closepidgen(struct pidgen *pg);
 int pidgen_next(struct pidgen *pg);
 
-/* ioprio.h */
+/* ioprio.c */
 
 int get_ioprio(pid_t pid);
 const char *str_ioprio(int io_prio);
+int set_ioprio(int which, int who, const char *ioprio_class, int ioprio_data);
+
+/* vmstat.c */
+
+int get_vm_counters(uint64_t *pgpgin, uint64_t *pgpgout);
+
+/* checks.c */
+
+int system_checks(void);
 
 #endif // __IOTOP_H__
 
