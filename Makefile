@@ -1,5 +1,5 @@
 TARGET=iotop
-OBJS=main.o ioprio.o utils.o views.o xxxid_info.o
+OBJS=main.o ioprio.o utils.o views.o xxxid_info.o checks.o vmstat.o
 CFLAGS=-Wall -O2 --pedantic --std=c99
 LDFLAGS=-lncurses
 
