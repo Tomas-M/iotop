@@ -19,7 +19,7 @@ typedef union
         int accumulated;
         int kilobytes;
         int timestamp;
-        int quite;
+        int quiet;
         int nohelp;
     } f;
     int opts[8];

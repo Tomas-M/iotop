@@ -81,7 +81,7 @@ parse_args(int argc, char *argv[])
             {"accumulated", no_argument, NULL, 'a'},
             {"kilobytes",   no_argument, NULL, 'k'},
             {"timestamp",   no_argument, NULL, 't'},
-            {"quite",       no_argument, NULL, 'q'},
+            {"quiet",       no_argument, NULL, 'q'},
             {"no-help",     no_argument, NULL, 'H'},
             {NULL, 0, NULL, 0}
         };
@@ -184,7 +184,7 @@ main(int argc, char *argv[])
     struct xxxid_stats *cs = NULL;
     struct act_stats act = {0};
 
-    if (config.f.timestamp || config.f.quite)
+    if (config.f.timestamp || config.f.quiet)
         config.f.batch_mode = 1;
 
     view_callback view = view_batch;
