@@ -2,7 +2,6 @@
 
 #include <curses.h>
 #include <math.h>
-#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,110 +11,68 @@
 #define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s |   Total DISK WRITE:   %7.2f %s"
 #define HEADER2_FORMAT "Current DISK READ:   %7.2f %s | Current DISK WRITE:   %7.2f %s"
 
-struct xxxid_stats *findpid(struct xxxid_stats *chain, int tid)
+static uint64_t xxx = ~0;
+
+#define RRV(to, from) (((to) < (from)) ? (xxx) - (to) + (from) : (to) - (from))
+#define RRVf(pto, pfrom, fld) RRV(pto->fld, pfrom->fld)
+
+int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps)
 {
-    struct xxxid_stats *s;
-
-    for (s = chain; s; s = s->__next)
-        if (s->tid == tid)
-            return s;
-
-    return NULL;
-}
-
-int chainlen(struct xxxid_stats *chain)
-{
-    int i = 0;
-
-    while (chain)
-    {
-        i++;
-        chain = chain->__next;
-    }
-
-    return i;
-}
-
-#define RRV(to, from) {\
-    to = (to < from)\
-        ? xxx - to + from\
-        : to - from;\
-}
-
-struct xxxid_stats *create_diff(struct xxxid_stats *cs, struct xxxid_stats *ps, int *len)
-{
-    int diff_size = sizeof(struct xxxid_stats) * chainlen(cs);
-    struct xxxid_stats *diff = malloc(diff_size);
-    struct xxxid_stats *c;
+    int diff_size = cs->length;
     int n = 0;
-    uint64_t xxx = ~0;
 
-    memset(diff, 0, diff_size);
-
-    for (c = cs; c; c = c->__next, n++)
+    for (n = 0; cs->arr && n < cs->length; n++)
     {
-        struct xxxid_stats *p = findpid(ps, c->tid);
+        struct xxxid_stats *c;
+        struct xxxid_stats *p;
+
+        c = cs->arr[n];
+        p = arr_find(ps, c->tid);
 
         if (!p)
         {
             // new process or task
-            memcpy(&diff[n], c, sizeof(struct xxxid_stats));
-            diff[n].read_bytes \
-            = diff[n].write_bytes \
-              = diff[n].swapin_delay_total \
-                = diff[n].blkio_delay_total \
-                  = 0;
-            diff[n].__next = &diff[n + 1];
+            c->read_bytes = 0;
+            c->write_bytes = 0;
+            c->swapin_delay_total = 0;
+            c->blkio_delay_total = 0;
             continue;
         }
 
-        memcpy(&diff[n], c, sizeof(struct xxxid_stats));
-
         // round robin value
+        c->blkio_val =
+            (double) RRVf(c, p, blkio_delay_total) / 10e9 / params.delay * 100;
 
-        RRV(diff[n].read_bytes, p->read_bytes);
-        RRV(diff[n].write_bytes, p->write_bytes);
+        c->swapin_val =
+            (double) RRVf(c, p, swapin_delay_total) / 10e9 / params.delay * 100;
 
-        RRV(diff[n].swapin_delay_total, p->swapin_delay_total);
-        RRV(diff[n].blkio_delay_total, p->blkio_delay_total);
-
-        diff[n].blkio_val =
-            (double) diff[n].blkio_delay_total / 10e9 / params.delay * 100;
-
-        diff[n].swapin_val =
-            (double) diff[n].swapin_delay_total / 10e9 / params.delay * 100;
-
-        diff[n].read_val = (double) diff[n].read_bytes
+        c->read_val = (double) RRVf(c, p, read_bytes)
                            / (config.f.accumulated ? 1 : params.delay);
 
-        diff[n].write_val = (double) diff[n].write_bytes
+        c->write_val = (double) RRVf(c, p, write_bytes)
                             / (config.f.accumulated ? 1 : params.delay);
 
-        diff[n].__next = &diff[n + 1];
+        if (config.f.accumulated)
+        {
+            c->read_val += p->read_val;
+            c->write_val += p->write_val;
+        }
     }
 
-    // No have previous data to calculate diff
-    if (!n)
-    {
-        free(diff);
-        return NULL;
-    }
-
-    diff[n - 1].__next = NULL;
-    *len = n;
-
-    return diff;
+    return diff_size;
 }
 
-void calc_total(struct xxxid_stats *diff, double *read, double *write)
+void calc_total(struct xxxid_stats_arr *cs, double *read, double *write)
 {
-    struct xxxid_stats *s;
-    *read = *write = 0;
+    int i;
 
-    for (s = diff; s; s = s->__next)
+    if (!config.f.accumulated)
+        *read = *write = 0;
+
+    for (i = 0; i < cs->length; i++)
     {
-        *read += s->read_bytes;
-        *write += s->write_bytes;
+        *read += cs->arr[i]->read_val;
+        *write += cs->arr[i]->write_val;
     }
 
     if (!config.f.accumulated)
@@ -127,8 +84,6 @@ void calc_total(struct xxxid_stats *diff, double *read, double *write)
 
 void calc_a_total(struct act_stats *act, double *read, double *write)
 {
-    uint64_t xxx = ~0;
-
     *read = *write = 0;
 
     if (act->have_o)
@@ -136,8 +91,8 @@ void calc_a_total(struct act_stats *act, double *read, double *write)
         uint64_t r = act->read_bytes;
         uint64_t w = act->write_bytes;
 
-        RRV(r, act->read_bytes_o);
-        RRV(w, act->write_bytes_o);
+        r = RRV(r, act->read_bytes_o);
+        w = RRV(w, act->write_bytes_o);
         *read = (double) r / params.delay;
         *write = (double) w / params.delay;
     }
@@ -165,19 +120,17 @@ void humanize_val(double *value, char **str, int allow_accum)
     *str = config.f.accumulated && allow_accum ? prefix_acc[p] : prefix[p];
 }
 
-void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats *act)
+void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
 {
-    int diff_len = 0;
-
-    struct xxxid_stats *diff = create_diff(cs, ps, &diff_len);
+    int diff_len = create_diff(cs, ps);
     struct xxxid_stats *s;
 
-    double total_read, total_write;
+    static double total_read = 0, total_write = 0;
     double total_a_read, total_a_write;
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
 
-    calc_total(diff, &total_read, &total_write);
+    calc_total(cs, &total_read, &total_write);
     calc_a_total(act, &total_a_read, &total_a_write);
 
     humanize_val(&total_read, &str_read, 0);
@@ -192,13 +145,6 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats
            str_write
           );
 
-    printf(HEADER2_FORMAT,
-           total_a_read,
-           str_a_read,
-           total_a_write,
-           str_a_write
-          );
-
     if (config.f.timestamp)
     {
         time_t t = time(NULL);
@@ -206,6 +152,15 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats
     }
     else
         printf("\n");
+
+    printf(HEADER2_FORMAT,
+           total_a_read,
+           str_a_read,
+           total_a_write,
+           str_a_write
+          );
+
+    printf("\n");
 
     if (!config.f.quiet)
         printf("%5s %4s %8s %11s %11s %6s %6s %s\n",
@@ -219,9 +174,11 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats
                "COMMAND"
               );
 
-    for (s = diff; s; s = s->__next)
+    int i;
+
+    for (i = 0; cs->sor && i < diff_len; i++)
     {
-        struct passwd *pwd = getpwuid(s->euid);
+        s = cs->sor[i];
 
         double read_val = s->read_val;
         double write_val = s->write_val;
@@ -237,7 +194,7 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats
         printf("%5i %4s %-10.10s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
                s->tid,
                str_ioprio(s->io_prio),
-               pwd ? pwd->pw_name : "UNKNOWN",
+               s->pw_name,
                read_val,
                read_str,
                write_val,
@@ -247,8 +204,6 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats
                s->cmdline
               );
     }
-
-    free(diff);
 }
 
 enum
@@ -305,78 +260,48 @@ static const char *column_format[] =
 static int sort_by = SORT_BY_IO;
 static int sort_order = SORT_DESC;
 
-void sort_diff(struct xxxid_stats *d)
+static int my_sort_cb(const void *a,const void *b,void *arg)
 {
-    int len = chainlen(d);
-    int i;
+    int order = (((long)arg) & 1) ? 1 : -1; // SORT_ASC is bit 0=1, else should reverse sort
+    struct xxxid_stats **ppa = (struct xxxid_stats **)a;
+    struct xxxid_stats **ppb = (struct xxxid_stats **)b;
+    struct xxxid_stats *pa = *ppa;
+    struct xxxid_stats *pb = *ppb;
+    int type = ((long)arg) >> 1;
+    int res = 0;
 
-    for (i = 0; i < len; i++)
+    switch (type)
     {
-        int k;
-
-        for (k = i; k < len; k++)
-        {
-            int found = 0;
-
-#define CMP_FIELDS(field_name) (d[k].field_name > d[i].field_name)
-
-            switch (sort_by)
-            {
-            case SORT_BY_PRIO:
-                found = d[k].io_prio > d[i].io_prio;
-                break;
-            case SORT_BY_COMMAND:
-                found = (strcmp(d[k].cmdline, d[i].cmdline) > 0);
-                break;
-            case SORT_BY_PID:
-                found = CMP_FIELDS(tid);
-                break;
-            case SORT_BY_USER:
-                found = CMP_FIELDS(euid);
-                break;
-            case SORT_BY_READ:
-                found = CMP_FIELDS(read_val);
-                break;
-            case SORT_BY_WRITE:
-                found = CMP_FIELDS(write_val);
-                break;
-            case SORT_BY_SWAPIN:
-                found = CMP_FIELDS(swapin_val);
-                break;
-            case SORT_BY_IO:
-                found = CMP_FIELDS(blkio_val);
-                break;
-            }
-
-#undef CMP_FIELDS
-
-            if (found)
-            {
-                static struct xxxid_stats tmp;
-
-                memcpy(&tmp, &d[i], sizeof(struct xxxid_stats));
-                memcpy(&d[i], &d[k], sizeof(struct xxxid_stats));
-                memcpy(&d[k], &tmp, sizeof(struct xxxid_stats));
-            }
-        }
+        case SORT_BY_PRIO:
+            res = pa->io_prio - pb->io_prio;
+            break;
+        case SORT_BY_COMMAND:
+            res = strcmp(pa->cmdline, pb->cmdline);
+            break;
+        case SORT_BY_PID:
+            res = pa->tid - pb->tid;
+            break;
+        case SORT_BY_USER:
+            res = strcmp(pa->pw_name, pb->pw_name);
+            break;
+        case SORT_BY_READ:
+            res = pa->read_val - pb->read_val;
+            break;
+        case SORT_BY_WRITE:
+            res = pa->write_val - pb->write_val;
+            break;
+        case SORT_BY_SWAPIN:
+            res = pa->swapin_val - pb->swapin_val;
+            break;
+        case SORT_BY_IO:
+            res = pa->blkio_val - pb->blkio_val;
+            break;
     }
-
-    if (sort_order == SORT_ASC)
-    {
-        struct xxxid_stats *rev = malloc(sizeof(struct xxxid_stats) * len);
-        for (i = 0; i < len; i++)
-            memcpy(&rev[i], &d[len - i - 1], sizeof(struct xxxid_stats));
-        memcpy(d, rev, sizeof(struct xxxid_stats) * len);
-        free(rev);
-    }
-
-    for (i = 0; i < len; i++)
-        d[i].__next = &d[i + 1];
-
-    d[len - 1].__next = NULL;
+    res *= order;
+    return res;
 }
 
-void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats *act)
+void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
 {
     if (!stdscr)
     {
@@ -389,9 +314,7 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
         nodelay(stdscr, TRUE);
     }
 
-    int diff_len = 0;
-
-    struct xxxid_stats *diff = create_diff(cs, ps, &diff_len);
+    int diff_len = create_diff(cs, ps);
     struct xxxid_stats *s;
 
     double total_read, total_write;
@@ -399,11 +322,11 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
 
-    calc_total(diff, &total_read, &total_write);
+    calc_total(cs, &total_read, &total_write);
     calc_a_total(act, &total_a_read, &total_a_write);
 
-    humanize_val(&total_read, &str_read, 0);
-    humanize_val(&total_write, &str_write, 0);
+    humanize_val(&total_read, &str_read, config.f.accumulated);
+    humanize_val(&total_write, &str_write, config.f.accumulated);
     humanize_val(&total_a_read, &str_a_read, 0);
     humanize_val(&total_a_write, &str_a_write, 0);
 
@@ -440,13 +363,13 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
     }
     attroff(A_REVERSE);
 
-    sort_diff(diff);
+    arr_sort(cs,my_sort_cb,(void *)(long)(sort_by * 2 + !!(sort_order == SORT_ASC)));
 
     int line = 3;
     int lastline = line;
-    for (s = diff; s; s = s->__next)
+    for (i = 0; cs->sor && i < diff_len; i++)
     {
-        struct passwd *pwd = getpwuid(s->euid);
+        s = cs->sor[i];
 
         double read_val = s->read_val;
         double write_val = s->write_val;
@@ -462,7 +385,7 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
         mvprintw(line, 0, "%5i  %4s  %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s %5.2f %% %5.2f %%  %s\n",
                  s->tid,
                  str_ioprio(s->io_prio),
-                 pwd ? pwd->pw_name : "UNKNOWN",
+                 s->pw_name,
                  read_val,
                  read_str,
                  write_val,
@@ -536,8 +459,6 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
         attroff(A_REVERSE);
     }
 
-    sort_diff(diff);
-    free(diff);
     refresh();
 }
 
