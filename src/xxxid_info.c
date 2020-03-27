@@ -22,7 +22,6 @@
 #define NLA_PAYLOAD(len)        (len - NLA_HDRLEN)
 
 #define MAX_MSG_SIZE 1024
-#define MAX_CPUS     32
 
 struct msgtemplate
 {
