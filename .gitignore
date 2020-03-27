@@ -1,4 +1,4 @@
 build/*
 *.swp
-src/*.o
-./iotop
+*.o
+iotop
