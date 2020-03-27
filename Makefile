@@ -6,6 +6,7 @@ DEPS:=$(OBJS:.o=.d)
 
 CFLAGS=-Wall -O3 -std=gnu90 -fno-stack-protector -mno-stackrealign
 LDFLAGS=-lncurses
+STRIP?=strip
 
 PREFIX=/usr
 
@@ -41,12 +42,14 @@ clean:
 	$(VE) CLEAN
 	$(Q)rm -rf ./bld $(TARGET)
 
-install:
+install: $(TARGET)
 	$(VE) STRIP $(TARGET)
 	$(Q)$(STRIP) $(TARGET)
+	$(VE) INSTALL $(TARGET)
 	$(Q)cp $(TARGET) $(PREFIX)/bin/$(TARGET)
 
 uninstall:
+	$(VE) UNINSTALL $(TARGET)
 	$(Q)rm $(PREFIX)/bin/$(TARGET)
 
 bld/.mkdir:
