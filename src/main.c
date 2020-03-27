@@ -180,8 +180,8 @@ main(int argc, char *argv[])
     if (signal(SIGINT, sig_handler) == SIG_ERR)
         perror("signal");
 
-    struct xxxid_stats *ps = NULL;
-    struct xxxid_stats *cs = NULL;
+    struct xxxid_stats_arr *ps = NULL;
+    struct xxxid_stats_arr *cs = NULL;
     struct act_stats act = {0};
 
     if (config.f.timestamp || config.f.quiet)
@@ -203,7 +203,7 @@ main(int argc, char *argv[])
         view(cs, ps, &act);
 
         if (ps)
-            free_stats_chain(ps);
+            arr_free(ps);
 
         ps = cs;
         act.read_bytes_o = act.read_bytes;
@@ -215,7 +215,7 @@ main(int argc, char *argv[])
     }
     while (!do_sleep(params.delay));
 
-    free_stats_chain(cs);
+    arr_free(cs);
     sig_handler(SIGINT);
 
     return 0;
