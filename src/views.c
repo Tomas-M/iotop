@@ -9,7 +9,8 @@
 #include <sys/select.h>
 #include <time.h>
 
-#define HEADER_FORMAT "Total DISK READ: %7.2f %s | Total DISK WRITE: %7.2f %s"
+#define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s |   Total DISK WRITE:   %7.2f %s"
+#define HEADER2_FORMAT "Current DISK READ:   %7.2f %s | Current DISK WRITE:   %7.2f %s"
 
 struct xxxid_stats *findpid(struct xxxid_stats *chain, int tid)
 {
@@ -33,6 +34,12 @@ int chainlen(struct xxxid_stats *chain)
     }
 
     return i;
+}
+
+#define RRV(to, from) {\
+    to = (to < from)\
+        ? xxx - to + from\
+        : to - from;\
 }
 
 struct xxxid_stats *create_diff(struct xxxid_stats *cs, struct xxxid_stats *ps, int *len)
@@ -66,28 +73,17 @@ struct xxxid_stats *create_diff(struct xxxid_stats *cs, struct xxxid_stats *ps, 
 
         // round robin value
 
-#define RRV(to, from) {\
-    to = (to < from)\
-        ? xxx - to + from\
-        : to - from;\
-}
         RRV(diff[n].read_bytes, p->read_bytes);
         RRV(diff[n].write_bytes, p->write_bytes);
 
         RRV(diff[n].swapin_delay_total, p->swapin_delay_total);
         RRV(diff[n].blkio_delay_total, p->blkio_delay_total);
 
-        static double pow_ten = 0;
-        if (!pow_ten)
-            pow_ten = pow(10, 9);
-
-#undef RRV
-
         diff[n].blkio_val =
-            (double) diff[n].blkio_delay_total / pow_ten / params.delay * 100;
+            (double) diff[n].blkio_delay_total / 10e9 / params.delay * 100;
 
         diff[n].swapin_val =
-            (double) diff[n].swapin_delay_total / pow_ten / params.delay * 100;
+            (double) diff[n].swapin_delay_total / 10e9 / params.delay * 100;
 
         diff[n].read_val = (double) diff[n].read_bytes
                            / (config.f.accumulated ? 1 : params.delay);
@@ -129,6 +125,24 @@ void calc_total(struct xxxid_stats *diff, double *read, double *write)
     }
 }
 
+void calc_a_total(struct act_stats *act, double *read, double *write)
+{
+    uint64_t xxx = ~0;
+
+    *read = *write = 0;
+
+    if (act->have_o)
+    {
+        uint64_t r = act->read_bytes;
+        uint64_t w = act->write_bytes;
+
+        RRV(r, act->read_bytes_o);
+        RRV(w, act->write_bytes_o);
+        *read = (double) r / params.delay;
+        *write = (double) w / params.delay;
+    }
+}
+
 void humanize_val(double *value, char **str)
 {
     static char *prefix_acc[] = {"B", "K", "M", "G", "T"};
@@ -144,7 +158,7 @@ void humanize_val(double *value, char **str)
     *str = config.f.accumulated ? prefix_acc[p] : prefix[p];
 }
 
-void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
+void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats *act)
 {
     int diff_len = 0;
 
@@ -152,18 +166,30 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps)
     struct xxxid_stats *s;
 
     double total_read, total_write;
+    double total_a_read, total_a_write;
     char *str_read, *str_write;
+    char *str_a_read, *str_a_write;
 
     calc_total(diff, &total_read, &total_write);
+    calc_a_total(act, &total_a_read, &total_a_write);
 
     humanize_val(&total_read, &str_read);
     humanize_val(&total_write, &str_write);
+    humanize_val(&total_a_read, &str_a_read);
+    humanize_val(&total_a_write, &str_a_write);
 
-    printf(HEADER_FORMAT,
+    printf(HEADER1_FORMAT,
            total_read,
            str_read,
            total_write,
            str_write
+          );
+
+    printf(HEADER2_FORMAT,
+           total_a_read,
+           str_a_read,
+           total_a_write,
+           str_a_write
           );
 
     if (config.f.timestamp)
@@ -321,7 +347,7 @@ void sort_diff(struct xxxid_stats *d)
     d[len - 1].__next = NULL;
 }
 
-void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
+void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats *act)
 {
     if (!stdscr)
     {
@@ -340,24 +366,36 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
     struct xxxid_stats *s;
 
     double total_read, total_write;
+    double total_a_read, total_a_write;
     char *str_read, *str_write;
+    char *str_a_read, *str_a_write;
 
     calc_total(diff, &total_read, &total_write);
+    calc_a_total(act, &total_a_read, &total_a_write);
 
     humanize_val(&total_read, &str_read);
     humanize_val(&total_write, &str_write);
+    humanize_val(&total_a_read, &str_a_read);
+    humanize_val(&total_a_write, &str_a_write);
 
-    mvprintw(0, 0, HEADER_FORMAT,
+    mvprintw(0, 0, HEADER1_FORMAT,
              total_read,
              str_read,
              total_write,
              str_write
             );
 
+    mvprintw(1, 0, HEADER2_FORMAT,
+             total_a_read,
+             str_a_read,
+             total_a_write,
+             str_a_write
+            );
+
 #define SORT_CHAR(x) ((sort_by == x) ? (sort_order == SORT_ASC ? '<' : '>') : ' ')
     attron(A_REVERSE);
-    mvhline(1, 0, ' ', 1000);
-    mvprintw(1, 0, "%5s%c %4s%c  %6s%c   %11s%c %11s%c %6s%c %6s%c %s%c",
+    mvhline(2, 0, ' ', 1000);
+    mvprintw(2, 0, "%5s%c %4s%c  %6s%c   %11s%c %11s%c %6s%c %6s%c %s%c",
              config.f.processes ? "PID" : "TID", SORT_CHAR(SORT_BY_PID),
              "PRIO", SORT_CHAR(SORT_BY_PRIO),
              "USER", SORT_CHAR(SORT_BY_USER),
@@ -371,7 +409,7 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps)
 
     sort_diff(diff);
 
-    int line = 2;
+    int line = 3;
     for (s = diff; s; s = s->__next, line++)
     {
         struct passwd *pwd = getpwuid(s->euid);
