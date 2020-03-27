@@ -107,8 +107,8 @@ struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa, pid_t tid)
 {
     int i, s, e, r;
 
-	if (!pa)
-		return NULL;
+    if (!pa)
+        return NULL;
 
     s = 0;
     e = pa->length;
