@@ -182,6 +182,7 @@ main(int argc, char *argv[])
 
     struct xxxid_stats *ps = NULL;
     struct xxxid_stats *cs = NULL;
+    struct act_stats act = {0};
 
     if (config.f.timestamp || config.f.quite)
         config.f.batch_mode = 1;
@@ -198,12 +199,17 @@ main(int argc, char *argv[])
     do
     {
         cs = fetch_data(config.f.processes, filter1);
-        view(cs, ps);
+        get_vm_counters(&act.read_bytes,&act.write_bytes);
+        view(cs, ps, &act);
 
         if (ps)
             free_stats_chain(ps);
 
         ps = cs;
+        act.read_bytes_o = act.read_bytes;
+        act.write_bytes_o = act.write_bytes;
+        act.have_o = 1;
+
         if ((params.iter > -1) && ((--params.iter) == 0))
             break;
     }
