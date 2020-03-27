@@ -74,6 +74,8 @@ struct act_stats
     uint64_t write_bytes;
     uint64_t read_bytes_o;
     uint64_t write_bytes_o;
+    uint64_t ts_c;
+    uint64_t ts_o;
     int have_o;
 };
 
@@ -118,6 +120,7 @@ const char *read_cmdline2(int pid);
 struct pidgen *openpidgen(int flags);
 void closepidgen(struct pidgen *pg);
 int pidgen_next(struct pidgen *pg);
+int64_t monotime(void);
 
 /* ioprio.c */
 

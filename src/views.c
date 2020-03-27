@@ -15,8 +15,9 @@ static uint64_t xxx = ~0;
 
 #define RRV(to, from) (((to) < (from)) ? (xxx) - (to) + (from) : (to) - (from))
 #define RRVf(pto, pfrom, fld) RRV(pto->fld, pfrom->fld)
+#define TIMEDIFF_IN_S(sta, end) ((((sta) == (end)) || (sta) == 0) ? 0.0001 : (((end) - (sta)) / 1000.0))
 
-int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps)
+int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, double time_s)
 {
     int diff_size = cs->length;
     int n = 0;
@@ -41,16 +42,16 @@ int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps)
 
         // round robin value
         c->blkio_val =
-            (double) RRVf(c, p, blkio_delay_total) / 10e9 / params.delay * 100;
+            (double) RRVf(c, p, blkio_delay_total) / 10e9 / time_s * 100;
 
         c->swapin_val =
-            (double) RRVf(c, p, swapin_delay_total) / 10e9 / params.delay * 100;
+            (double) RRVf(c, p, swapin_delay_total) / 10e9 / time_s * 100;
 
         c->read_val = (double) RRVf(c, p, read_bytes)
-                           / (config.f.accumulated ? 1 : params.delay);
+                           / (config.f.accumulated ? 1 : time_s);
 
         c->write_val = (double) RRVf(c, p, write_bytes)
-                            / (config.f.accumulated ? 1 : params.delay);
+                            / (config.f.accumulated ? 1 : time_s);
 
         if (config.f.accumulated)
         {
@@ -62,7 +63,7 @@ int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps)
     return diff_size;
 }
 
-void calc_total(struct xxxid_stats_arr *cs, double *read, double *write)
+void calc_total(struct xxxid_stats_arr *cs, double *read, double *write, double time_s)
 {
     int i;
 
@@ -77,12 +78,12 @@ void calc_total(struct xxxid_stats_arr *cs, double *read, double *write)
 
     if (!config.f.accumulated)
     {
-        *read /= params.delay;
-        *write /= params.delay;
+        *read /= time_s;
+        *write /= time_s;
     }
 }
 
-void calc_a_total(struct act_stats *act, double *read, double *write)
+void calc_a_total(struct act_stats *act, double *read, double *write, double time_s)
 {
     *read = *write = 0;
 
@@ -93,8 +94,8 @@ void calc_a_total(struct act_stats *act, double *read, double *write)
 
         r = RRV(r, act->read_bytes_o);
         w = RRV(w, act->write_bytes_o);
-        *read = (double) r / params.delay;
-        *write = (double) w / params.delay;
+        *read = (double) r / time_s;
+        *write = (double) w / time_s;
     }
 }
 
@@ -122,7 +123,8 @@ void humanize_val(double *value, char **str, int allow_accum)
 
 void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
 {
-    int diff_len = create_diff(cs, ps);
+    double time_s = TIMEDIFF_IN_S(act->ts_o, act->ts_c);
+    int diff_len = create_diff(cs, ps, time_s);
     struct xxxid_stats *s;
 
     static double total_read = 0, total_write = 0;
@@ -130,8 +132,8 @@ void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct a
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
 
-    calc_total(cs, &total_read, &total_write);
-    calc_a_total(act, &total_a_read, &total_a_write);
+    calc_total(cs, &total_read, &total_write, time_s);
+    calc_a_total(act, &total_a_read, &total_a_write, time_s);
 
     humanize_val(&total_read, &str_read, 0);
     humanize_val(&total_write, &str_write, 0);
@@ -314,7 +316,8 @@ void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct 
         nodelay(stdscr, TRUE);
     }
 
-    int diff_len = create_diff(cs, ps);
+    double time_s = TIMEDIFF_IN_S(act->ts_o, act->ts_c);
+    int diff_len = create_diff(cs, ps, time_s);
     struct xxxid_stats *s;
 
     static double total_read = 0, total_write = 0;
@@ -322,8 +325,8 @@ void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct 
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
 
-    calc_total(cs, &total_read, &total_write);
-    calc_a_total(act, &total_a_read, &total_a_write);
+    calc_total(cs, &total_read, &total_write, time_s);
+    calc_a_total(act, &total_a_read, &total_a_write, time_s);
 
     humanize_val(&total_read, &str_read, config.f.accumulated);
     humanize_val(&total_write, &str_write, config.f.accumulated);

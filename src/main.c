@@ -200,6 +200,7 @@ main(int argc, char *argv[])
     {
         cs = fetch_data(config.f.processes, filter1);
         get_vm_counters(&act.read_bytes,&act.write_bytes);
+        act.ts_c = monotime();
         view(cs, ps, &act);
 
         if (ps)
@@ -208,6 +209,7 @@ main(int argc, char *argv[])
         ps = cs;
         act.read_bytes_o = act.read_bytes;
         act.write_bytes_o = act.write_bytes;
+        act.ts_o = act.ts_c;
         act.have_o = 1;
 
         if ((params.iter > -1) && ((--params.iter) == 0))

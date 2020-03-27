@@ -1,5 +1,6 @@
 #include "iotop.h"
 
+#include <time.h>
 #include <dirent.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -155,5 +156,16 @@ int pidgen_next(struct pidgen *pg)
     }
 
     return pid;
+}
+
+int64_t monotime(void)
+{
+    struct timespec ts;
+    int64_t res;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    res = ts.tv_sec * 1000;
+    res += ts.tv_nsec / 1000000;
+    return res;
 }
 
