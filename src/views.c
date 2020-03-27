@@ -317,7 +317,7 @@ void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct 
     int diff_len = create_diff(cs, ps);
     struct xxxid_stats *s;
 
-    double total_read, total_write;
+    static double total_read = 0, total_write = 0;
     double total_a_read, total_a_write;
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
