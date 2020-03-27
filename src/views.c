@@ -226,7 +226,7 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats
         double read_val = s->read_val;
         double write_val = s->write_val;
 
-        if (config.f.only && (!read_val || !write_val))
+        if (config.f.only && !read_val && !write_val)
             continue;
 
         char *read_str, *write_str;
@@ -451,7 +451,7 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
         double read_val = s->read_val;
         double write_val = s->write_val;
 
-        if (config.f.only && (!read_val || !write_val))
+        if (config.f.only && !read_val && !write_val)
             continue;
 
         char *read_str, *write_str;
@@ -471,12 +471,12 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
                  s->blkio_val,
                  s->cmdline
                 );
-        lastline = line;
-        if (line >= maxy - (config.f.nohelp ? 1 : 3)) // do not draw out of screen, keep 2 lines for help
-            break;
         line++;
+        lastline = line;
+        if (line > maxy - (config.f.nohelp ? 1 : 3)) // do not draw out of screen, keep 2 lines for help
+            break;
     }
-    for (line = lastline + 1; line <= maxy - (config.f.nohelp ? 1 : 3); line++) // always draw empty lines
+    for (line = lastline; line <= maxy - (config.f.nohelp ? 1 : 3); line++) // always draw empty lines
         mvhline(line, 0, ' ', maxx);
 
     if (!config.f.nohelp)
