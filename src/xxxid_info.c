@@ -231,24 +231,17 @@ void free_stats(struct xxxid_stats *s)
 {
     if (s->cmdline)
         free(s->cmdline);
+    if (s->pw_name)
+        free(s->pw_name);
 
     free(s);
-}
-
-void free_stats_chain(struct xxxid_stats *chain)
-{
-    while (chain)
-    {
-        struct xxxid_stats *next = chain->__next;
-
-        free_stats(chain);
-        chain = next;
-    }
 }
 
 struct xxxid_stats *make_stats(int pid, int processes)
 {
     struct xxxid_stats *s = malloc(sizeof(struct xxxid_stats));
+    struct passwd *pwd;
+
     memset(s, 0, sizeof(struct xxxid_stats));
 
     if (nl_xxxid_info(pid, processes, s))
@@ -258,6 +251,8 @@ struct xxxid_stats *make_stats(int pid, int processes)
     const char *cmdline = read_cmdline2(pid);
 
     s->cmdline = strdup(cmdline ? cmdline : unknown);
+    pwd = getpwuid(s->euid);
+    s->pw_name = strdup(pwd && pwd->pw_name ? pwd->pw_name : unknown);
 
     return s;
 
@@ -266,8 +261,13 @@ error:
     return NULL;
 }
 
-struct xxxid_stats *fetch_data(int processes, filter_callback filter)
+struct xxxid_stats_arr *fetch_data(int processes, filter_callback filter)
 {
+    struct xxxid_stats_arr *a = arr_alloc();
+
+    if (!a)
+        return NULL;
+
     struct pidgen *pg = openpidgen(
                             processes ? PIDGEN_FLAGS_PROC : PIDGEN_FLAGS_TASK);
 
@@ -277,10 +277,7 @@ struct xxxid_stats *fetch_data(int processes, filter_callback filter)
         exit(EXIT_FAILURE);
     }
 
-    struct xxxid_stats *schain = NULL;
-    struct xxxid_stats *p = NULL;
-
-    int pid;
+    pid_t pid;
 
     while ((pid = pidgen_next(pg)) > 0)
     {
@@ -289,21 +286,10 @@ struct xxxid_stats *fetch_data(int processes, filter_callback filter)
         if (filter && filter(s))
             free_stats(s);
         else
-        {
-            if (!schain)
-            {
-                schain = s;
-                p = s;
-            }
-            else
-            {
-                p->__next = s;
-                p = s;
-            }
-        }
+            arr_add(a, s);
     }
 
     closepidgen(pg);
-    return schain;
+    return a;
 }
 
