@@ -143,10 +143,17 @@ void calc_a_total(struct act_stats *act, double *read, double *write)
     }
 }
 
-void humanize_val(double *value, char **str)
+void humanize_val(double *value, char **str, int allow_accum)
 {
-    static char *prefix_acc[] = {"B", "K", "M", "G", "T"};
+    static char *prefix_acc[] = {"B  ", "K  ", "M  ", "G  ", "T  "};
     static char *prefix[] = {"B/s", "K/s", "M/s", "G/s", "T/s"};
+
+    if (config.f.kilobytes)
+    {
+        *value /= 1000.0;
+        *str = config.f.accumulated && allow_accum ? prefix_acc[1] : prefix[1];
+        return;
+    }
 
     int p = 0;
     while (*value > 10000 && p < 5)
@@ -155,7 +162,7 @@ void humanize_val(double *value, char **str)
         p++;
     }
 
-    *str = config.f.accumulated ? prefix_acc[p] : prefix[p];
+    *str = config.f.accumulated && allow_accum ? prefix_acc[p] : prefix[p];
 }
 
 void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats *act)
@@ -173,10 +180,10 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats
     calc_total(diff, &total_read, &total_write);
     calc_a_total(act, &total_a_read, &total_a_write);
 
-    humanize_val(&total_read, &str_read);
-    humanize_val(&total_write, &str_write);
-    humanize_val(&total_a_read, &str_a_read);
-    humanize_val(&total_a_write, &str_a_write);
+    humanize_val(&total_read, &str_read, 0);
+    humanize_val(&total_write, &str_write, 0);
+    humanize_val(&total_a_read, &str_a_read, 0);
+    humanize_val(&total_a_write, &str_a_write, 0);
 
     printf(HEADER1_FORMAT,
            total_read,
@@ -200,7 +207,7 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats
     else
         printf("\n");
 
-    if (!config.f.quite)
+    if (!config.f.quiet)
         printf("%5s %4s %8s %11s %11s %6s %6s %s\n",
                config.f.processes ? "PID" : "TID",
                "PRIO",
@@ -224,18 +231,8 @@ void view_batch(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stats
 
         char *read_str, *write_str;
 
-        if (config.f.kilobytes)
-        {
-            read_val /= 1000;
-            write_val /= 1000;
-            read_str = config.f.accumulated ? "K" : "K/s";
-            write_str = config.f.accumulated ? "K" : "K/s";
-        }
-        else
-        {
-            humanize_val(&read_val, &read_str);
-            humanize_val(&write_val, &write_str);
-        }
+        humanize_val(&read_val, &read_str, 1);
+        humanize_val(&write_val, &write_str, 1);
 
         printf("%5i %4s %-10.10s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
                s->tid,
@@ -272,6 +269,38 @@ enum
     SORT_DESC,
     SORT_ASC
 };
+
+static const char *column_name[] =
+{
+    "xID", // unused, value varies - PID or TID
+    "PRIO",
+    "USER",
+    "DISK READ",
+    "DISK WRITE",
+    "SWAPIN",
+    "IO",
+    "COMMAND",
+};
+
+static const char *column_format[] =
+{
+    "%5s%c ",
+    "%4s%c  ",
+    "%6s%c   ",
+    "%11s%c ",
+    "%11s%c ",
+    "%6s%c ",
+    "%6s%c ",
+    "%s%c",
+};
+
+#define __COLUMN_NAME(i) ((i) == 0 ? (config.f.processes ? "PID" : "TID") : column_name[(i)])
+#define __COLUMN_FORMAT(i) (column_format[(i)])
+#define __SAFE_INDEX(i) ((((i) % SORT_BY_MAX) + SORT_BY_MAX) % SORT_BY_MAX)
+#define COLUMN_NAME(i) __COLUMN_NAME(__SAFE_INDEX(i))
+#define COLUMN_FORMAT(i) __COLUMN_FORMAT(__SAFE_INDEX(i))
+#define COLUMN_L(i) COLUMN_NAME((i) - 1)
+#define COLUMN_R(i) COLUMN_NAME((i) + 1)
 
 static int sort_by = SORT_BY_IO;
 static int sort_order = SORT_DESC;
@@ -373,10 +402,10 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
     calc_total(diff, &total_read, &total_write);
     calc_a_total(act, &total_a_read, &total_a_write);
 
-    humanize_val(&total_read, &str_read);
-    humanize_val(&total_write, &str_write);
-    humanize_val(&total_a_read, &str_a_read);
-    humanize_val(&total_a_write, &str_a_write);
+    humanize_val(&total_read, &str_read, 0);
+    humanize_val(&total_write, &str_write, 0);
+    humanize_val(&total_a_read, &str_a_read, 0);
+    humanize_val(&total_a_write, &str_a_write, 0);
 
     mvprintw(0, 0, HEADER1_FORMAT,
              total_read,
@@ -392,25 +421,30 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
              str_a_write
             );
 
+    int maxy = getmaxy(stdscr);
+    int maxx = getmaxx(stdscr);
+
 #define SORT_CHAR(x) ((sort_by == x) ? (sort_order == SORT_ASC ? '<' : '>') : ' ')
     attron(A_REVERSE);
-    mvhline(2, 0, ' ', 1000);
-    mvprintw(2, 0, "%5s%c %4s%c  %6s%c   %11s%c %11s%c %6s%c %6s%c %s%c",
-             config.f.processes ? "PID" : "TID", SORT_CHAR(SORT_BY_PID),
-             "PRIO", SORT_CHAR(SORT_BY_PRIO),
-             "USER", SORT_CHAR(SORT_BY_USER),
-             "DISK READ", SORT_CHAR(SORT_BY_READ),
-             "DISK WRITE", SORT_CHAR(SORT_BY_WRITE),
-             "SWAPIN", SORT_CHAR(SORT_BY_SWAPIN),
-             "IO", SORT_CHAR(SORT_BY_IO),
-             "COMMAND", SORT_CHAR(SORT_BY_COMMAND)
-            );
+    mvhline(2, 0, ' ', maxx);
+    move(2, 0);
+
+    int i;
+    for (i = 0; i < SORT_BY_MAX; i++)
+    {
+        if (sort_by == i)
+            attron(A_BOLD);
+        printw(COLUMN_FORMAT(i), COLUMN_NAME(i), SORT_CHAR(i));
+        if (sort_by == i)
+            attroff(A_BOLD);
+    }
     attroff(A_REVERSE);
 
     sort_diff(diff);
 
     int line = 3;
-    for (s = diff; s; s = s->__next, line++)
+    int lastline = line;
+    for (s = diff; s; s = s->__next)
     {
         struct passwd *pwd = getpwuid(s->euid);
 
@@ -422,18 +456,8 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
 
         char *read_str, *write_str;
 
-        if (config.f.kilobytes)
-        {
-            read_val /= 1000;
-            write_val /= 1000;
-            read_str = config.f.accumulated ? "K" : "K/s";
-            write_str = config.f.accumulated ? "K" : "K/s";
-        }
-        else
-        {
-            humanize_val(&read_val, &read_str);
-            humanize_val(&write_val, &write_str);
-        }
+        humanize_val(&read_val, &read_str, 1);
+        humanize_val(&write_val, &write_str, 1);
 
         mvprintw(line, 0, "%5i  %4s  %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s %5.2f %% %5.2f %%  %s\n",
                  s->tid,
@@ -447,7 +471,72 @@ void view_curses(struct xxxid_stats *cs, struct xxxid_stats *ps, struct act_stat
                  s->blkio_val,
                  s->cmdline
                 );
+        lastline = line;
+        if (line >= maxy - (config.f.nohelp ? 1 : 3)) // do not draw out of screen, keep 2 lines for help
+            break;
+        line++;
     }
+    for (line = lastline + 1; line <= maxy - (config.f.nohelp ? 1 : 3); line++) // always draw empty lines
+        mvhline(line, 0, ' ', maxx);
+
+    if (!config.f.nohelp)
+    {
+        attron(A_REVERSE);
+
+        mvhline(maxy - 2, 0, ' ', maxx);
+        mvhline(maxy - 1, 0, ' ', maxx);
+        mvprintw(maxy - 2, 0, "%s", "  keys:  any: refresh  ");
+        attron(A_UNDERLINE);
+        printw("q");
+        attroff(A_UNDERLINE);
+        printw(": quit  ");
+        attron(A_UNDERLINE);
+        printw("i");
+        attroff(A_UNDERLINE);
+        printw(": ionice  ");
+        attron(A_UNDERLINE);
+        printw("o");
+        attroff(A_UNDERLINE);
+        printw(": %s  ", config.f.only ? "all" : "active");
+        attron(A_UNDERLINE);
+        printw("p");
+        attroff(A_UNDERLINE);
+        printw(": %s  ", config.f.processes ? "threads" : "procs");
+        attron(A_UNDERLINE);
+        printw("a");
+        attroff(A_UNDERLINE);
+        printw(": %s  ", config.f.accumulated ? "bandwidth" : "accum");
+        attron(A_UNDERLINE);
+        printw("h");
+        attroff(A_UNDERLINE);
+        printw(": help");
+
+        mvprintw(maxy - 1, 0, "  sort:  ");
+        attron(A_UNDERLINE);
+        printw("r");
+        attroff(A_UNDERLINE);
+        printw(": %s  ", sort_order == SORT_ASC ? "desc" : "asc");
+        attron(A_UNDERLINE);
+        printw("left");
+        attroff(A_UNDERLINE);
+        printw(": %s  ", COLUMN_L(sort_by));
+        attron(A_UNDERLINE);
+        printw("right");
+        attroff(A_UNDERLINE);
+        printw(": %s  ", COLUMN_R(sort_by));
+        attron(A_UNDERLINE);
+        printw("home");
+        attroff(A_UNDERLINE);
+        printw(": %s  ", COLUMN_L(1));
+        attron(A_UNDERLINE);
+        printw("end");
+        attroff(A_UNDERLINE);
+        printw(": %s  ", COLUMN_L(0));
+
+        attroff(A_REVERSE);
+    }
+
+    sort_diff(diff);
     free(diff);
     refresh();
 }
@@ -475,12 +564,18 @@ int curses_sleep(unsigned int seconds)
         switch (getch())
         {
         case 'q':
+        case 'Q':
             return 1;
         case ' ':
+        case 'r':
+        case 'R':
             sort_order = (sort_order == SORT_ASC) ? SORT_DESC : SORT_ASC;
             return 0;
-        case 'p':
-            config.f.processes = ~config.f.processes;
+        case KEY_HOME:
+            sort_by = 0;
+            return 0;
+        case KEY_END:
+            sort_by = SORT_BY_MAX - 1;
             return 0;
         case KEY_RIGHT:
             if (++sort_by == SORT_BY_MAX)
@@ -489,6 +584,23 @@ int curses_sleep(unsigned int seconds)
         case KEY_LEFT:
             if (--sort_by == -1)
                 sort_by = SORT_BY_MAX - 1;
+            return 0;
+        case 'o':
+        case 'O':
+            config.f.only = !config.f.only;
+            return 0;
+        case 'p':
+        case 'P':
+            config.f.processes = !config.f.processes;
+            return 0;
+        case 'a':
+        case 'A':
+            config.f.accumulated = !config.f.accumulated;
+            return 0;
+        case '?':
+        case 'h':
+        case 'H':
+            config.f.nohelp = !config.f.nohelp;
             return 0;
         }
     }
