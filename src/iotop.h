@@ -1,8 +1,9 @@
 #ifndef __IOTOP_H__
 #define __IOTOP_H__
 
-#define _POSIX_C_SOURCE 1
-#define _DEFAULT_SOURCE 1
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE
+#define _DEFAULT_SOURCE
 
 #include <sys/types.h>
 #include <stdint.h>
@@ -54,8 +55,17 @@ struct xxxid_stats
 
     int euid;
     char *cmdline;
+    char *pw_name;
+};
 
-    void *__next;
+#define PROC_LIST_SZ_INC 1024
+
+struct xxxid_stats_arr
+{
+    struct xxxid_stats **arr;
+    struct xxxid_stats **sor;
+    int length;
+    int size;
 };
 
 struct act_stats
@@ -75,13 +85,13 @@ void dump_xxxid_stats(struct xxxid_stats *stats);
 
 typedef int (*filter_callback)(struct xxxid_stats *);
 
-struct xxxid_stats* fetch_data(int processes, filter_callback);
-void free_stats_chain(struct xxxid_stats *chain);
+struct xxxid_stats_arr *fetch_data(int processes, filter_callback);
+void free_stats(struct xxxid_stats *s);
 
-typedef void (*view_callback)(struct xxxid_stats *current, struct xxxid_stats *prev, struct act_stats *);
+typedef void (*view_callback)(struct xxxid_stats_arr *current, struct xxxid_stats_arr *prev, struct act_stats *);
 
-void view_batch(struct xxxid_stats *, struct xxxid_stats *, struct act_stats *);
-void view_curses(struct xxxid_stats *, struct xxxid_stats *, struct act_stats *);
+void view_batch(struct xxxid_stats_arr *, struct xxxid_stats_arr *, struct act_stats *);
+void view_curses(struct xxxid_stats_arr *, struct xxxid_stats_arr *, struct act_stats *);
 void view_curses_finish();
 
 typedef int (*how_to_sleep)(unsigned int seconds);
@@ -122,6 +132,14 @@ int get_vm_counters(uint64_t *pgpgin, uint64_t *pgpgout);
 /* checks.c */
 
 int system_checks(void);
+
+/* arr.c */
+
+struct xxxid_stats_arr *arr_alloc(void);
+int arr_add(struct xxxid_stats_arr *a, struct xxxid_stats *s);
+struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa, pid_t tid);
+void arr_free(struct xxxid_stats_arr *pa);
+void arr_sort(struct xxxid_stats_arr *pa, int (*cb)(const void *a, const void *b, void *arg), void *arg);
 
 #endif // __IOTOP_H__
 
