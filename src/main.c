@@ -25,19 +25,7 @@ init_params(void)
     params.user_id = -1;
 }
 
-static char str_opt[] = "boPaktq";
-
-void
-check_priv(void)
-{
-    if (geteuid() == 0)
-        return;
-
-    errno = EACCES;
-    perror(progname);
-
-    exit(EXIT_FAILURE);
-}
+static char str_opt[] = "boPaktqH";
 
 void
 print_help(void)
@@ -46,12 +34,12 @@ print_help(void)
         "Usage: %s [OPTIONS]\n\n"
         "DISK READ and DISK WRITE are the block I/O bandwidth used during the sampling\n"
         "period. SWAPIN and IO are the percentages of time the thread spent respectively\n"
-        "while swapping in and waiting on I/O more generally. PRIO is the I/O priority at\n"
-        "which the thread is running (set using the ionice command).\n\n"
+        "while swapping in and waiting on I/O more generally. PRIO is the I/O priority\n"
+        "at which the thread is running (set using the ionice command).\n\n"
         "Controls: left and right arrows to change the sorting column, r to invert the\n"
         "sorting order, o to toggle the --only option, p to toggle the --processes\n"
-        "option, a to toggle the --accumulated option, q to quit, any other key to force\n"
-        "a refresh.\n\n"
+        "option, a to toggle the --accumulated option, i to change I/O priority, q to\n"
+        "quit, any other key to force a refresh.\n\n"
         "Options:\n"
         "  --version             show program's version number and exit\n"
         "  -h, --help            show this help message and exit\n"
@@ -65,7 +53,8 @@ print_help(void)
         "  -a, --accumulated     show accumulated I/O instead of bandwidth\n"
         "  -k, --kilobytes       use kilobytes instead of a human friendly unit\n"
         "  -t, --time            add a timestamp on each line (implies --batch)\n"
-        "  -q, --quiet           suppress header line output (implies --batch)\n",
+        "  -q, --quiet           suppress some lines of header (implies --batch)\n"
+        "  --no-help             suppress listing of shortcuts\n",
         progname
     );
 }
@@ -93,6 +82,7 @@ parse_args(int argc, char *argv[])
             {"kilobytes",   no_argument, NULL, 'k'},
             {"timestamp",   no_argument, NULL, 't'},
             {"quite",       no_argument, NULL, 'q'},
+            {"no-help",     no_argument, NULL, 'H'},
             {NULL, 0, NULL, 0}
         };
 
@@ -117,6 +107,7 @@ parse_args(int argc, char *argv[])
         case 'k':
         case 't':
         case 'q':
+        case 'H':
             config.opts[(unsigned int) (strchr(str_opt, c) - str_opt)] = 1;
             break;
         case 'n':
@@ -181,7 +172,8 @@ main(int argc, char *argv[])
     progname = argv[0];
 
     parse_args(argc, argv);
-    check_priv();
+    if (system_checks())
+        return EXIT_FAILURE;
 
     nl_init();
 
