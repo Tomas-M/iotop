@@ -33,10 +33,10 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
         if (!p)
         {
             // new process or task
-            c->read_bytes = 0;
-            c->write_bytes = 0;
-            c->swapin_delay_total = 0;
-            c->blkio_delay_total = 0;
+            c->blkio_val = 0;
+            c->swapin_val = 0;
+            c->read_val = 0;
+            c->write_val = 0;
             continue;
         }
 
