@@ -8,7 +8,7 @@
 #define PGIN "pgpgin "
 #define PGOUT "pgpgout "
 
-int get_vm_counters(uint64_t *pgpgin, uint64_t *pgpgout)
+inline int get_vm_counters(uint64_t *pgpgin, uint64_t *pgpgout)
 {
     char buf[200];
     int haveout = 0;

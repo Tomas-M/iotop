@@ -10,7 +10,7 @@
 
 #include <linux/capability.h>
 
-int system_checks(void)
+inline int system_checks(void)
 {
     int vm_event_counters = 0;
     int root_or_netadm = 0;

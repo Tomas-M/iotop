@@ -53,7 +53,7 @@ inline int get_ioprio(pid_t pid)
     return io_prio;
 }
 
-const char *str_ioprio(int io_prio)
+inline const char *str_ioprio(int io_prio)
 {
     const static char corrupted[] = "xx/x";
     static char buf[IOPRIO_STR_MAXSIZ];
@@ -75,7 +75,7 @@ const char *str_ioprio(int io_prio)
     return (const char *) buf;
 }
 
-int ioprio_value(const char *prio, int data)
+inline int ioprio_value(const char *prio, int data)
 {
     int i;
 
@@ -86,7 +86,7 @@ int ioprio_value(const char *prio, int data)
     return (0 << IOPRIO_CLASS_SHIFT) | data;
 }
 
-int set_ioprio(int which, int who, const char *ioprio_class, int ioprio_data)
+inline int set_ioprio(int which, int who, const char *ioprio_class, int ioprio_data)
 {
     int ioprio_val = ioprio_value(ioprio_class, ioprio_data);
 

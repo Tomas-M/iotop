@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct xxxid_stats_arr *arr_alloc(void)
+inline struct xxxid_stats_arr *arr_alloc(void)
 {
     struct xxxid_stats_arr *a;
 
@@ -22,7 +22,7 @@ struct xxxid_stats_arr *arr_alloc(void)
     return a;
 }
 
-static int arr_resize(struct xxxid_stats_arr *a, int newsize)
+static inline int arr_resize(struct xxxid_stats_arr *a, int newsize)
 {
     struct xxxid_stats **t;
 
@@ -42,7 +42,7 @@ static int arr_resize(struct xxxid_stats_arr *a, int newsize)
     return 0;
 }
 
-int arr_add(struct xxxid_stats_arr *pa, struct xxxid_stats *ps)
+inline int arr_add(struct xxxid_stats_arr *pa, struct xxxid_stats *ps)
 {
     int a = -1;
     int i,s,e;
@@ -103,7 +103,7 @@ int arr_add(struct xxxid_stats_arr *pa, struct xxxid_stats *ps)
     return 0; // SUCCESS
 }
 
-struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa, pid_t tid)
+inline struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa, pid_t tid)
 {
     int i, s, e, r;
 
@@ -140,7 +140,7 @@ struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa, pid_t tid)
     }
 }
 
-void arr_free(struct xxxid_stats_arr *pa)
+inline void arr_free(struct xxxid_stats_arr *pa)
 {
     int i;
 
@@ -157,8 +157,7 @@ void arr_free(struct xxxid_stats_arr *pa)
     free(pa);
 }
 
-
-void arr_sort(struct xxxid_stats_arr *pa, int (*cb)(const void *a, const void *b, void *arg), void *arg)
+inline void arr_sort(struct xxxid_stats_arr *pa, int (*cb)(const void *a, const void *b, void *arg), void *arg)
 {
     if (!pa)
         return;

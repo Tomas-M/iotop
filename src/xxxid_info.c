@@ -33,7 +33,7 @@ struct msgtemplate
 static int nl_sock = -1;
 static int nl_fam_id = 0;
 
-int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
+inline int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
              __u8 genl_cmd, __u16 nla_type,
              void *nla_data, int nla_len)
 {
@@ -79,7 +79,7 @@ int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
     return 0;
 }
 
-int get_family_id(int sock_fd)
+inline int get_family_id(int sock_fd)
 {
     static char name[256];
 
@@ -113,7 +113,7 @@ int get_family_id(int sock_fd)
     return id;
 }
 
-void nl_init(void)
+inline void nl_init(void)
 {
     struct sockaddr_nl addr;
     int sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
@@ -140,7 +140,7 @@ error:
     exit(EXIT_FAILURE);
 }
 
-int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
+inline int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
 {
     if (nl_sock < 0)
     {
@@ -209,13 +209,13 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
     return 0;
 }
 
-void nl_term(void)
+inline void nl_term(void)
 {
     if (nl_sock > -1)
         close(nl_sock);
 }
 
-void dump_xxxid_stats(struct xxxid_stats *stats)
+inline void dump_xxxid_stats(struct xxxid_stats *stats)
 {
     printf("%i %i SWAPIN: %lu IO: %lu "
            "READ: %lu WRITE: %lu IOPRIO: %s   %s\n",
@@ -227,7 +227,7 @@ void dump_xxxid_stats(struct xxxid_stats *stats)
            stats->cmdline);
 }
 
-void free_stats(struct xxxid_stats *s)
+inline void free_stats(struct xxxid_stats *s)
 {
     if (s->cmdline)
         free(s->cmdline);
@@ -237,7 +237,7 @@ void free_stats(struct xxxid_stats *s)
     free(s);
 }
 
-struct xxxid_stats *make_stats(int pid, int processes)
+inline struct xxxid_stats *make_stats(int pid, int processes)
 {
     struct xxxid_stats *s = malloc(sizeof(struct xxxid_stats));
     struct passwd *pwd;
@@ -261,7 +261,7 @@ error:
     return NULL;
 }
 
-struct xxxid_stats_arr *fetch_data(int processes, filter_callback filter)
+inline struct xxxid_stats_arr *fetch_data(int processes, filter_callback filter)
 {
     struct xxxid_stats_arr *a = arr_alloc();
 

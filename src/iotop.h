@@ -79,25 +79,25 @@ struct act_stats
     int have_o;
 };
 
-void nl_init(void);
-void nl_term(void);
+inline void nl_init(void);
+inline void nl_term(void);
 
-int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats);
-void dump_xxxid_stats(struct xxxid_stats *stats);
+inline int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats);
+inline void dump_xxxid_stats(struct xxxid_stats *stats);
 
 typedef int (*filter_callback)(struct xxxid_stats *);
 
-struct xxxid_stats_arr *fetch_data(int processes, filter_callback);
-void free_stats(struct xxxid_stats *s);
+inline struct xxxid_stats_arr *fetch_data(int processes, filter_callback);
+inline void free_stats(struct xxxid_stats *s);
 
 typedef void (*view_callback)(struct xxxid_stats_arr *current, struct xxxid_stats_arr *prev, struct act_stats *);
 
-void view_batch(struct xxxid_stats_arr *, struct xxxid_stats_arr *, struct act_stats *);
-void view_curses(struct xxxid_stats_arr *, struct xxxid_stats_arr *, struct act_stats *);
-void view_curses_finish();
+inline void view_batch(struct xxxid_stats_arr *, struct xxxid_stats_arr *, struct act_stats *);
+inline void view_curses(struct xxxid_stats_arr *, struct xxxid_stats_arr *, struct act_stats *);
+inline void view_curses_finish();
 
 typedef int (*how_to_sleep)(unsigned int seconds);
-int curses_sleep(unsigned int seconds);
+inline int curses_sleep(unsigned int seconds);
 
 /* utils.c */
 
@@ -114,35 +114,35 @@ struct pidgen
     int __flags;
 };
 
-const char *xprintf(const char *format, ...);
-const char *read_cmdline2(int pid);
+inline const char *xprintf(const char *format, ...);
+inline const char *read_cmdline2(int pid);
 
-struct pidgen *openpidgen(int flags);
-void closepidgen(struct pidgen *pg);
-int pidgen_next(struct pidgen *pg);
-int64_t monotime(void);
+inline struct pidgen *openpidgen(int flags);
+inline void closepidgen(struct pidgen *pg);
+inline int pidgen_next(struct pidgen *pg);
+inline int64_t monotime(void);
 
 /* ioprio.c */
 
-int get_ioprio(pid_t pid);
-const char *str_ioprio(int io_prio);
-int set_ioprio(int which, int who, const char *ioprio_class, int ioprio_data);
+inline int get_ioprio(pid_t pid);
+inline const char *str_ioprio(int io_prio);
+inline int set_ioprio(int which, int who, const char *ioprio_class, int ioprio_data);
 
 /* vmstat.c */
 
-int get_vm_counters(uint64_t *pgpgin, uint64_t *pgpgout);
+inline int get_vm_counters(uint64_t *pgpgin, uint64_t *pgpgout);
 
 /* checks.c */
 
-int system_checks(void);
+inline int system_checks(void);
 
 /* arr.c */
 
-struct xxxid_stats_arr *arr_alloc(void);
-int arr_add(struct xxxid_stats_arr *a, struct xxxid_stats *s);
-struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa, pid_t tid);
-void arr_free(struct xxxid_stats_arr *pa);
-void arr_sort(struct xxxid_stats_arr *pa, int (*cb)(const void *a, const void *b, void *arg), void *arg);
+inline struct xxxid_stats_arr *arr_alloc(void);
+inline int arr_add(struct xxxid_stats_arr *a, struct xxxid_stats *s);
+inline struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa, pid_t tid);
+inline void arr_free(struct xxxid_stats_arr *pa);
+inline void arr_sort(struct xxxid_stats_arr *pa, int (*cb)(const void *a, const void *b, void *arg), void *arg);
 
 #endif // __IOTOP_H__
 

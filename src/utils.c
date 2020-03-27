@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char *xprintf(const char *format, ...)
+inline const char *xprintf(const char *format, ...)
 {
     static char buf[BUFSIZ];
     va_list args;
@@ -22,7 +22,7 @@ const char *xprintf(const char *format, ...)
     return ((j >= 0) && (j < BUFSIZ)) ? buf : NULL;
 }
 
-const char *read_cmdline2(int pid)
+inline const char *read_cmdline2(int pid)
 {
     static char buf[BUFSIZ];
     FILE *fp = fopen(xprintf("/proc/%d/cmdline", pid), "rb");
@@ -79,7 +79,7 @@ const char *read_cmdline2(int pid)
     return rv;
 }
 
-static int __next_pid(DIR *dir)
+inline static int __next_pid(DIR *dir)
 {
     while (1)
     {
@@ -100,7 +100,7 @@ static int __next_pid(DIR *dir)
     return 0;
 }
 
-struct pidgen *openpidgen(int flags)
+inline struct pidgen *openpidgen(int flags)
 {
     struct pidgen *pg = malloc(sizeof(struct pidgen));
 
@@ -118,7 +118,7 @@ struct pidgen *openpidgen(int flags)
     return NULL;
 }
 
-void closepidgen(struct pidgen *pg)
+inline void closepidgen(struct pidgen *pg)
 {
     if (pg->__proc)
         closedir((DIR *) pg->__proc);
@@ -129,7 +129,7 @@ void closepidgen(struct pidgen *pg)
     free(pg);
 }
 
-int pidgen_next(struct pidgen *pg)
+inline int pidgen_next(struct pidgen *pg)
 {
     int pid;
 
@@ -158,7 +158,7 @@ int pidgen_next(struct pidgen *pg)
     return pid;
 }
 
-int64_t monotime(void)
+inline int64_t monotime(void)
 {
     struct timespec ts;
     int64_t res;

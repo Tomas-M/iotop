@@ -11,12 +11,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static char *progname = NULL;
+static const char *progname = NULL;
 
 config_t config;
 params_t params;
 
-void
+inline void
 init_params(void)
 {
     params.iter = -1;
@@ -25,9 +25,9 @@ init_params(void)
     params.user_id = -1;
 }
 
-static char str_opt[] = "boPaktqH";
+static const char str_opt[] = "boPaktqH";
 
-void
+static inline void
 print_help(void)
 {
     printf(
@@ -59,7 +59,7 @@ print_help(void)
     );
 }
 
-void
+static inline void
 parse_args(int argc, char *argv[])
 {
     init_params();
@@ -141,7 +141,7 @@ parse_args(int argc, char *argv[])
     }
 }
 
-int
+inline int
 filter1(struct xxxid_stats *s)
 {
     if ((params.user_id != -1) && (s->euid != params.user_id))
@@ -153,7 +153,7 @@ filter1(struct xxxid_stats *s)
     return 0;
 }
 
-void
+inline void
 sig_handler(int signo)
 {
     if (signo == SIGINT)

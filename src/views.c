@@ -17,7 +17,7 @@ static uint64_t xxx = ~0;
 #define RRVf(pto, pfrom, fld) RRV(pto->fld, pfrom->fld)
 #define TIMEDIFF_IN_S(sta, end) ((((sta) == (end)) || (sta) == 0) ? 0.0001 : (((end) - (sta)) / 1000.0))
 
-int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, double time_s)
+inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, double time_s)
 {
     int diff_size = cs->length;
     int n = 0;
@@ -63,7 +63,7 @@ int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, double t
     return diff_size;
 }
 
-void calc_total(struct xxxid_stats_arr *cs, double *read, double *write, double time_s)
+inline void calc_total(struct xxxid_stats_arr *cs, double *read, double *write, double time_s)
 {
     int i;
 
@@ -83,7 +83,7 @@ void calc_total(struct xxxid_stats_arr *cs, double *read, double *write, double 
     }
 }
 
-void calc_a_total(struct act_stats *act, double *read, double *write, double time_s)
+inline void calc_a_total(struct act_stats *act, double *read, double *write, double time_s)
 {
     *read = *write = 0;
 
@@ -99,7 +99,7 @@ void calc_a_total(struct act_stats *act, double *read, double *write, double tim
     }
 }
 
-void humanize_val(double *value, char **str, int allow_accum)
+inline void humanize_val(double *value, char **str, int allow_accum)
 {
     static char *prefix_acc[] = {"B  ", "K  ", "M  ", "G  ", "T  "};
     static char *prefix[] = {"B/s", "K/s", "M/s", "G/s", "T/s"};
@@ -121,7 +121,7 @@ void humanize_val(double *value, char **str, int allow_accum)
     *str = config.f.accumulated && allow_accum ? prefix_acc[p] : prefix[p];
 }
 
-void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
+inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
 {
     double time_s = TIMEDIFF_IN_S(act->ts_o, act->ts_c);
     int diff_len = create_diff(cs, ps, time_s);
@@ -262,7 +262,7 @@ static const char *column_format[] =
 static int sort_by = SORT_BY_IO;
 static int sort_order = SORT_DESC;
 
-static int my_sort_cb(const void *a,const void *b,void *arg)
+static inline int my_sort_cb(const void *a,const void *b,void *arg)
 {
     int order = (((long)arg) & 1) ? 1 : -1; // SORT_ASC is bit 0=1, else should reverse sort
     struct xxxid_stats **ppa = (struct xxxid_stats **)a;
@@ -303,7 +303,7 @@ static int my_sort_cb(const void *a,const void *b,void *arg)
     return res;
 }
 
-void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
+inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
 {
     if (!stdscr)
     {
@@ -465,12 +465,12 @@ void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct 
     refresh();
 }
 
-void view_curses_finish(void)
+inline void view_curses_finish(void)
 {
     endwin();
 }
 
-int curses_sleep(unsigned int seconds)
+inline int curses_sleep(unsigned int seconds)
 {
     fd_set fds;
     struct timeval tv;

@@ -1,7 +1,12 @@
 TARGET=iotop
 OBJS=main.o ioprio.o utils.o views.o xxxid_info.o checks.o vmstat.o arr.o
-CFLAGS=-Wall -O2 --pedantic --std=c99
+CFLAGS=-Wall -O3 -std=gnu90 -fno-stack-protector -mno-stackrealign
 LDFLAGS=-lncurses
+ifndef NO_FLTO
+CFLAGS+=-flto
+LDFLAGS+=-flto -O3
+endif
+# -pedantic
 
 PREFIX=/usr
 
