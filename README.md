@@ -47,4 +47,5 @@ Options
 -k, --kilobytes       use kilobytes instead of a human friendly unit
 -t, --time            add a timestamp on each line (implies --batch)
 -q, --quiet           suppress some lines of header (implies --batch)
+--no-help             suppress listing of shortcuts
 ```
