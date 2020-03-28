@@ -1,17 +1,24 @@
 #include "iotop.h"
 
-#include <curses.h>
 #include <math.h>
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <curses.h>
 #include <sys/select.h>
-#include <time.h>
 
 #define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s |   Total DISK WRITE:   %7.2f %s"
 #define HEADER2_FORMAT "Current DISK READ:   %7.2f %s | Current DISK WRITE:   %7.2f %s"
 
 static uint64_t xxx = ~0;
+static int in_ionice = 0;
+static char ionice_id[50];
+static int ionice_cl = 1; // select what to edit class(1) or prio(0)
+static int ionice_class = IOPRIO_CLASS_RT;
+static int ionice_prio = 0;
+static int ionice_id_changed = 0;
 
 #define RRV(to, from) (((to) < (from)) ? (xxx) - (to) + (from) : (to) - (from))
 #define RRVf(pto, pfrom, fld) RRV(pto->fld, pfrom->fld)
@@ -43,13 +50,13 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
         // round robin value
         c->blkio_val =
             (double) RRVf(c, p, blkio_delay_total) / (time_s * 10000000.0);
-		if (c->blkio_val > 99.99)
-			c->blkio_val = 99.99;
+        if (c->blkio_val > 99.99)
+            c->blkio_val = 99.99;
 
         c->swapin_val =
             (double) RRVf(c, p, swapin_delay_total) / (time_s * 10000000.0);
-		if (c->swapin_val > 99.99)
-			c->swapin_val = 99.99;
+        if (c->swapin_val > 99.99)
+            c->swapin_val = 99.99;
 
         c->read_val = (double) RRVf(c, p, read_bytes)
                            / (config.f.accumulated ? 1 : time_s);
@@ -328,6 +335,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     double total_a_read, total_a_write;
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
+    int promptx, prompty, show;
 
     calc_total(cs, &total_read, &total_write, time_s);
     calc_a_total(act, &total_a_read, &total_a_write, time_s);
@@ -337,6 +345,11 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     humanize_val(&total_a_read, &str_a_read, 0);
     humanize_val(&total_a_write, &str_a_write, 0);
 
+    int maxy = getmaxy(stdscr);
+    int maxx = getmaxx(stdscr);
+    int i;
+
+    mvhline(0, 0, ' ', maxx);
     mvprintw(0, 0, HEADER1_FORMAT,
              total_read,
              str_read,
@@ -344,22 +357,75 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
              str_write
             );
 
-    mvprintw(1, 0, HEADER2_FORMAT,
-             total_a_read,
-             str_a_read,
-             total_a_write,
-             str_a_write
-            );
+    mvhline(1, 0, ' ', maxx);
+    if (!in_ionice)
+    {
+        mvprintw(1, 0, HEADER2_FORMAT,
+                 total_a_read,
+                 str_a_read,
+                 total_a_write,
+                 str_a_write
+                );
+        show = FALSE;
+    }
+    else
+    {
+        mvprintw(1, 0, "%s: ", COLUMN_NAME(0));
+        attron(A_BOLD);
+        printw(ionice_id);
+        attroff(A_BOLD);
+        getyx(stdscr, promptx, prompty);
 
-    int maxy = getmaxy(stdscr);
-    int maxx = getmaxx(stdscr);
+        if (strlen(ionice_id))
+        {
+            struct xxxid_stats *p = NULL;
+            pid_t id = atoi(ionice_id);
+
+            if (id && (p = arr_find(cs, id)))
+            {
+                printw(" Current: ");
+                attron(A_BOLD);
+                printw("%s", str_ioprio(p->io_prio));
+                attroff(A_BOLD);
+                printw(" Change to: ");
+
+                if (ionice_id_changed)
+                {
+                    ionice_id_changed = 0;
+                    ionice_class = ioprio2class(p->io_prio);
+                    ionice_prio = ioprio2prio(p->io_prio);
+                }
+
+                attron(A_BOLD);
+                if (ionice_cl)
+                    attron(A_REVERSE);
+                printw("%s", str_ioprio_class[ionice_class]);
+                if (ionice_cl)
+                    attroff(A_REVERSE);
+                printw("/");
+                if (!ionice_cl)
+                    attron(A_REVERSE);
+                printw("%d", ionice_prio);
+                if (!ionice_cl)
+                    attroff(A_REVERSE);
+                attroff(A_BOLD);
+            }
+            else
+                printw(" (invalid %s)", COLUMN_NAME(0));
+        } else
+            printw(" (select %s)", COLUMN_NAME(0));
+		printw(" ");
+        attron(A_REVERSE);
+        printw("[use 0-9/bksp for %s, tab and arrows for prio]", COLUMN_NAME(0));
+        attroff(A_REVERSE);
+        show = TRUE;
+    }
 
 #define SORT_CHAR(x) ((sort_by == x) ? (sort_order == SORT_ASC ? '<' : '>') : ' ')
     attron(A_REVERSE);
     mvhline(2, 0, ' ', maxx);
     move(2, 0);
 
-    int i;
     for (i = 0; i < SORT_BY_MAX; i++)
     {
         if (sort_by == i)
@@ -466,6 +532,9 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         attroff(A_REVERSE);
     }
 
+    if (show)
+        move(promptx, prompty);
+    curs_set(show);
     refresh();
 }
 
@@ -474,7 +543,7 @@ inline void view_curses_finish(void)
     endwin();
 }
 
-inline int curses_sleep(unsigned int seconds)
+inline unsigned int curses_sleep(unsigned int seconds)
 {
     fd_set fds;
     struct timeval tv;
@@ -486,13 +555,19 @@ inline int curses_sleep(unsigned int seconds)
     tv.tv_usec = 0;
 
     int rv = select(1, &fds, NULL, NULL, &tv);
+    int ch;
 
     if (rv)
     {
-        switch (getch())
+        switch ((ch = getch()))
         {
         case 'q':
         case 'Q':
+            if (in_ionice)
+            {
+                in_ionice = 0;
+                return 0;
+            }
             return 1;
         case ' ':
         case 'r':
@@ -500,19 +575,65 @@ inline int curses_sleep(unsigned int seconds)
             sort_order = (sort_order == SORT_ASC) ? SORT_DESC : SORT_ASC;
             return 0;
         case KEY_HOME:
-            sort_by = 0;
+            if (in_ionice)
+                ionice_cl = 1;
+            else
+                sort_by = 0;
             return 0;
         case KEY_END:
-            sort_by = SORT_BY_MAX - 1;
-            return 0;
-        case KEY_RIGHT:
-            if (++sort_by == SORT_BY_MAX)
-                sort_by = SORT_BY_PID;
-            return 0;
-        case KEY_LEFT:
-            if (--sort_by == -1)
+            if (in_ionice)
+                ionice_cl = 0;
+            else
                 sort_by = SORT_BY_MAX - 1;
             return 0;
+        case KEY_RIGHT:
+            if (in_ionice)
+                ionice_cl = !ionice_cl;
+            else
+                if (++sort_by == SORT_BY_MAX)
+                    sort_by = SORT_BY_PID;
+            return 0;
+        case KEY_LEFT:
+            if (in_ionice)
+                ionice_cl = !ionice_cl;
+            else
+                if (--sort_by == -1)
+                    sort_by = SORT_BY_MAX - 1;
+            return 0;
+        case KEY_UP:
+            if (in_ionice)
+            {
+                if (ionice_cl)
+                {
+                    ionice_class++;
+                    if (ionice_class >= IOPRIO_CLASS_MAX)
+                        ionice_class = IOPRIO_CLASS_MIN;
+                }
+                else
+                {
+                    ionice_prio++;
+                    if (ionice_prio > 7)
+                        ionice_prio = 0;
+                }
+            }
+            break;
+        case KEY_DOWN:
+            if (in_ionice)
+            {
+                if (ionice_cl)
+                {
+                    ionice_class--;
+                    if (ionice_class < IOPRIO_CLASS_MIN)
+                        ionice_class = IOPRIO_CLASS_MAX - 1;
+                }
+                else
+                {
+                    ionice_prio--;
+                    if (ionice_prio < 0)
+                        ionice_prio = 7;
+                }
+            }
+            break;
         case 'o':
         case 'O':
             config.f.only = !config.f.only;
@@ -534,6 +655,52 @@ inline int curses_sleep(unsigned int seconds)
         case 'C':
             config.f.fullcmdline = !config.f.fullcmdline;
             return 0;
+        case 'i':
+        case 'I':
+            in_ionice = 1;
+            ionice_id[0] = 0;
+            ionice_cl = 1;
+            ionice_id_changed = 1;
+            return 0;
+        case 27: // ESC
+            in_ionice = 0;
+            break;
+        case '\r': // CR
+        case KEY_ENTER:
+            if (in_ionice) {
+                in_ionice = 0;
+                set_ioprio(IOPRIO_WHO_PROCESS, atoi(ionice_id), ionice_class, ionice_prio);
+            }
+            break;
+        case '\t': // TAB
+            if (in_ionice)
+                ionice_cl = !ionice_cl;
+            break;
+        case KEY_BACKSPACE:
+            if (in_ionice == 1)
+            {
+                int idlen = strlen(ionice_id);
+
+                if (idlen)
+                {
+                    ionice_id[idlen - 1] = 0;
+                    ionice_id_changed = 1;
+                }
+            }
+            break;
+        case '0' ... '9':
+            if (in_ionice == 1)
+            {
+                int idlen = strlen(ionice_id);
+
+                if (idlen < sizeof ionice_id - 1)
+                {
+                    ionice_id[idlen++] = ch;
+                    ionice_id[idlen] = 0;
+                    ionice_id_changed = 1;
+                }
+            }
+            break;
         }
     }
 
