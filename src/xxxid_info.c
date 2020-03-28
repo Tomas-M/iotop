@@ -164,7 +164,8 @@ inline int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
             !NLMSG_OK((&msg.n), rv))
     {
         struct nlmsgerr *err = NLMSG_DATA(&msg);
-        fprintf(stderr, "fatal reply error, %d\n", err->error);
+        if (err->error != -ESRCH)
+            fprintf(stderr, "fatal reply error, %d\n", err->error);
         return -1;
     }
 
