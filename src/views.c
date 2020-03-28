@@ -24,6 +24,61 @@ static int ionice_id_changed = 0;
 #define RRVf(pto, pfrom, fld) RRV(pto->fld, pfrom->fld)
 #define TIMEDIFF_IN_S(sta, end) ((((sta) == (end)) || (sta) == 0) ? 0.0001 : (((end) - (sta)) / 1000.0))
 
+enum
+{
+    SORT_BY_PID,
+    SORT_BY_PRIO,
+    SORT_BY_USER,
+    SORT_BY_READ,
+    SORT_BY_WRITE,
+    SORT_BY_SWAPIN,
+    SORT_BY_IO,
+    SORT_BY_COMMAND,
+    SORT_BY_MAX
+};
+
+enum
+{
+    SORT_DESC,
+    SORT_ASC
+};
+
+static const char *column_name[] =
+{
+    "xID", // unused, value varies - PID or TID
+    "PRIO",
+    "USER",
+    "DISK READ",
+    "DISK WRITE",
+    "SWAPIN",
+    "IO",
+    "COMMAND",
+};
+
+static const char *column_format[] =
+{
+    "%5s%c ",
+    "%4s%c  ",
+    "%6s%c   ",
+    "%11s%c ",
+    "%11s%c ",
+    "%6s%c ",
+    "%6s%c ",
+    "%s%c",
+};
+
+#define __COLUMN_NAME(i) ((i) == 0 ? (config.f.processes ? "PID" : "TID") : column_name[(i)])
+#define __COLUMN_FORMAT(i) (column_format[(i)])
+#define __SAFE_INDEX(i) ((((i) % SORT_BY_MAX) + SORT_BY_MAX) % SORT_BY_MAX)
+#define COLUMN_NAME(i) __COLUMN_NAME(__SAFE_INDEX(i))
+#define COLUMN_FORMAT(i) __COLUMN_FORMAT(__SAFE_INDEX(i))
+#define COLUMN_L(i) COLUMN_NAME((i) - 1)
+#define COLUMN_R(i) COLUMN_NAME((i) + 1)
+
+static int sort_by = SORT_BY_IO;
+static int sort_order = SORT_DESC;
+
+
 inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, double time_s)
 {
     int diff_size = cs->length;
@@ -132,6 +187,47 @@ inline void humanize_val(double *value, char **str, int allow_accum)
     *str = config.f.accumulated && allow_accum ? prefix_acc[p] : prefix[p];
 }
 
+static inline int my_sort_cb(const void *a,const void *b,void *arg)
+{
+    int order = (((long)arg) & 1) ? 1 : -1; // SORT_ASC is bit 0=1, else should reverse sort
+    struct xxxid_stats **ppa = (struct xxxid_stats **)a;
+    struct xxxid_stats **ppb = (struct xxxid_stats **)b;
+    struct xxxid_stats *pa = *ppa;
+    struct xxxid_stats *pb = *ppb;
+    int type = ((long)arg) >> 1;
+    int res = 0;
+
+    switch (type)
+    {
+        case SORT_BY_PRIO:
+            res = pa->io_prio - pb->io_prio;
+            break;
+        case SORT_BY_COMMAND:
+            res = strcmp(pa->cmdline, pb->cmdline);
+            break;
+        case SORT_BY_PID:
+            res = pa->tid - pb->tid;
+            break;
+        case SORT_BY_USER:
+            res = strcmp(pa->pw_name, pb->pw_name);
+            break;
+        case SORT_BY_READ:
+            res = pa->read_val - pb->read_val;
+            break;
+        case SORT_BY_WRITE:
+            res = pa->write_val - pb->write_val;
+            break;
+        case SORT_BY_SWAPIN:
+            res = pa->swapin_val - pb->swapin_val;
+            break;
+        case SORT_BY_IO:
+            res = pa->blkio_val - pb->blkio_val;
+            break;
+    }
+    res *= order;
+    return res;
+}
+
 inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
 {
     double time_s = TIMEDIFF_IN_S(act->ts_o, act->ts_c);
@@ -189,6 +285,8 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
 
     int i;
 
+    arr_sort(cs,my_sort_cb,(void *)(long)SORT_ASC);
+
     for (i = 0; cs->sor && i < diff_len; i++)
     {
         s = cs->sor[i];
@@ -217,101 +315,6 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
                s->cmdline
               );
     }
-}
-
-enum
-{
-    SORT_BY_PID,
-    SORT_BY_PRIO,
-    SORT_BY_USER,
-    SORT_BY_READ,
-    SORT_BY_WRITE,
-    SORT_BY_SWAPIN,
-    SORT_BY_IO,
-    SORT_BY_COMMAND,
-    SORT_BY_MAX
-};
-
-enum
-{
-    SORT_DESC,
-    SORT_ASC
-};
-
-static const char *column_name[] =
-{
-    "xID", // unused, value varies - PID or TID
-    "PRIO",
-    "USER",
-    "DISK READ",
-    "DISK WRITE",
-    "SWAPIN",
-    "IO",
-    "COMMAND",
-};
-
-static const char *column_format[] =
-{
-    "%5s%c ",
-    "%4s%c  ",
-    "%6s%c   ",
-    "%11s%c ",
-    "%11s%c ",
-    "%6s%c ",
-    "%6s%c ",
-    "%s%c",
-};
-
-#define __COLUMN_NAME(i) ((i) == 0 ? (config.f.processes ? "PID" : "TID") : column_name[(i)])
-#define __COLUMN_FORMAT(i) (column_format[(i)])
-#define __SAFE_INDEX(i) ((((i) % SORT_BY_MAX) + SORT_BY_MAX) % SORT_BY_MAX)
-#define COLUMN_NAME(i) __COLUMN_NAME(__SAFE_INDEX(i))
-#define COLUMN_FORMAT(i) __COLUMN_FORMAT(__SAFE_INDEX(i))
-#define COLUMN_L(i) COLUMN_NAME((i) - 1)
-#define COLUMN_R(i) COLUMN_NAME((i) + 1)
-
-static int sort_by = SORT_BY_IO;
-static int sort_order = SORT_DESC;
-
-static inline int my_sort_cb(const void *a,const void *b,void *arg)
-{
-    int order = (((long)arg) & 1) ? 1 : -1; // SORT_ASC is bit 0=1, else should reverse sort
-    struct xxxid_stats **ppa = (struct xxxid_stats **)a;
-    struct xxxid_stats **ppb = (struct xxxid_stats **)b;
-    struct xxxid_stats *pa = *ppa;
-    struct xxxid_stats *pb = *ppb;
-    int type = ((long)arg) >> 1;
-    int res = 0;
-
-    switch (type)
-    {
-        case SORT_BY_PRIO:
-            res = pa->io_prio - pb->io_prio;
-            break;
-        case SORT_BY_COMMAND:
-            res = strcmp(pa->cmdline, pb->cmdline);
-            break;
-        case SORT_BY_PID:
-            res = pa->tid - pb->tid;
-            break;
-        case SORT_BY_USER:
-            res = strcmp(pa->pw_name, pb->pw_name);
-            break;
-        case SORT_BY_READ:
-            res = pa->read_val - pb->read_val;
-            break;
-        case SORT_BY_WRITE:
-            res = pa->write_val - pb->write_val;
-            break;
-        case SORT_BY_SWAPIN:
-            res = pa->swapin_val - pb->swapin_val;
-            break;
-        case SORT_BY_IO:
-            res = pa->blkio_val - pb->blkio_val;
-            break;
-    }
-    res *= order;
-    return res;
 }
 
 inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
