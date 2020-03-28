@@ -338,7 +338,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     double total_a_read, total_a_write;
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
-    int promptx, prompty, show;
+    int promptx = 0, prompty = 0, show;
 
     calc_total(cs, &total_read, &total_write, time_s);
     calc_a_total(act, &total_a_read, &total_a_write, time_s);
