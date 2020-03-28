@@ -25,6 +25,7 @@ How to make
 ===========
 
     git clone https://github.com/Tomas-M/iotop
+    cd iotop
     make
 
 
