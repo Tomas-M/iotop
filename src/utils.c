@@ -38,7 +38,7 @@ inline const char *read_cmdline2(int pid)
             size_t k;
             char *ep;
 
-            if (!0/* option to show full path */)
+            if (!config.f.fullcmdline)
             {
                 ep = strrchr(buf, '/');
                 if (ep && ep[1])

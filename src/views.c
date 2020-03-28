@@ -530,6 +530,10 @@ inline int curses_sleep(unsigned int seconds)
         case 'H':
             config.f.nohelp = !config.f.nohelp;
             return 0;
+        case 'c':
+        case 'C':
+            config.f.fullcmdline = !config.f.fullcmdline;
+            return 0;
         }
     }
 

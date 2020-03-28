@@ -22,6 +22,7 @@ typedef union
         int timestamp;
         int quiet;
         int nohelp;
+        int fullcmdline;
     } f;
     int opts[8];
 } config_t;
