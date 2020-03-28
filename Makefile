@@ -22,34 +22,34 @@ endif
 
 ifeq ("$(V)","1")
 Q:=
-vecho:=@true
+E:=@true
 else
 Q:=@
-VE:=@echo
+E:=@echo
 endif
 
 $(TARGET): $(OBJS)
-	$(VE) LD $@
+	$(E) LD $@
 	$(Q)$(CC) -o $@ $^ $(LDFLAGS)
 
 bld/%.o: src/%.c bld/.mkdir
-	$(VE) DEP $@
+	$(E) DEP $@
 	$(Q)$(CC) $(CFLAGS) -MM -MT $@ -MF $(patsubst %.o,%.d,$@) $<
-	$(VE) CC $@
+	$(E) CC $@
 	$(Q)$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	$(VE) CLEAN
+	$(E) CLEAN
 	$(Q)rm -rf ./bld $(TARGET)
 
 install: $(TARGET)
-	$(VE) STRIP $(TARGET)
+	$(E) STRIP $(TARGET)
 	$(Q)$(STRIP) $(TARGET)
-	$(VE) INSTALL $(TARGET)
+	$(E) INSTALL $(TARGET)
 	$(Q)cp $(TARGET) $(PREFIX)/bin/$(TARGET)
 
 uninstall:
-	$(VE) UNINSTALL $(TARGET)
+	$(E) UNINSTALL $(TARGET)
 	$(Q)rm $(PREFIX)/bin/$(TARGET)
 
 bld/.mkdir:
