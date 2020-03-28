@@ -24,7 +24,7 @@ runs without python at all.
 How to make
 ===========
 
-    git clone
+    git clone https://github.com/Tomas-M/iotop
     make
 
 
