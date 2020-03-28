@@ -97,8 +97,8 @@ inline void view_batch(struct xxxid_stats_arr *, struct xxxid_stats_arr *, struc
 inline void view_curses(struct xxxid_stats_arr *, struct xxxid_stats_arr *, struct act_stats *);
 inline void view_curses_finish();
 
-typedef int (*how_to_sleep)(unsigned int seconds);
-inline int curses_sleep(unsigned int seconds);
+typedef unsigned int (*how_to_sleep)(unsigned int seconds);
+inline unsigned int curses_sleep(unsigned int seconds);
 
 /* utils.c */
 
@@ -125,9 +125,29 @@ inline int64_t monotime(void);
 
 /* ioprio.c */
 
+enum {
+    IOPRIO_CLASS_NONE,
+    IOPRIO_CLASS_RT,
+    IOPRIO_CLASS_BE,
+    IOPRIO_CLASS_IDLE,
+    IOPRIO_CLASS_MAX,
+    IOPRIO_CLASS_MIN = IOPRIO_CLASS_RT,
+};
+
+enum {
+    IOPRIO_WHO_PROCESS = 1,
+    IOPRIO_WHO_PGRP,
+    IOPRIO_WHO_USER
+};
+
+extern const char *str_ioprio_class[];
+
 inline int get_ioprio(pid_t pid);
 inline const char *str_ioprio(int io_prio);
-inline int set_ioprio(int which, int who, const char *ioprio_class, int ioprio_data);
+inline int ioprio_value(int class, int prio);
+inline int set_ioprio(int which, int who, int ioprio_class, int ioprio_prio);
+inline int ioprio2class(int ioprio);
+inline int ioprio2prio(int ioprio);
 
 /* vmstat.c */
 

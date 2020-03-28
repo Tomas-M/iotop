@@ -9,20 +9,6 @@
 #include <sys/resource.h>
 #include <linux/sched.h>
 
-enum {
-    IOPRIO_CLASS_NONE,
-    IOPRIO_CLASS_RT,
-    IOPRIO_CLASS_BE,
-    IOPRIO_CLASS_IDLE,
-    IOPRIO_CLASS_MAX
-};
-
-enum {
-    IOPRIO_WHO_PROCESS = 1,
-    IOPRIO_WHO_PGRP,
-    IOPRIO_WHO_USER
-};
-
 #define IOPRIO_CLASS_SHIFT 13
 #define IOPRIO_STR_MAXSIZ  7
 #define IOPRIO_STR_FORMAT "%2s/%1i"
@@ -53,13 +39,23 @@ inline int get_ioprio(pid_t pid)
     return io_prio;
 }
 
+inline int ioprio2class(int ioprio)
+{
+    return ioprio >> IOPRIO_CLASS_SHIFT;
+}
+
+inline int ioprio2prio(int ioprio)
+{
+    return ioprio & ((1 << IOPRIO_CLASS_SHIFT) - 1);
+}
+
 inline const char *str_ioprio(int io_prio)
 {
     const static char corrupted[] = "xx/x";
     static char buf[IOPRIO_STR_MAXSIZ];
     int io_class = io_prio >> IOPRIO_CLASS_SHIFT;
 
-    io_prio &= 0xff;
+    io_prio &= ((1 << IOPRIO_CLASS_SHIFT) - 1);
 
     if (io_class >= IOPRIO_CLASS_MAX)
         return corrupted;
@@ -75,21 +71,13 @@ inline const char *str_ioprio(int io_prio)
     return (const char *) buf;
 }
 
-inline int ioprio_value(const char *prio, int data)
+inline int ioprio_value(int class, int prio)
 {
-    int i;
-
-    for (i=0; i < sizeof(str_ioprio_class) / sizeof(*str_ioprio_class); i++)
-        if (!strcmp(prio, str_ioprio_class[i]))
-            return (i << IOPRIO_CLASS_SHIFT) | data;
-
-    return (0 << IOPRIO_CLASS_SHIFT) | data;
+    return (class << IOPRIO_CLASS_SHIFT) | prio;
 }
 
-inline int set_ioprio(int which, int who, const char *ioprio_class, int ioprio_data)
+inline int set_ioprio(int which, int who, int ioprio_class, int ioprio_prio)
 {
-    int ioprio_val = ioprio_value(ioprio_class, ioprio_data);
-
-    return syscall(SYS_ioprio_set, which, who, ioprio_val);
+    return syscall(SYS_ioprio_set, which, who, ioprio_value(ioprio_class, ioprio_prio));
 }
 

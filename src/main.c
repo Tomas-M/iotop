@@ -188,7 +188,7 @@ main(int argc, char *argv[])
         config.f.batch_mode = 1;
 
     view_callback view = view_batch;
-    how_to_sleep do_sleep = (how_to_sleep) sleep;
+    how_to_sleep do_sleep = sleep;
 
     if (!config.f.batch_mode)
     {
