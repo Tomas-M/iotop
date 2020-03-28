@@ -1,13 +1,14 @@
 #ifndef __IOTOP_H__
 #define __IOTOP_H__
 
-#define _POSIX_C_SOURCE 1
-#define _DEFAULT_SOURCE 1
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE
+#define _DEFAULT_SOURCE
 
 #include <sys/types.h>
 #include <stdint.h>
 
-#define VERSION "0.1"
+#define VERSION "0.2"
 
 typedef union
 {
@@ -19,9 +20,11 @@ typedef union
         int accumulated;
         int kilobytes;
         int timestamp;
-        int quite;
+        int quiet;
+        int nohelp;
+        int fullcmdline;
     } f;
-    int opts[7];
+    int opts[8];
 } config_t;
 
 typedef struct
@@ -53,29 +56,49 @@ struct xxxid_stats
 
     int euid;
     char *cmdline;
-
-    void *__next;
+    char *pw_name;
 };
 
-void nl_init(void);
-void nl_term(void);
+#define PROC_LIST_SZ_INC 1024
 
-int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats);
-void dump_xxxid_stats(struct xxxid_stats *stats);
+struct xxxid_stats_arr
+{
+    struct xxxid_stats **arr;
+    struct xxxid_stats **sor;
+    int length;
+    int size;
+};
+
+struct act_stats
+{
+    uint64_t read_bytes;
+    uint64_t write_bytes;
+    uint64_t read_bytes_o;
+    uint64_t write_bytes_o;
+    uint64_t ts_c;
+    uint64_t ts_o;
+    int have_o;
+};
+
+inline void nl_init(void);
+inline void nl_term(void);
+
+inline int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats);
+inline void dump_xxxid_stats(struct xxxid_stats *stats);
 
 typedef int (*filter_callback)(struct xxxid_stats *);
 
-struct xxxid_stats* fetch_data(int processes, filter_callback);
-void free_stats_chain(struct xxxid_stats *chain);
+inline struct xxxid_stats_arr *fetch_data(int processes, filter_callback);
+inline void free_stats(struct xxxid_stats *s);
 
-typedef void (*view_callback)(struct xxxid_stats *current, struct xxxid_stats *prev);
+typedef void (*view_callback)(struct xxxid_stats_arr *current, struct xxxid_stats_arr *prev, struct act_stats *);
 
-void view_batch(struct xxxid_stats *, struct xxxid_stats *);
-void view_curses(struct xxxid_stats *, struct xxxid_stats *);
-void view_curses_finish();
+inline void view_batch(struct xxxid_stats_arr *, struct xxxid_stats_arr *, struct act_stats *);
+inline void view_curses(struct xxxid_stats_arr *, struct xxxid_stats_arr *, struct act_stats *);
+inline void view_curses_finish();
 
 typedef int (*how_to_sleep)(unsigned int seconds);
-int curses_sleep(unsigned int seconds);
+inline int curses_sleep(unsigned int seconds);
 
 /* utils.c */
 
@@ -92,17 +115,35 @@ struct pidgen
     int __flags;
 };
 
-const char *xprintf(const char *format, ...);
-const char *read_cmdline2(int pid);
+inline const char *xprintf(const char *format, ...);
+inline const char *read_cmdline2(int pid);
 
-struct pidgen *openpidgen(int flags);
-void closepidgen(struct pidgen *pg);
-int pidgen_next(struct pidgen *pg);
+inline struct pidgen *openpidgen(int flags);
+inline void closepidgen(struct pidgen *pg);
+inline int pidgen_next(struct pidgen *pg);
+inline int64_t monotime(void);
 
-/* ioprio.h */
+/* ioprio.c */
 
-int get_ioprio(pid_t pid);
-const char *str_ioprio(int io_prio);
+inline int get_ioprio(pid_t pid);
+inline const char *str_ioprio(int io_prio);
+inline int set_ioprio(int which, int who, const char *ioprio_class, int ioprio_data);
+
+/* vmstat.c */
+
+inline int get_vm_counters(uint64_t *pgpgin, uint64_t *pgpgout);
+
+/* checks.c */
+
+inline int system_checks(void);
+
+/* arr.c */
+
+inline struct xxxid_stats_arr *arr_alloc(void);
+inline int arr_add(struct xxxid_stats_arr *a, struct xxxid_stats *s);
+inline struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa, pid_t tid);
+inline void arr_free(struct xxxid_stats_arr *pa);
+inline void arr_sort(struct xxxid_stats_arr *pa, int (*cb)(const void *a, const void *b, void *arg), void *arg);
 
 #endif // __IOTOP_H__
 

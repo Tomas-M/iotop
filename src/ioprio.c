@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sched.h>
+#include <string.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <linux/sched.h>
@@ -52,7 +53,7 @@ inline int get_ioprio(pid_t pid)
     return io_prio;
 }
 
-const char *str_ioprio(int io_prio)
+inline const char *str_ioprio(int io_prio)
 {
     const static char corrupted[] = "xx/x";
     static char buf[IOPRIO_STR_MAXSIZ];
@@ -72,5 +73,23 @@ const char *str_ioprio(int io_prio)
     );
 
     return (const char *) buf;
+}
+
+inline int ioprio_value(const char *prio, int data)
+{
+    int i;
+
+    for (i=0; i < sizeof(str_ioprio_class) / sizeof(*str_ioprio_class); i++)
+        if (!strcmp(prio, str_ioprio_class[i]))
+            return (i << IOPRIO_CLASS_SHIFT) | data;
+
+    return (0 << IOPRIO_CLASS_SHIFT) | data;
+}
+
+inline int set_ioprio(int which, int who, const char *ioprio_class, int ioprio_data)
+{
+    int ioprio_val = ioprio_value(ioprio_class, ioprio_data);
+
+    return syscall(SYS_ioprio_set, which, who, ioprio_val);
 }
 

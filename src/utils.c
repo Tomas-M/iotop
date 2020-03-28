@@ -1,12 +1,13 @@
 #include "iotop.h"
 
+#include <time.h>
 #include <dirent.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-const char *xprintf(const char *format, ...)
+inline const char *xprintf(const char *format, ...)
 {
     static char buf[BUFSIZ];
     va_list args;
@@ -21,7 +22,7 @@ const char *xprintf(const char *format, ...)
     return ((j >= 0) && (j < BUFSIZ)) ? buf : NULL;
 }
 
-const char *read_cmdline2(int pid)
+inline const char *read_cmdline2(int pid)
 {
     static char buf[BUFSIZ];
     FILE *fp = fopen(xprintf("/proc/%d/cmdline", pid), "rb");
@@ -31,9 +32,22 @@ const char *read_cmdline2(int pid)
     if (fp)
     {
         size_t n = fread(buf, sizeof(char), BUFSIZ, fp);
+
         if (n > 0)
         {
             size_t k;
+            char *ep;
+
+            if (!config.f.fullcmdline)
+            {
+                ep = strrchr(buf, '/');
+                if (ep && ep[1])
+                {
+                    memmove(buf, ep + 1, BUFSIZ - (ep - buf + 1));
+                    n -= ep - buf + 1;
+                }
+            }
+
             for (k = 0; k < n - 1; k++)
                 buf[k] = buf[k] ? buf[k] : ' ';
             rv = buf;
@@ -65,7 +79,7 @@ const char *read_cmdline2(int pid)
     return rv;
 }
 
-static int __next_pid(DIR *dir)
+inline static int __next_pid(DIR *dir)
 {
     while (1)
     {
@@ -86,7 +100,7 @@ static int __next_pid(DIR *dir)
     return 0;
 }
 
-struct pidgen *openpidgen(int flags)
+inline struct pidgen *openpidgen(int flags)
 {
     struct pidgen *pg = malloc(sizeof(struct pidgen));
 
@@ -104,7 +118,7 @@ struct pidgen *openpidgen(int flags)
     return NULL;
 }
 
-void closepidgen(struct pidgen *pg)
+inline void closepidgen(struct pidgen *pg)
 {
     if (pg->__proc)
         closedir((DIR *) pg->__proc);
@@ -115,7 +129,7 @@ void closepidgen(struct pidgen *pg)
     free(pg);
 }
 
-int pidgen_next(struct pidgen *pg)
+inline int pidgen_next(struct pidgen *pg)
 {
     int pid;
 
@@ -142,5 +156,16 @@ int pidgen_next(struct pidgen *pg)
     }
 
     return pid;
+}
+
+inline int64_t monotime(void)
+{
+    struct timespec ts;
+    int64_t res;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    res = ts.tv_sec * 1000;
+    res += ts.tv_nsec / 1000000;
+    return res;
 }
 

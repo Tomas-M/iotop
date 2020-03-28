@@ -22,7 +22,6 @@
 #define NLA_PAYLOAD(len)        (len - NLA_HDRLEN)
 
 #define MAX_MSG_SIZE 1024
-#define MAX_CPUS     32
 
 struct msgtemplate
 {
@@ -34,7 +33,7 @@ struct msgtemplate
 static int nl_sock = -1;
 static int nl_fam_id = 0;
 
-int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
+inline int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
              __u8 genl_cmd, __u16 nla_type,
              void *nla_data, int nla_len)
 {
@@ -57,7 +56,7 @@ int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
 
     na = (struct nlattr *) GENLMSG_DATA(&msg);
     na->nla_type = nla_type;
-    na->nla_len = nla_len + 1 + NLA_HDRLEN;
+    na->nla_len = nla_len + NLA_HDRLEN;
 
     memcpy(NLA_DATA(na), nla_data, nla_len);
     msg.n.nlmsg_len += NLMSG_ALIGN(na->nla_len);
@@ -80,7 +79,7 @@ int send_cmd(int sock_fd, __u16 nlmsg_type, __u32 nlmsg_pid,
     return 0;
 }
 
-int get_family_id(int sock_fd)
+inline int get_family_id(int sock_fd)
 {
     static char name[256];
 
@@ -114,7 +113,7 @@ int get_family_id(int sock_fd)
     return id;
 }
 
-void nl_init(void)
+inline void nl_init(void)
 {
     struct sockaddr_nl addr;
     int sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
@@ -141,7 +140,7 @@ error:
     exit(EXIT_FAILURE);
 }
 
-int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
+inline int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
 {
     if (nl_sock < 0)
     {
@@ -210,13 +209,13 @@ int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
     return 0;
 }
 
-void nl_term(void)
+inline void nl_term(void)
 {
     if (nl_sock > -1)
         close(nl_sock);
 }
 
-void dump_xxxid_stats(struct xxxid_stats *stats)
+inline void dump_xxxid_stats(struct xxxid_stats *stats)
 {
     printf("%i %i SWAPIN: %lu IO: %lu "
            "READ: %lu WRITE: %lu IOPRIO: %s   %s\n",
@@ -228,28 +227,21 @@ void dump_xxxid_stats(struct xxxid_stats *stats)
            stats->cmdline);
 }
 
-void free_stats(struct xxxid_stats *s)
+inline void free_stats(struct xxxid_stats *s)
 {
     if (s->cmdline)
         free(s->cmdline);
+    if (s->pw_name)
+        free(s->pw_name);
 
     free(s);
 }
 
-void free_stats_chain(struct xxxid_stats *chain)
-{
-    while (chain)
-    {
-        struct xxxid_stats *next = chain->__next;
-
-        free_stats(chain);
-        chain = next;
-    }
-}
-
-struct xxxid_stats *make_stats(int pid, int processes)
+inline struct xxxid_stats *make_stats(int pid, int processes)
 {
     struct xxxid_stats *s = malloc(sizeof(struct xxxid_stats));
+    struct passwd *pwd;
+
     memset(s, 0, sizeof(struct xxxid_stats));
 
     if (nl_xxxid_info(pid, processes, s))
@@ -259,6 +251,8 @@ struct xxxid_stats *make_stats(int pid, int processes)
     const char *cmdline = read_cmdline2(pid);
 
     s->cmdline = strdup(cmdline ? cmdline : unknown);
+    pwd = getpwuid(s->euid);
+    s->pw_name = strdup(pwd && pwd->pw_name ? pwd->pw_name : unknown);
 
     return s;
 
@@ -267,8 +261,13 @@ error:
     return NULL;
 }
 
-struct xxxid_stats *fetch_data(int processes, filter_callback filter)
+inline struct xxxid_stats_arr *fetch_data(int processes, filter_callback filter)
 {
+    struct xxxid_stats_arr *a = arr_alloc();
+
+    if (!a)
+        return NULL;
+
     struct pidgen *pg = openpidgen(
                             processes ? PIDGEN_FLAGS_PROC : PIDGEN_FLAGS_TASK);
 
@@ -278,10 +277,7 @@ struct xxxid_stats *fetch_data(int processes, filter_callback filter)
         exit(EXIT_FAILURE);
     }
 
-    struct xxxid_stats *schain = NULL;
-    struct xxxid_stats *p = NULL;
-
-    int pid;
+    pid_t pid;
 
     while ((pid = pidgen_next(pg)) > 0)
     {
@@ -290,21 +286,10 @@ struct xxxid_stats *fetch_data(int processes, filter_callback filter)
         if (filter && filter(s))
             free_stats(s);
         else
-        {
-            if (!schain)
-            {
-                schain = s;
-                p = s;
-            }
-            else
-            {
-                p->__next = s;
-                p = s;
-            }
-        }
+            arr_add(a, s);
     }
 
     closepidgen(pg);
-    return schain;
+    return a;
 }
 

@@ -11,12 +11,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static char *progname = NULL;
+static const char *progname = NULL;
 
 config_t config;
 params_t params;
 
-void
+inline void
 init_params(void)
 {
     params.iter = -1;
@@ -25,33 +25,21 @@ init_params(void)
     params.user_id = -1;
 }
 
-static char str_opt[] = "boPaktq";
+static const char str_opt[] = "boPaktqH";
 
-void
-check_priv(void)
-{
-    if (geteuid() == 0)
-        return;
-
-    errno = EACCES;
-    perror(progname);
-
-    exit(EXIT_FAILURE);
-}
-
-void
+static inline void
 print_help(void)
 {
     printf(
         "Usage: %s [OPTIONS]\n\n"
         "DISK READ and DISK WRITE are the block I/O bandwidth used during the sampling\n"
         "period. SWAPIN and IO are the percentages of time the thread spent respectively\n"
-        "while swapping in and waiting on I/O more generally. PRIO is the I/O priority at\n"
-        "which the thread is running (set using the ionice command).\n\n"
+        "while swapping in and waiting on I/O more generally. PRIO is the I/O priority\n"
+        "at which the thread is running (set using the ionice command).\n\n"
         "Controls: left and right arrows to change the sorting column, r to invert the\n"
         "sorting order, o to toggle the --only option, p to toggle the --processes\n"
-        "option, a to toggle the --accumulated option, q to quit, any other key to force\n"
-        "a refresh.\n\n"
+        "option, a to toggle the --accumulated option, i to change I/O priority, q to\n"
+        "quit, any other key to force a refresh.\n\n"
         "Options:\n"
         "  --version             show program's version number and exit\n"
         "  -h, --help            show this help message and exit\n"
@@ -65,12 +53,13 @@ print_help(void)
         "  -a, --accumulated     show accumulated I/O instead of bandwidth\n"
         "  -k, --kilobytes       use kilobytes instead of a human friendly unit\n"
         "  -t, --time            add a timestamp on each line (implies --batch)\n"
-        "  -q, --quiet           suppress header line output (implies --batch)\n",
+        "  -q, --quiet           suppress some lines of header (implies --batch)\n"
+        "  --no-help             suppress listing of shortcuts\n",
         progname
     );
 }
 
-void
+static inline void
 parse_args(int argc, char *argv[])
 {
     init_params();
@@ -92,7 +81,8 @@ parse_args(int argc, char *argv[])
             {"accumulated", no_argument, NULL, 'a'},
             {"kilobytes",   no_argument, NULL, 'k'},
             {"timestamp",   no_argument, NULL, 't'},
-            {"quite",       no_argument, NULL, 'q'},
+            {"quiet",       no_argument, NULL, 'q'},
+            {"no-help",     no_argument, NULL, 'H'},
             {NULL, 0, NULL, 0}
         };
 
@@ -117,6 +107,7 @@ parse_args(int argc, char *argv[])
         case 'k':
         case 't':
         case 'q':
+        case 'H':
             config.opts[(unsigned int) (strchr(str_opt, c) - str_opt)] = 1;
             break;
         case 'n':
@@ -150,7 +141,7 @@ parse_args(int argc, char *argv[])
     }
 }
 
-int
+inline int
 filter1(struct xxxid_stats *s)
 {
     if ((params.user_id != -1) && (s->euid != params.user_id))
@@ -162,7 +153,7 @@ filter1(struct xxxid_stats *s)
     return 0;
 }
 
-void
+inline void
 sig_handler(int signo)
 {
     if (signo == SIGINT)
@@ -181,17 +172,19 @@ main(int argc, char *argv[])
     progname = argv[0];
 
     parse_args(argc, argv);
-    check_priv();
+    if (system_checks())
+        return EXIT_FAILURE;
 
     nl_init();
 
     if (signal(SIGINT, sig_handler) == SIG_ERR)
         perror("signal");
 
-    struct xxxid_stats *ps = NULL;
-    struct xxxid_stats *cs = NULL;
+    struct xxxid_stats_arr *ps = NULL;
+    struct xxxid_stats_arr *cs = NULL;
+    struct act_stats act = {0};
 
-    if (config.f.timestamp || config.f.quite)
+    if (config.f.timestamp || config.f.quiet)
         config.f.batch_mode = 1;
 
     view_callback view = view_batch;
@@ -206,18 +199,25 @@ main(int argc, char *argv[])
     do
     {
         cs = fetch_data(config.f.processes, filter1);
-        view(cs, ps);
+        get_vm_counters(&act.read_bytes,&act.write_bytes);
+        act.ts_c = monotime();
+        view(cs, ps, &act);
 
         if (ps)
-            free_stats_chain(ps);
+            arr_free(ps);
 
         ps = cs;
+        act.read_bytes_o = act.read_bytes;
+        act.write_bytes_o = act.write_bytes;
+        act.ts_o = act.ts_c;
+        act.have_o = 1;
+
         if ((params.iter > -1) && ((--params.iter) == 0))
             break;
     }
     while (!do_sleep(params.delay));
 
-    free_stats_chain(cs);
+    arr_free(cs);
     sig_handler(SIGINT);
 
     return 0;
