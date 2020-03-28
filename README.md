@@ -24,6 +24,7 @@ runs without python at all.
 How to make
 ===========
 
+    # apt-install build-essential ncurses-dev
     git clone https://github.com/Tomas-M/iotop
     cd iotop
     make
