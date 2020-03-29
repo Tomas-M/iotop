@@ -417,7 +417,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
                 printw(" (invalid %s)", COLUMN_NAME(0));
         } else
             printw(" (select %s)", COLUMN_NAME(0));
-		printw(" ");
+        printw(" ");
         attron(A_REVERSE);
         printw("[use 0-9/bksp for %s, tab and arrows for prio]", COLUMN_NAME(0));
         attroff(A_REVERSE);
@@ -671,8 +671,16 @@ inline unsigned int curses_sleep(unsigned int seconds)
         case '\r': // CR
         case KEY_ENTER:
             if (in_ionice) {
+                pid_t pgid = atoi(ionice_id);
+                int who = IOPRIO_WHO_PROCESS;
+
+                if (config.f.processes)
+                {
+                    pgid = getpgid(pgid);
+                    who = IOPRIO_WHO_PGRP;
+                }
                 in_ionice = 0;
-                set_ioprio(IOPRIO_WHO_PROCESS, atoi(ionice_id), ionice_class, ionice_prio);
+                set_ioprio(who, atoi(ionice_id), ionice_class, ionice_prio);
             }
             break;
         case '\t': // TAB
