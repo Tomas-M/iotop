@@ -51,6 +51,8 @@ struct xxxid_stats
     double swapin_val;
     double read_val;
     double write_val;
+    double read_val_acc;
+    double write_val_acc;
 
     int io_prio;
 

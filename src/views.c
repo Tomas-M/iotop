@@ -23,6 +23,7 @@ static int ionice_id_changed = 0;
 #define RRV(to, from) (((to) < (from)) ? (xxx) - (to) + (from) : (to) - (from))
 #define RRVf(pto, pfrom, fld) RRV(pto->fld, pfrom->fld)
 #define TIMEDIFF_IN_S(sta, end) ((((sta) == (end)) || (sta) == 0) ? 0.0001 : (((end) - (sta)) / 1000.0))
+#define SORT_CHAR(x) ((sort_by == x) ? (sort_order == SORT_ASC ? '<' : '>') : ' ')
 
 enum
 {
@@ -99,31 +100,32 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
             c->swapin_val = 0;
             c->read_val = 0;
             c->write_val = 0;
+            c->read_val_acc = 0;
+            c->write_val_acc = 0;
             continue;
         }
 
         // round robin value
         c->blkio_val =
             (double) RRVf(c, p, blkio_delay_total) / (time_s * 10000000.0);
-        if (c->blkio_val > 99.99)
-            c->blkio_val = 99.99;
+        if (c->blkio_val > 100)
+            c->blkio_val = 100;
 
         c->swapin_val =
             (double) RRVf(c, p, swapin_delay_total) / (time_s * 10000000.0);
-        if (c->swapin_val > 99.99)
-            c->swapin_val = 99.99;
+        if (c->swapin_val > 100)
+            c->swapin_val = 100;
 
-        c->read_val = (double) RRVf(c, p, read_bytes)
-                           / (config.f.accumulated ? 1 : time_s);
+        double rv, wv;
 
-        c->write_val = (double) RRVf(c, p, write_bytes)
-                            / (config.f.accumulated ? 1 : time_s);
+        rv = (double) RRVf(c, p, read_bytes);
+        wv = (double) RRVf(c, p, write_bytes);
 
-        if (config.f.accumulated)
-        {
-            c->read_val += p->read_val;
-            c->write_val += p->write_val;
-        }
+        c->read_val = rv / time_s;
+        c->write_val = wv / time_s;
+
+        c->read_val_acc = p->read_val_acc + rv;
+        c->write_val_acc = p->write_val_acc + wv;
     }
 
     return diff_size;
@@ -133,19 +135,20 @@ inline void calc_total(struct xxxid_stats_arr *cs, double *read, double *write, 
 {
     int i;
 
-    if (!config.f.accumulated)
-        *read = *write = 0;
+    *read = *write = 0;
 
     for (i = 0; i < cs->length; i++)
     {
-        *read += cs->arr[i]->read_val;
-        *write += cs->arr[i]->write_val;
-    }
-
-    if (!config.f.accumulated)
-    {
-        *read /= time_s;
-        *write /= time_s;
+        if (!config.f.accumulated)
+        {
+            *read += cs->arr[i]->read_val;
+            *write += cs->arr[i]->write_val;
+        }
+        else
+        {
+            *read += cs->arr[i]->read_val_acc;
+            *write += cs->arr[i]->write_val_acc;
+        }
     }
 }
 
@@ -212,10 +215,16 @@ static inline int my_sort_cb(const void *a,const void *b,void *arg)
             res = strcmp(pa->pw_name, pb->pw_name);
             break;
         case SORT_BY_READ:
-            res = pa->read_val - pb->read_val;
+            if (config.f.accumulated)
+                res = pa->read_val_acc - pb->read_val_acc;
+            else
+                res = pa->read_val - pb->read_val;
             break;
         case SORT_BY_WRITE:
-            res = pa->write_val - pb->write_val;
+            if (config.f.accumulated)
+                res = pa->write_val_acc - pb->write_val_acc;
+            else
+                res = pa->write_val - pb->write_val;
             break;
         case SORT_BY_SWAPIN:
             res = pa->swapin_val - pb->swapin_val;
@@ -242,8 +251,8 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
     calc_total(cs, &total_read, &total_write, time_s);
     calc_a_total(act, &total_a_read, &total_a_write, time_s);
 
-    humanize_val(&total_read, &str_read, 0);
-    humanize_val(&total_write, &str_write, 0);
+    humanize_val(&total_read, &str_read, 1);
+    humanize_val(&total_write, &str_write, 1);
     humanize_val(&total_a_read, &str_a_read, 0);
     humanize_val(&total_a_write, &str_a_write, 0);
 
@@ -291,8 +300,8 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
     {
         s = cs->sor[i];
 
-        double read_val = s->read_val;
-        double write_val = s->write_val;
+        double read_val = config.f.accumulated ? s->read_val_acc : s->read_val;
+        double write_val = config.f.accumulated ? s->write_val_acc : s->write_val;
 
         if (config.f.only && !read_val && !write_val)
             continue;
@@ -343,8 +352,8 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     calc_total(cs, &total_read, &total_write, time_s);
     calc_a_total(act, &total_a_read, &total_a_write, time_s);
 
-    humanize_val(&total_read, &str_read, config.f.accumulated);
-    humanize_val(&total_write, &str_write, config.f.accumulated);
+    humanize_val(&total_read, &str_read, 1);
+    humanize_val(&total_write, &str_write, 1);
     humanize_val(&total_a_read, &str_a_read, 0);
     humanize_val(&total_a_write, &str_a_write, 0);
 
@@ -424,7 +433,6 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         show = TRUE;
     }
 
-#define SORT_CHAR(x) ((sort_by == x) ? (sort_order == SORT_ASC ? '<' : '>') : ' ')
     attron(A_REVERSE);
     mvhline(2, 0, ' ', maxx);
     move(2, 0);
@@ -447,8 +455,8 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     {
         s = cs->sor[i];
 
-        double read_val = s->read_val;
-        double write_val = s->write_val;
+        double read_val = config.f.accumulated ? s->read_val_acc : s->read_val;
+        double write_val = config.f.accumulated ? s->write_val_acc : s->write_val;
 
         if (config.f.only && !read_val && !write_val)
             continue;
