@@ -12,7 +12,7 @@
 #define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s |   Total DISK WRITE:   %7.2f %s"
 #define HEADER2_FORMAT "Current DISK READ:   %7.2f %s | Current DISK WRITE:   %7.2f %s"
 
-static uint64_t xxx = ~0;
+static uint64_t xxx = ~0ULL;
 static int in_ionice = 0;
 static char ionice_id[50];
 static int ionice_cl = 1; // select what to edit class(1) or prio(0)
