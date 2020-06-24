@@ -51,7 +51,7 @@ inline int ioprio2prio(int ioprio)
 
 inline const char *str_ioprio(int io_prio)
 {
-    const static char corrupted[] = "xx/x";
+    static const char corrupted[] = "xx/x";
     static char buf[IOPRIO_STR_MAXSIZ];
     int io_class = io_prio >> IOPRIO_CLASS_SHIFT;
 
