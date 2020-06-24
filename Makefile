@@ -15,7 +15,7 @@ MYCFLAGS:=$(CFLAGS) -std=gnu90 -Wall -Wextra
 MYLDFLAGS=$(LDFLAGS) -lncurses
 STRIP?=strip
 
-PREFIX=/usr
+PREFIX?=$(DESTDIR)/usr
 
 # use this to disable flto optimizations:
 #   make NO_FLTO=1
@@ -50,11 +50,11 @@ install: $(TARGET)
 	$(E) STRIP $(TARGET)
 	$(Q)$(STRIP) $(TARGET)
 	$(E) INSTALL $(TARGET)
-	$(Q)cp $(TARGET) $(PREFIX)/bin/$(TARGET)
+	$(Q)install -TD -m 0755 -o root -g root $(TARGET) $(PREFIX)/sbin/$(TARGET)-c
 
 uninstall:
 	$(E) UNINSTALL $(TARGET)
-	$(Q)rm $(PREFIX)/bin/$(TARGET)
+	$(Q)rm $(PREFIX)/sbin/$(TARGET)-c
 
 bld/.mkdir:
 	$(Q)mkdir -p bld
