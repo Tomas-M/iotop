@@ -92,7 +92,7 @@ inline int get_family_id(int sock_fd)
 
     int id = 0;
     struct nlattr *na;
-    int rep_len;
+    ssize_t rep_len;
 
     strcpy(name, TASKSTATS_GENL_NAME);
     if (send_cmd(sock_fd, GENL_ID_CTRL, getpid(), CTRL_CMD_GETFAMILY,
@@ -140,7 +140,7 @@ error:
     exit(EXIT_FAILURE);
 }
 
-inline int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
+inline int nl_xxxid_info(pid_t xxxid, struct xxxid_stats *stats)
 {
     if (nl_sock < 0)
     {
@@ -158,7 +158,7 @@ inline int nl_xxxid_info(pid_t xxxid, int isp, struct xxxid_stats *stats)
     stats->tid = xxxid;
 
     struct msgtemplate msg;
-    int rv = recv(nl_sock, &msg, sizeof(msg), 0);
+    ssize_t rv = recv(nl_sock, &msg, sizeof(msg), 0);
 
     if (msg.n.nlmsg_type == NLMSG_ERROR ||
             !NLMSG_OK((&msg.n), rv))
@@ -238,17 +238,17 @@ inline void free_stats(struct xxxid_stats *s)
     free(s);
 }
 
-inline struct xxxid_stats *make_stats(int pid, int processes)
+inline struct xxxid_stats *make_stats(int pid)
 {
     struct xxxid_stats *s = malloc(sizeof(struct xxxid_stats));
     struct passwd *pwd;
 
     memset(s, 0, sizeof(struct xxxid_stats));
 
-    if (nl_xxxid_info(pid, processes, s))
+    if (nl_xxxid_info(pid, s))
         goto error;
 
-    const static char unknown[] = "<unknown>";
+    static const char unknown[] = "<unknown>";
     const char *cmdline = read_cmdline2(pid);
 
     s->cmdline = strdup(cmdline ? cmdline : unknown);
@@ -282,7 +282,7 @@ inline struct xxxid_stats_arr *fetch_data(int processes, filter_callback filter)
 
     while ((pid = pidgen_next(pg)) > 0)
     {
-        struct xxxid_stats *s = make_stats(pid, processes);
+        struct xxxid_stats *s = make_stats(pid);
 
         if (filter && filter(s))
             free_stats(s);

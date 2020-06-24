@@ -131,7 +131,7 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
     return diff_size;
 }
 
-inline void calc_total(struct xxxid_stats_arr *cs, double *read, double *write, double time_s)
+inline void calc_total(struct xxxid_stats_arr *cs, double *read, double *write)
 {
     int i;
 
@@ -248,7 +248,7 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
 
-    calc_total(cs, &total_read, &total_write, time_s);
+    calc_total(cs, &total_read, &total_write);
     calc_a_total(act, &total_a_read, &total_a_write, time_s);
 
     humanize_val(&total_read, &str_read, 1);
@@ -349,7 +349,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     char *str_a_read, *str_a_write;
     int promptx = 0, prompty = 0, show;
 
-    calc_total(cs, &total_read, &total_write, time_s);
+    calc_total(cs, &total_read, &total_write);
     calc_a_total(act, &total_a_read, &total_a_write, time_s);
 
     humanize_val(&total_read, &str_read, 1);
@@ -688,7 +688,7 @@ inline unsigned int curses_sleep(unsigned int seconds)
                     who = IOPRIO_WHO_PGRP;
                 }
                 in_ionice = 0;
-                set_ioprio(who, atoi(ionice_id), ionice_class, ionice_prio);
+                set_ioprio(who, pgid, ionice_class, ionice_prio);
             }
             break;
         case '\t': // TAB
@@ -710,7 +710,7 @@ inline unsigned int curses_sleep(unsigned int seconds)
         case '0' ... '9':
             if (in_ionice == 1)
             {
-                int idlen = strlen(ionice_id);
+                size_t idlen = strlen(ionice_id);
 
                 if (idlen < sizeof ionice_id - 1)
                 {
