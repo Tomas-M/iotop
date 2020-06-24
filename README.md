@@ -8,17 +8,17 @@ to a hard drive while it is too slow and not ready yet, serving data for
 some other processes.
 
 Common practice is to use iostat -x in order to find out which block
-device (hard drive) is slow, but such information is not always much
+device (hard drive) is slow, but this information is not always very
 helpful. It could help you much more if you knew which process reads or
-writes the most data from your slow disk, so you could possibly renice
-it using ionice or even kill it.
+writes the most data from your slow disk, so you could renice it using
+ionice or even kill it.
 
-IOTop will identify processes, which use high amount of input/output
-requests on your machine. It is similar to the well known top utility,
-but instead of showing you what consumes CPU the most, it lists
-processes by their IO consumption. Inspired by iotop python script from
-Guillaume Chazarain, but rewritten to C by Vyacheslav Trushkin so it now
-runs without python at all.
+IOTop identifies processes that use high amount of input/output requests
+on your machine. It is similar to the well known top utility, but
+instead of showing you what consumes CPU the most, it lists
+processes by their IO usage. Inspired by iotop python script from
+Guillaume Chazarain, rewritten in C by Vyacheslav Trushkin and improved
+by Boian Bonev so it runs without python at all.
 
 
 How to make
