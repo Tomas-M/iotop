@@ -4,8 +4,15 @@ SRCS:=$(wildcard src/*.c)
 OBJS:=$(patsubst %c,%o,$(patsubst src/%,bld/%,$(SRCS)))
 DEPS:=$(OBJS:.o=.d)
 
-CFLAGS=-Wall -O3 -std=gnu90 -fno-stack-protector -mno-stackrealign -Wextra
-LDFLAGS=-lncurses
+ifndef NO_FLTO
+CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign -flto
+LDFLAGS+=-O3 -fno-stack-protector -mno-stackrealign -flto
+else
+CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
+endif
+
+MYCFLAGS:=$(CFLAGS) -std=gnu90 -Wall -Wextra
+MYLDFLAGS=$(LDFLAGS) -lncurses
 STRIP?=strip
 
 PREFIX=/usr
@@ -14,11 +21,6 @@ PREFIX=/usr
 #   make NO_FLTO=1
 # and this to enable verbose mode:
 #   make V=1
-
-ifndef NO_FLTO
-CFLAGS+=-flto
-LDFLAGS+=-flto -O3
-endif
 
 ifeq ("$(V)","1")
 Q:=
@@ -32,13 +34,13 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(E) LD $@
-	$(Q)$(CC) -o $@ $^ $(LDFLAGS)
+	$(Q)$(CC) -o $@ $^ $(MYLDFLAGS)
 
 bld/%.o: src/%.c bld/.mkdir
-	$(E) DEP $@
-	$(Q)$(CC) $(CFLAGS) -MM -MT $@ -MF $(patsubst %.o,%.d,$@) $<
+	$(E) DE $@
+	$(Q)$(CC) $(MYCFLAGS) -MM -MT $@ -MF $(patsubst %.o,%.d,$@) $<
 	$(E) CC $@
-	$(Q)$(CC) $(CFLAGS) -c -o $@ $<
+	$(Q)$(CC) $(MYCFLAGS) -c -o $@ $<
 
 clean:
 	$(E) CLEAN
