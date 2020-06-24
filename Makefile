@@ -4,7 +4,7 @@ SRCS:=$(wildcard src/*.c)
 OBJS:=$(patsubst %c,%o,$(patsubst src/%,bld/%,$(SRCS)))
 DEPS:=$(OBJS:.o=.d)
 
-CFLAGS=-Wall -O3 -std=gnu90 -fno-stack-protector -mno-stackrealign
+CFLAGS=-Wall -O3 -std=gnu90 -fno-stack-protector -mno-stackrealign -Wextra
 LDFLAGS=-lncurses
 STRIP?=strip
 
@@ -27,6 +27,8 @@ else
 Q:=@
 E:=@echo
 endif
+
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(E) LD $@
