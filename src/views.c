@@ -1,13 +1,12 @@
 #include "iotop.h"
 
-#include <math.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <curses.h>
-#include <sys/select.h>
+#include <sys/time.h>
 
 #define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s |   Total DISK WRITE:   %7.2f %s"
 #define HEADER2_FORMAT "Current DISK READ:   %7.2f %s | Current DISK WRITE:   %7.2f %s"
