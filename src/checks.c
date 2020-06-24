@@ -18,7 +18,7 @@ inline int system_checks(void)
     struct stat s;
     uint64_t i, o;
 
-    if (geteuid() == -1)
+    if (geteuid() == 0)
         root_or_netadm = 1;
     else
     {
