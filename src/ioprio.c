@@ -1,13 +1,11 @@
 #include "iotop.h"
 
-#include <sys/syscall.h>
-#include <stdio.h>
-#include <unistd.h>
 #include <sched.h>
-#include <string.h>
-#include <sys/time.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 #include <sys/resource.h>
-#include <linux/sched.h>
 
 #define IOPRIO_CLASS_SHIFT 13
 #define IOPRIO_STR_MAXSIZ  10
