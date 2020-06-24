@@ -1,15 +1,16 @@
 #include "iotop.h"
 
-#include <errno.h>
-#include <linux/genetlink.h>
-#include <linux/netlink.h>
-#include <linux/taskstats.h>
 #include <pwd.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/taskstats.h>
+#include <linux/genetlink.h>
 
 /*
  * Generic macros for dealing with netlink sockets. Might be duplicated
