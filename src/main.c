@@ -1,15 +1,14 @@
 #include "iotop.h"
 
-#include <ctype.h>
-#include <errno.h>
-#include <getopt.h>
 #include <pwd.h>
-#include <signal.h>
+#include <ctype.h>
+#include <getopt.h>
 #include <stdio.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 static const char *progname = NULL;
 
