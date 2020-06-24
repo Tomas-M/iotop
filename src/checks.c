@@ -32,8 +32,8 @@ inline int system_checks(void)
     if (!root_or_netadm)
     {
         printf(
-            "The Linux kernel interfaces that iotop relies on now require root priviliges\n"
-            "or the NET_ADMIN capability. This change occured because a security issue\n"
+            "The Linux kernel interfaces that iotop relies on now require root privileges\n"
+            "or the NET_ADMIN capability. This change occurred because a security issue\n"
             "(CVE-2011-2494) was found that allows leakage of sensitive data across user\n"
             "boundaries. If you require the ability to run iotop as a non-root user, please\n"
             "configure sudo to allow you to run iotop as root.\n"
