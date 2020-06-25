@@ -218,18 +218,6 @@ inline void nl_term(void)
         close(nl_sock);
 }
 
-inline void dump_xxxid_stats(struct xxxid_stats *stats)
-{
-    printf("%i %i SWAPIN: %" PRIu64 " IO: %" PRIu64 " "
-           "READ: %" PRIu64 " WRITE: %" PRIu64 " IOPRIO: %s   %s\n",
-           stats->tid, stats->euid,
-           stats->swapin_delay_total,
-           stats->blkio_delay_total, stats->read_bytes,
-           stats->write_bytes,
-           str_ioprio(stats->io_prio),
-           stats->cmdline);
-}
-
 inline void free_stats(struct xxxid_stats *s)
 {
     if (s->cmdline)
