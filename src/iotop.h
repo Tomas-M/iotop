@@ -86,7 +86,6 @@ inline void nl_init(void);
 inline void nl_term(void);
 
 inline int nl_xxxid_info(pid_t xxxid, struct xxxid_stats *stats);
-inline void dump_xxxid_stats(struct xxxid_stats *stats);
 
 typedef int (*filter_callback)(struct xxxid_stats *);
 

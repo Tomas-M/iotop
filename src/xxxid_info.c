@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <inttypes.h>
 #include <sys/socket.h>
 #include <linux/taskstats.h>
 #include <linux/genetlink.h>
@@ -215,18 +216,6 @@ inline void nl_term(void)
 {
     if (nl_sock > -1)
         close(nl_sock);
-}
-
-inline void dump_xxxid_stats(struct xxxid_stats *stats)
-{
-    printf("%i %i SWAPIN: %lu IO: %lu "
-           "READ: %lu WRITE: %lu IOPRIO: %s   %s\n",
-           stats->tid, stats->euid,
-           stats->swapin_delay_total,
-           stats->blkio_delay_total, stats->read_bytes,
-           stats->write_bytes,
-           str_ioprio(stats->io_prio),
-           stats->cmdline);
 }
 
 inline void free_stats(struct xxxid_stats *s)
