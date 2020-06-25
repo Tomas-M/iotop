@@ -25,7 +25,7 @@ inline const char *xprintf(const char *format, ...)
 
 inline const char *read_cmdline2(int pid)
 {
-    static char buf[BUFSIZ];
+    static char buf[BUFSIZ + 1];
     FILE *fp = fopen(xprintf("/proc/%d/cmdline", pid), "rb");
     char *rv = NULL;
 
