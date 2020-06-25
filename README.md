@@ -13,12 +13,14 @@ It could help you much more if you knew which process reads or writes
 the most data from your slow disk, so you could renice it using ionice
 or even kill it.
 
-IOTop identifies processes that use high amount of input/output requests
+iotop identifies processes that use high amount of input/output requests
 on your machine. It is similar to the well known top utility, but
 instead of showing you what consumes CPU the most, it lists
 processes by their IO usage. Inspired by iotop python script from
 Guillaume Chazarain, rewritten in C by Vyacheslav Trushkin and improved
 by Boian Bonev so it runs without python at all.
+
+iotop is licensed GPL-2.0+
 
 
 How to make
@@ -49,3 +51,17 @@ Options
 -q, --quiet           suppress some lines of header (implies --batch)
 --no-help             suppress listing of shortcuts
 ```
+
+Contribute
+==========
+
+iotop was originally written by Vyacheslav Trushkin in 2014, distributed by Tomas Matejicek and later improved by Boian Bonev.
+
+iotop is maintaned on GitHub at https://github.com/Tomas-M/iotop
+
+The preferred way to contribute to the project is to file a pull request at GitHub.
+
+Contacts of current maintainers are:
+
+- Tomas Matejicek <tomas@slax.org>
+- Boian Bonev <bbonev@ipacct.com>
