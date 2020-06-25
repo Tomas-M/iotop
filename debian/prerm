@@ -1,0 +1,22 @@
+#!/bin/sh
+# prerm script for iotop-c
+
+set -e
+
+case "$1" in
+    remove|deconfigure)
+        update-alternatives --remove iotop /usr/sbin/iotop-c
+    ;;
+
+    failed-upgrade|upgrade)
+    ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

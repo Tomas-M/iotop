@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    abort-upgrade|configure)
+        update-alternatives --install /usr/sbin/iotop iotop /usr/sbin/iotop-c 40 \
+          --slave /usr/share/man/man8/iotop.8.gz iotop.8.gz \
+          /usr/share/man/man8/iotop-c.8.gz
+    ;;
+
+    abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0
