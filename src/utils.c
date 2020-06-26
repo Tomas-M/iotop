@@ -61,8 +61,9 @@ inline char *read_cmdline2(int pid)
                 }
             }
 
-            for (k = 0; k < p; k++)
-                dbuf[k] = dbuf[k] ? dbuf[k] : ' ';
+            if (config.f.fullcmdline)
+                for (k = 0; k < p; k++)
+                    dbuf[k] = dbuf[k] ? dbuf[k] : ' ';
             rv = dbuf;
         } else
             free(dbuf);
@@ -92,7 +93,7 @@ inline char *read_cmdline2(int pid)
                 eol[0] = 0;
                 rv = malloc(strlen(tab + 1) + 2 + 1);
                 if (rv)
-                    sprintf(rv, "[%s]", tab + 1);
+                    sprintf(rv, config.f.fullcmdline ? "[%s]" : "%s", tab + 1);
             }
         }
     }
