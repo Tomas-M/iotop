@@ -233,6 +233,9 @@ inline struct xxxid_stats *make_stats(int pid)
     struct xxxid_stats *s = malloc(sizeof(struct xxxid_stats));
     struct passwd *pwd;
 
+    if (!s)
+        return NULL;
+
     memset(s, 0, sizeof(struct xxxid_stats));
 
     if (nl_xxxid_info(pid, s))
