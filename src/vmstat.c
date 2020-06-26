@@ -46,9 +46,11 @@ inline int get_vm_counters(uint64_t *pgpgin, uint64_t *pgpgout)
         if (havein && haveout)
             break;
     }
+
+    fclose(f);
+
     if (!havein || !haveout)
         return ENOENT;
 
-    fclose(f);
     return 0;
 }
