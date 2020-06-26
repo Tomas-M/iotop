@@ -30,7 +30,8 @@ inline char *read_cmdline2(int pid)
             return NULL;
         }
 
-        do {
+        do
+        {
             n = read(fd, dbuf + p, sz - p);
             if (n == sz - p)
             {
@@ -47,7 +48,8 @@ inline char *read_cmdline2(int pid)
             }
             if (n > 0)
                  p += n;
-        } while (n > 0);
+        }
+        while (n > 0);
 
         if (p > 0)
         {
@@ -63,9 +65,14 @@ inline char *read_cmdline2(int pid)
                 ep = strrchr(dbuf, '/');
                 if (ep && ep[1])
                 {
-                    memmove(dbuf, ep + 1, p - (ep - dbuf + 1));
-                    p -= ep - dbuf + 1;
-                    dbuf[p] = 0;
+                    char *t = strdup(ep + 1);
+
+                    if (t)
+                    {
+                        free(dbuf);
+                        dbuf = t;
+                        p = strlen(t) + 1;
+                    }
                 }
             }
 
@@ -73,7 +80,8 @@ inline char *read_cmdline2(int pid)
                 for (k = 0; k < p; k++)
                     dbuf[k] = dbuf[k] ? dbuf[k] : ' ';
             rv = dbuf;
-        } else
+        }
+        else
             free(dbuf);
         close(fd);
     }
