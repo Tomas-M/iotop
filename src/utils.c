@@ -10,47 +10,73 @@
 
 inline char *read_cmdline2(int pid)
 {
-    static char buf[BUFSIZ + 1];
     char *rv = NULL;
     char path[30];
     FILE *fp;
 
     sprintf(path, "/proc/%d/cmdline", pid);
     fp = fopen(path, "rb");
-    memset(buf, 0, BUFSIZ);
     if (fp)
     {
-        size_t n = fread(buf, sizeof(char), BUFSIZ, fp);
+        char *dbuf=malloc(BUFSIZ + 1);
+        size_t n, p = 0;
 
-        if (n > 0)
+        if (!dbuf)
+            return NULL;
+
+        do {
+            n = fread(dbuf + p, sizeof(char), BUFSIZ, fp);
+            if (n == BUFSIZ)
+            {
+                char *t = realloc(dbuf, p + 2 * BUFSIZ + 1);
+
+                if (!t)
+                {
+                    free(dbuf);
+                    return NULL;
+                }
+                dbuf = t;
+            }
+            if (n > 0)
+                 p += n;
+        } while (n > 0);
+
+        if (p > 0)
         {
             size_t k;
             char *ep;
 
-            if (!config.f.fullcmdline)
+            dbuf[p] = 0;
+            if (!config.f.fullcmdline && (
+                dbuf[0] == '/' ||
+                (p > 1 && dbuf[0] == '.' && dbuf[1] == '/') ||
+                (p > 2 && dbuf[0] == '.' && dbuf[1] == '.' && dbuf[2] == '/')))
             {
-                ep = strrchr(buf, '/');
+                ep = strrchr(dbuf, '/');
                 if (ep && ep[1])
                 {
-                    memmove(buf, ep + 1, BUFSIZ - (ep - buf + 1));
-                    n -= ep - buf + 1;
+                    memmove(dbuf, ep + 1, p - (ep - dbuf + 1));
+                    p -= ep - dbuf + 1;
+                    dbuf[p] = 0;
                 }
             }
 
-            for (k = 0; k < n - 1; k++)
-                buf[k] = buf[k] ? buf[k] : ' ';
-            rv = buf;
-        }
+            for (k = 0; k < p; k++)
+                dbuf[k] = dbuf[k] ? dbuf[k] : ' ';
+            rv = dbuf;
+        } else
+            free(dbuf);
         fclose(fp);
     }
 
     if (rv)
-        return strdup(rv);
+        return rv;
 
     sprintf(path, "/proc/%d/status", pid);
     fp = fopen(path, "rb");
     if (fp)
     {
+        char buf[BUFSIZ + 1];
         size_t n = fread(buf, sizeof(char), BUFSIZ, fp);
         char *eol, *tab;
 
