@@ -24,7 +24,7 @@ typedef union
         int nohelp;
         int fullcmdline;
     } f;
-    int opts[8];
+    int opts[9];
 } config_t;
 
 typedef struct

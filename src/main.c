@@ -24,7 +24,7 @@ init_params(void)
     params.user_id = -1;
 }
 
-static const char str_opt[] = "boPaktqH";
+static const char str_opt[] = "boPaktqHc";
 
 static inline void
 print_help(void)
@@ -52,6 +52,7 @@ print_help(void)
         "  -a, --accumulated     show accumulated I/O instead of bandwidth\n"
         "  -k, --kilobytes       use kilobytes instead of a human friendly unit\n"
         "  -t, --time            add a timestamp on each line (implies --batch)\n"
+        "  -c, --fullcmdline     show full command line\n"
         "  -q, --quiet           suppress some lines of header (implies --batch)\n"
         "  --no-help             suppress listing of shortcuts\n",
         progname
@@ -82,10 +83,11 @@ parse_args(int argc, char *argv[])
             {"timestamp",   no_argument, NULL, 't'},
             {"quiet",       no_argument, NULL, 'q'},
             {"no-help",     no_argument, NULL, 'H'},
+            {"fullcmdline", no_argument, NULL, 'c'},
             {NULL, 0, NULL, 0}
         };
 
-        int c = getopt_long(argc, argv, "vhbon:d:p:u:Paktq",
+        int c = getopt_long(argc, argv, "vhbon:d:p:u:Paktqc",
                             long_options, NULL);
 
         if (c == -1)
@@ -107,6 +109,7 @@ parse_args(int argc, char *argv[])
         case 't':
         case 'q':
         case 'H':
+        case 'c':
             config.opts[(unsigned int) (strchr(str_opt, c) - str_opt)] = 1;
             break;
         case 'n':
