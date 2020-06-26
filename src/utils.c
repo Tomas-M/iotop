@@ -1,41 +1,49 @@
 #include "iotop.h"
 
 #include <time.h>
+#include <fcntl.h>
 #include <dirent.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 inline char *read_cmdline2(int pid)
 {
     char *rv = NULL;
     char path[30];
-    FILE *fp;
+    int fd;
 
     sprintf(path, "/proc/%d/cmdline", pid);
-    fp = fopen(path, "rb");
-    if (fp)
+    fd = open(path, O_RDONLY);
+    if (fd != -1)
     {
         char *dbuf=malloc(BUFSIZ + 1);
-        size_t n, p = 0;
+        size_t n, p = 0, sz = BUFSIZ;
 
         if (!dbuf)
+        {
+            close(fd);
             return NULL;
+        }
 
         do {
-            n = fread(dbuf + p, sizeof(char), BUFSIZ, fp);
-            if (n == BUFSIZ)
+            n = read(fd, dbuf + p, sz - p);
+            if (n == sz - p)
             {
-                char *t = realloc(dbuf, p + 2 * BUFSIZ + 1);
+                char *t = realloc(dbuf, sz + BUFSIZ + 1);
 
                 if (!t)
                 {
+                    close(fd);
                     free(dbuf);
                     return NULL;
                 }
                 dbuf = t;
+                sz += BUFSIZ;
             }
             if (n > 0)
                  p += n;
@@ -67,21 +75,21 @@ inline char *read_cmdline2(int pid)
             rv = dbuf;
         } else
             free(dbuf);
-        fclose(fp);
+        close(fd);
     }
 
     if (rv)
         return rv;
 
     sprintf(path, "/proc/%d/status", pid);
-    fp = fopen(path, "rb");
-    if (fp)
+    fd = open(path, O_RDONLY);
+    if (fd != -1)
     {
         char buf[BUFSIZ + 1];
-        size_t n = fread(buf, sizeof(char), BUFSIZ, fp);
+        size_t n = read(fd, buf, BUFSIZ);
         char *eol, *tab;
 
-        fclose(fp);
+        close(fd);
 
         if (n > 0)
         {
