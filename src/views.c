@@ -18,6 +18,7 @@ static int ionice_cl = 1; // select what to edit class(1) or prio(0)
 static int ionice_class = IOPRIO_CLASS_RT;
 static int ionice_prio = 0;
 static int ionice_id_changed = 0;
+static double total_read = 0, total_write = 0;
 
 #define RRV(to, from) (((to) < (from)) ? (xxx) - (to) + (from) : (to) - (from))
 #define RRVf(pto, pfrom, fld) RRV(pto->fld, pfrom->fld)
@@ -242,7 +243,6 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
     int diff_len = create_diff(cs, ps, time_s);
     struct xxxid_stats *s;
 
-    static double total_read = 0, total_write = 0;
     double total_a_read, total_a_write;
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
@@ -342,7 +342,6 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     int diff_len = create_diff(cs, ps, time_s);
     struct xxxid_stats *s;
 
-    static double total_read = 0, total_write = 0;
     double total_a_read, total_a_write;
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
