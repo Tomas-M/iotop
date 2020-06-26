@@ -239,9 +239,9 @@ inline struct xxxid_stats *make_stats(int pid)
         goto error;
 
     static const char unknown[] = "<unknown>";
-    const char *cmdline = read_cmdline2(pid);
+    char *cmdline = read_cmdline2(pid);
 
-    s->cmdline = strdup(cmdline ? cmdline : unknown);
+    s->cmdline = cmdline ? cmdline : strdup(unknown);
     pwd = getpwuid(s->euid);
     s->pw_name = strdup(pwd && pwd->pw_name ? pwd->pw_name : unknown);
 

@@ -116,8 +116,7 @@ struct pidgen
     int __flags;
 };
 
-inline const char *xprintf(const char *format, ...);
-inline const char *read_cmdline2(int pid);
+inline char *read_cmdline2(int pid);
 
 inline struct pidgen *openpidgen(int flags);
 inline void closepidgen(struct pidgen *pg);

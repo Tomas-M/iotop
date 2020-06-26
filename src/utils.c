@@ -8,27 +8,15 @@
 #include <string.h>
 #include <sys/types.h>
 
-inline const char *xprintf(const char *format, ...)
-{
-    static char buf[BUFSIZ];
-    va_list args;
-
-    memset(buf, 0, BUFSIZ);
-    va_start(args, format);
-
-    int j = vsnprintf(buf, BUFSIZ, format, args);
-
-    va_end(args);
-
-    return ((j >= 0) && (j < BUFSIZ)) ? buf : NULL;
-}
-
-inline const char *read_cmdline2(int pid)
+inline char *read_cmdline2(int pid)
 {
     static char buf[BUFSIZ + 1];
-    FILE *fp = fopen(xprintf("/proc/%d/cmdline", pid), "rb");
     char *rv = NULL;
+    char path[30];
+    FILE *fp;
 
+    sprintf(path, "/proc/%d/cmdline", pid);
+    fp = fopen(path, "rb");
     memset(buf, 0, BUFSIZ);
     if (fp)
     {
@@ -57,30 +45,36 @@ inline const char *read_cmdline2(int pid)
     }
 
     if (rv)
-        return rv;
+        return strdup(rv);
 
-    fp = fopen(xprintf("/proc/%d/status", pid), "rb");
-
-    memset(buf, 0, BUFSIZ);
+    sprintf(path, "/proc/%d/status", pid);
+    fp = fopen(path, "rb");
     if (fp)
     {
         size_t n = fread(buf, sizeof(char), BUFSIZ, fp);
-        char *eol = NULL;
+        char *eol, *tab;
 
-        if (n > 0 && (eol = strchr(buf, '\n'))
-                && (eol > strchr(buf, '\t')))
-        {
-            eol[0] = 0;
-            strcpy(buf, xprintf("[%s]", strchr(buf, '\t') + 1));
-            rv = buf;
-        }
         fclose(fp);
+
+        if (n > 0)
+        {
+            buf[n] = 0;
+            eol = strchr(buf, '\n');
+            tab = strchr(buf, '\t');
+            if (eol && tab && eol > tab)
+            {
+                eol[0] = 0;
+                rv = malloc(strlen(tab + 1) + 2 + 1);
+                if (rv)
+                    sprintf(rv, "[%s]", tab + 1);
+            }
+        }
     }
 
     return rv;
 }
 
-inline static int __next_pid(DIR *dir)
+static inline int __next_pid(DIR *dir)
 {
     while (1)
     {
@@ -152,7 +146,10 @@ inline int pidgen_next(struct pidgen *pg)
 
     if (pid && (pg->__flags & PIDGEN_FLAGS_TASK))
     {
-        pg->__task = (DIR *) opendir(xprintf("/proc/%d/task", pid));
+        char path[30];
+
+        sprintf(path, "/proc/%d/task", pid);
+        pg->__task = (DIR *) opendir(path);
         return pidgen_next(pg);
     }
 
