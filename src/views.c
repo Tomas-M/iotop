@@ -89,6 +89,7 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
     {
         struct xxxid_stats *c;
         struct xxxid_stats *p;
+        double rv, wv;
 
         c = cs->arr[n];
         p = arr_find(ps, c->tid);
@@ -115,8 +116,6 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
             (double) RRVf(c, p, swapin_delay_total) / (time_s * 10000000.0);
         if (c->swapin_val > 100)
             c->swapin_val = 100;
-
-        double rv, wv;
 
         rv = (double) RRVf(c, p, read_bytes);
         wv = (double) RRVf(c, p, write_bytes);
@@ -172,6 +171,7 @@ inline void humanize_val(double *value, char **str, int allow_accum)
 {
     static char *prefix_acc[] = {"B  ", "K  ", "M  ", "G  ", "T  "};
     static char *prefix[] = {"B/s", "K/s", "M/s", "G/s", "T/s"};
+    int p;
 
     if (config.f.kilobytes)
     {
@@ -180,7 +180,7 @@ inline void humanize_val(double *value, char **str, int allow_accum)
         return;
     }
 
-    int p = 0;
+    p = 0;
     while (*value > 10000 && p < 5)
     {
         *value /= 1000.0;
@@ -241,11 +241,10 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
 {
     double time_s = TIMEDIFF_IN_S(act->ts_o, act->ts_c);
     int diff_len = create_diff(cs, ps, time_s);
-    struct xxxid_stats *s;
-
     double total_a_read, total_a_write;
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
+    int i;
 
     calc_total(cs, &total_read, &total_write);
     calc_a_total(act, &total_a_read, &total_a_write, time_s);
@@ -265,6 +264,7 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
     if (config.f.timestamp)
     {
         time_t t = time(NULL);
+
         printf(" | %s", ctime(&t));
     }
     else
@@ -291,21 +291,17 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
                "COMMAND"
               );
 
-    int i;
-
     arr_sort(cs,my_sort_cb,(void *)(long)SORT_ASC);
 
     for (i = 0; cs->sor && i < diff_len; i++)
     {
-        s = cs->sor[i];
-
+        struct xxxid_stats *s = cs->sor[i];
         double read_val = config.f.accumulated ? s->read_val_acc : s->read_val;
         double write_val = config.f.accumulated ? s->write_val_acc : s->write_val;
+        char *read_str, *write_str;
 
         if (config.f.only && !read_val && !write_val)
             continue;
-
-        char *read_str, *write_str;
 
         humanize_val(&read_val, &read_str, 1);
         humanize_val(&write_val, &write_str, 1);
@@ -327,6 +323,17 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
 
 inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
 {
+    double time_s = TIMEDIFF_IN_S(act->ts_o, act->ts_c);
+    int diff_len = create_diff(cs, ps, time_s);
+    double total_a_read, total_a_write;
+    char *str_read, *str_write;
+    char *str_a_read, *str_a_write;
+    int promptx = 0, prompty = 0, show;
+    int line, lastline;
+    int maxy;
+    int maxx;
+    int i;
+
     if (!stdscr)
     {
         initscr();
@@ -338,14 +345,8 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         nodelay(stdscr, TRUE);
     }
 
-    double time_s = TIMEDIFF_IN_S(act->ts_o, act->ts_c);
-    int diff_len = create_diff(cs, ps, time_s);
-    struct xxxid_stats *s;
-
-    double total_a_read, total_a_write;
-    char *str_read, *str_write;
-    char *str_a_read, *str_a_write;
-    int promptx = 0, prompty = 0, show;
+    maxy = getmaxy(stdscr);
+    maxx = getmaxx(stdscr);
 
     calc_total(cs, &total_read, &total_write);
     calc_a_total(act, &total_a_read, &total_a_write, time_s);
@@ -354,10 +355,6 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     humanize_val(&total_write, &str_write, 1);
     humanize_val(&total_a_read, &str_a_read, 0);
     humanize_val(&total_a_write, &str_a_write, 0);
-
-    int maxy = getmaxy(stdscr);
-    int maxx = getmaxx(stdscr);
-    int i;
 
     mvhline(0, 0, ' ', maxx);
     mvprintw(0, 0, HEADER1_FORMAT,
@@ -447,19 +444,17 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 
     arr_sort(cs,my_sort_cb,(void *)(long)(sort_by * 2 + !!(sort_order == SORT_ASC)));
 
-    int line = 3;
-    int lastline = line;
+    line = 3;
+    lastline = line;
     for (i = 0; cs->sor && i < diff_len; i++)
     {
-        s = cs->sor[i];
-
+        struct xxxid_stats *s = cs->sor[i];
         double read_val = config.f.accumulated ? s->read_val_acc : s->read_val;
         double write_val = config.f.accumulated ? s->write_val_acc : s->write_val;
+        char *read_str, *write_str;
 
         if (config.f.only && !read_val && !write_val)
             continue;
-
-        char *read_str, *write_str;
 
         humanize_val(&read_val, &read_str, 1);
         humanize_val(&write_val, &write_str, 1);
@@ -554,8 +549,9 @@ inline void view_curses_finish(void)
 
 inline unsigned int curses_sleep(unsigned int seconds)
 {
-    fd_set fds;
     struct timeval tv;
+    fd_set fds;
+    int rv, ch;
 
     FD_ZERO(&fds);
     FD_SET(fileno(stdin), &fds);
@@ -563,9 +559,7 @@ inline unsigned int curses_sleep(unsigned int seconds)
     tv.tv_sec = seconds;
     tv.tv_usec = 0;
 
-    int rv = select(1, &fds, NULL, NULL, &tv);
-    int ch;
-
+    rv = select(1, &fds, NULL, NULL, &tv);
     if (rv)
     {
         switch ((ch = getch()))
