@@ -452,6 +452,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         double read_val = config.f.accumulated ? s->read_val_acc : s->read_val;
         double write_val = config.f.accumulated ? s->write_val_acc : s->write_val;
         char *read_str, *write_str;
+        int maxcmdline;
 
         if (config.f.only && !read_val && !write_val)
             continue;
@@ -459,7 +460,10 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         humanize_val(&read_val, &read_str, 1);
         humanize_val(&write_val, &write_str, 1);
 
-        mvprintw(line, 0, "%5i  %4s  %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s %5.2f %% %5.2f %%  %s\n",
+        maxcmdline = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
+        if (maxcmdline < 0)
+            maxcmdline = 0;
+        mvprintw(line, 0, "%5i  %4s  %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s %5.2f %% %5.2f %%  %.*s\n",
                  s->tid,
                  str_ioprio(s->io_prio),
                  s->pw_name,
@@ -469,6 +473,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
                  write_str,
                  s->swapin_val,
                  s->blkio_val,
+                 maxcmdline,
                  s->cmdline
                 );
         line++;
