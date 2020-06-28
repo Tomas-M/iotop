@@ -1,3 +1,12 @@
+iotop-c (1.5-1) unstable; urgency=medium
+
+  * Upstream release 1.5
+  * Minor changes to version, man pages
+  * Add conficts: iotop (<= 0.6-24-g733f3f8-1)
+   because it does not support alternatives
+
+ -- Boian Bonev <bbonev@ipacct.com>  Sun, 28 Jun 2020 16:59:22 +0300
+
 iotop-c (1.4-1) unstable; urgency=medium
 
   * Upstream release 1.4
