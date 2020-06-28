@@ -16,9 +16,9 @@ or even kill it.
 iotop identifies processes that use high amount of input/output requests
 on your machine. It is similar to the well known top utility, but
 instead of showing you what consumes CPU the most, it lists
-processes by their IO usage. Inspired by iotop python script from
+processes by their IO usage. Inspired by iotop Python script from
 Guillaume Chazarain, rewritten in C by Vyacheslav Trushkin and improved
-by Boian Bonev so it runs without python at all.
+by Boian Bonev so it runs without Python at all.
 
 iotop is licensed GPL-2.0+
 
