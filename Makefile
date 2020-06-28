@@ -11,7 +11,7 @@ else
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
 
-MYCFLAGS:=$(CFLAGS) -std=gnu90 -Wall -Wextra
+MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) -std=gnu90 -Wall -Wextra
 MYLDFLAGS=$(LDFLAGS) -lncurses
 STRIP?=strip
 
