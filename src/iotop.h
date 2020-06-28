@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-#define VERSION "1.1"
+#define VERSION "1.4"
 
 typedef union
 {
