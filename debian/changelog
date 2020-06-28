@@ -1,3 +1,12 @@
+iotop-c (1.3-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Fix suggestions by lintian/check-all-the-things
+    adding CPPFLAGS to CFLAGS to enable fortified build
+    misc typos, trailing ws, missing tags
+
+ -- root <root@debian-sid>  Sun, 28 Jun 2020 04:36:39 +0300
+
 iotop-c (1.3-1) unstable; urgency=medium
 
   * Upstream release 1.3
