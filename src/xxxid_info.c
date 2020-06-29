@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <inttypes.h>
 #include <sys/socket.h>
 #include <linux/taskstats.h>
 #include <linux/genetlink.h>
