@@ -18,9 +18,9 @@ Description: simple top-like I/O monitor (implemented in C)
  current I/O usage by processes on the system. It is handy for answering
  the question "Why is the disk churning so much?".
  .
- iotop-c can only run under a Linux 2.6.20 or later kernel built with the
- CONFIG_TASKSTATS, CONFIG_TASK_DELAY_ACCT, CONFIG_TASK_IO_ACCOUNTING and
- CONFIG_VM_EVENT_COUNTERS build config options on.
+ iotop-c requires a Linux kernel built with the CONFIG_TASKSTATS,
+ CONFIG_TASK_DELAY_ACCT, CONFIG_TASK_IO_ACCOUNTING and
+ CONFIG_VM_EVENT_COUNTERS config options on.
  .
  iotop-c is an alternative reimplementation of iotop in C, optimized for
  performance. Normally a monitoring tool intended to be used on a system
