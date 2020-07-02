@@ -1,5 +1,5 @@
-iotop-c (1.6-1) unstable; urgency=medium
+iotop-c (1.7-1) unstable; urgency=medium
 
   * Initial release (Closes: #963612)
 
- -- Boian Bonev <bbonev@ipacct.com>  Mon, 29 Jun 2020 00:29:26 +0000
+ -- Boian Bonev <bbonev@ipacct.com>  Thu, 02 Jul 2020 09:20:46 +0000
