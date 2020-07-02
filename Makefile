@@ -12,7 +12,7 @@ CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
 
 MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) -std=gnu90 -Wall -Wextra
-MYLDFLAGS=$(LDFLAGS) -lncurses
+MYLDFLAGS=$(LDFLAGS) -lncursesw
 STRIP?=strip
 
 PREFIX?=$(DESTDIR)/usr

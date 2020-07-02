@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <stdio.h>
+#include <locale.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -177,6 +178,7 @@ main(int argc, char *argv[])
     if (system_checks())
         return EXIT_FAILURE;
 
+    setlocale(LC_ALL, "");
     nl_init();
 
     if (signal(SIGINT, sig_handler) == SIG_ERR)
