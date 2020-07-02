@@ -17,7 +17,7 @@ CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
 
 MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) -std=gnu90 -Wall -Wextra
-MYLDFLAGS=$(LDFLAGS) -lncurses
+MYLDFLAGS=$(LDFLAGS) -lncursesw
 STRIP?=strip
 
 PREFIX?=$(DESTDIR)/usr
@@ -50,7 +50,7 @@ install: $(TARGET)
 	$(E) STRIP $(TARGET)
 	$(Q)$(STRIP) $(TARGET)
 	$(E) INSTALL $(TARGET)
-	$(Q)install -TD -m 0755 -o root -g root $(TARGET) $(PREFIX)/sbin/$(TARGET)
+	$(Q)install -TD -m 0755 $(TARGET) $(PREFIX)/sbin/$(TARGET)
 
 uninstall:
 	$(E) UNINSTALL $(TARGET)

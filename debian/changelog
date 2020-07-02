@@ -1,53 +1,5 @@
-iotop-c (1.5-1.1) unstable; urgency=medium
-
-  * Non-maintainer upload.
-  * Fix a typo in changelog
-
- -- Boian Bonev <bbonev@ipacct.com>  Sun, 28 Jun 2020 17:22:43 +0300
-
-iotop-c (1.5-1) unstable; urgency=medium
-
-  * Upstream release 1.5
-  * Minor changes to version, man pages
-  * Add Conflicts: iotop (<= 0.6-24-g733f3f8-1)
-   because it does not support alternatives
-
- -- Boian Bonev <bbonev@ipacct.com>  Sun, 28 Jun 2020 16:59:22 +0300
-
-iotop-c (1.4-1) unstable; urgency=medium
-
-  * Upstream release 1.4
-
- -- Boian Bonev <bbonev@ipacct.com>  Sun, 28 Jun 2020 05:08:03 +0300
-
-iotop-c (1.3-1.1) unstable; urgency=medium
-
-  * Non-maintainer upload.
-  * Fix suggestions by lintian/check-all-the-things
-    adding CPPFLAGS to CFLAGS to enable fortified build
-    misc typos, trailing ws, missing tags
-
- -- Boian Bonev <bbonev@ipacct.com>  Sun, 28 Jun 2020 04:36:39 +0300
-
-iotop-c (1.3-1) unstable; urgency=medium
-
-  * Upstream release 1.3
-    handle long command lines
-    remove couple of OOB
-    add a missing check for OOM
-    avoid leaking open fd after parse error
-    process only the visible part of long command lines in curses mode
-
- -- Boian Bonev <bbonev@ipacct.com>  Sun, 28 Jun 2020 02:53:12 +0300
-
-iotop-c (1.2-1) unstable; urgency=medium
-
-  * Misceallaneous changes
-
- -- Boian Bonev <bbonev@ipacct.com>  Fri, 26 Jun 2020 00:44:56 +0300
-
-iotop-c (1.1-1) unstable; urgency=medium
+iotop-c (1.7-1) unstable; urgency=medium
 
   * Initial release (Closes: #963612)
 
- -- Boian Bonev <bbonev@ipacct.com>  Wed, 24 Jun 2020 12:33:53 +0300
+ -- Boian Bonev <bbonev@ipacct.com>  Thu, 02 Jul 2020 09:20:46 +0000

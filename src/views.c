@@ -299,6 +299,7 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
         double read_val = config.f.accumulated ? s->read_val_acc : s->read_val;
         double write_val = config.f.accumulated ? s->write_val_acc : s->write_val;
         char *read_str, *write_str;
+        char *pw_name;
 
         if (config.f.only && !read_val && !write_val)
             continue;
@@ -306,10 +307,12 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
         humanize_val(&read_val, &read_str, 1);
         humanize_val(&write_val, &write_str, 1);
 
-        printf("%5i %4s %-10.10s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
+        pw_name = u8strpadt(s->pw_name, 10);
+
+        printf("%5i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
                s->tid,
                str_ioprio(s->io_prio),
-               s->pw_name,
+               pw_name,
                read_val,
                read_str,
                write_val,
@@ -318,6 +321,9 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
                s->blkio_val,
                s->cmdline
               );
+
+        if (pw_name)
+            free(pw_name);
     }
 }
 
@@ -452,6 +458,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         double read_val = config.f.accumulated ? s->read_val_acc : s->read_val;
         double write_val = config.f.accumulated ? s->write_val_acc : s->write_val;
         char *read_str, *write_str;
+        char *pw_name, *cmdline;
         int maxcmdline;
 
         if (config.f.only && !read_val && !write_val)
@@ -463,19 +470,28 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         maxcmdline = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
         if (maxcmdline < 0)
             maxcmdline = 0;
-        mvprintw(line, 0, "%5i  %4s  %-9.9s  %7.2f %-3.3s  %7.2f %-3.3s %5.2f %% %5.2f %%  %.*s\n",
+
+        pw_name = u8strpadt(s->pw_name, 9);
+        cmdline = u8strpadt(s->cmdline, maxcmdline);
+
+        mvprintw(line, 0, "%5i  %4s  %s  %7.2f %-3.3s  %7.2f %-3.3s %5.2f %% %5.2f %%  %s\n",
                  s->tid,
                  str_ioprio(s->io_prio),
-                 s->pw_name,
+                 pw_name,
                  read_val,
                  read_str,
                  write_val,
                  write_str,
                  s->swapin_val,
                  s->blkio_val,
-                 maxcmdline,
-                 s->cmdline
+                 cmdline
                 );
+
+        if (pw_name)
+            free(pw_name);
+        if (cmdline)
+            free(cmdline);
+
         line++;
         lastline = line;
         if (line > maxy - (config.f.nohelp ? 1 : 3)) // do not draw out of screen, keep 2 lines for help

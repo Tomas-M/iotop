@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-#define VERSION "1.5"
+#define VERSION "1.7"
 
 typedef union
 {
@@ -122,6 +122,7 @@ inline struct pidgen *openpidgen(int flags);
 inline void closepidgen(struct pidgen *pg);
 inline int pidgen_next(struct pidgen *pg);
 inline int64_t monotime(void);
+inline char *u8strpadt(const char *s, size_t len);
 
 /* ioprio.c */
 
