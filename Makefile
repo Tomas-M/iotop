@@ -1,3 +1,8 @@
+# use this to disable flto optimizations:
+#   make NO_FLTO=1
+# and this to enable verbose mode:
+#   make V=1
+
 TARGET=iotop
 
 SRCS:=$(wildcard src/*.c)
@@ -16,11 +21,6 @@ MYLDFLAGS=$(LDFLAGS) -lncurses
 STRIP?=strip
 
 PREFIX?=$(DESTDIR)/usr
-
-# use this to disable flto optimizations:
-#   make NO_FLTO=1
-# and this to enable verbose mode:
-#   make V=1
 
 ifeq ("$(V)","1")
 Q:=
