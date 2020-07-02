@@ -2,8 +2,9 @@
 
 #include <time.h>
 #include <fcntl.h>
-#include <dirent.h>
 #include <stdio.h>
+#include <wchar.h>
+#include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -207,5 +208,87 @@ inline int64_t monotime(void)
     res = ts.tv_sec * 1000;
     res += ts.tv_nsec / 1000000;
     return res;
+}
+
+#define UBLEN 1024
+
+inline char *u8strpadt(const char *s, size_t len)
+{
+    char *d = malloc(UBLEN);
+    size_t dl = UBLEN;
+    size_t si = 0;
+    size_t di = 0;
+    size_t tl = 0;
+    size_t sl;
+    wchar_t w;
+
+    if (!d)
+        return NULL;
+    if (!s)
+        s = "(null)";
+
+    sl = strlen(s);
+    mbtowc(NULL, NULL, 0);
+    for (;;)
+    {
+        int cl;
+        int tw;
+
+        if (!s[si])
+            break;
+
+        cl = mbtowc(&w, s + si, sl - si);
+        if (cl <= 0)
+        {
+            si++;
+            continue;
+        }
+        if (dl - di < (size_t)cl + 1)
+        {
+            char *t;
+
+            dl += UBLEN;
+            t = realloc(d, dl);
+            if (!t)
+            {
+                free(d);
+                return NULL;
+            }
+            d = t;
+        }
+        tw = wcwidth(w);
+        if (tw < 0)
+        {
+            si += cl;
+            continue;
+        }
+        if (tw && tw + tl > len)
+            break;
+        memcpy(d + di, s + si, cl);
+        di += cl;
+        si += cl;
+        tl += tw;
+        d[di] = 0;
+    }
+    while (tl < len)
+    {
+        if (dl - di < 1 + 1)
+        {
+            char *t;
+
+            dl += UBLEN;
+            t = realloc(d, dl);
+            if (!t)
+            {
+                free(d);
+                return NULL;
+            }
+            d = t;
+        }
+        d[di++] = ' ';
+        d[di] = 0;
+        tl++;
+    }
+    return d;
 }
 
