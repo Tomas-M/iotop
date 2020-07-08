@@ -8,6 +8,7 @@ export V=1
 else
 export V=0
 endif
+export LDFLAGS=-Wl,-z,now $(shell dpkg-buildflags --get LDFLAGS)
 
 %:
 	dh $@
