@@ -53,15 +53,14 @@ inline char *read_cmdline2(int pid)
 
         if (p > 0)
         {
-            size_t k;
-            char *ep;
-
             dbuf[p] = 0;
             if (!config.f.fullcmdline && (
                 dbuf[0] == '/' ||
                 (p > 1 && dbuf[0] == '.' && dbuf[1] == '/') ||
                 (p > 2 && dbuf[0] == '.' && dbuf[1] == '.' && dbuf[2] == '/')))
             {
+                char *ep;
+
                 ep = strrchr(dbuf, '/');
                 if (ep && ep[1])
                 {
@@ -77,8 +76,12 @@ inline char *read_cmdline2(int pid)
             }
 
             if (config.f.fullcmdline)
+            {
+                size_t k;
+
                 for (k = 0; k < p; k++)
                     dbuf[k] = dbuf[k] ? dbuf[k] : ' ';
+            }
             rv = dbuf;
         }
         else
@@ -95,12 +98,13 @@ inline char *read_cmdline2(int pid)
     {
         char buf[BUFSIZ + 1];
         size_t n = read(fd, buf, BUFSIZ);
-        char *eol, *tab;
 
         close(fd);
 
         if (n > 0)
         {
+            char *eol, *tab;
+
             buf[n] = 0;
             eol = strchr(buf, '\n');
             tab = strchr(buf, '\t');

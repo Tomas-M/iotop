@@ -312,7 +312,7 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
         printf("%5i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",
                s->tid,
                str_ioprio(s->io_prio),
-               pw_name,
+               pw_name ? pw_name : "(null)",
                read_val,
                read_str,
                write_val,
@@ -477,7 +477,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         mvprintw(line, 0, "%5i  %4s  %s  %7.2f %-3.3s  %7.2f %-3.3s %5.2f %% %5.2f %%  %s\n",
                  s->tid,
                  str_ioprio(s->io_prio),
-                 pw_name,
+                 pw_name ? pw_name : "(null)",
                  read_val,
                  read_str,
                  write_val,
@@ -572,7 +572,7 @@ inline unsigned int curses_sleep(unsigned int seconds)
 {
     struct timeval tv;
     fd_set fds;
-    int rv, ch;
+    int rv;
 
     FD_ZERO(&fds);
     FD_SET(fileno(stdin), &fds);
@@ -583,6 +583,8 @@ inline unsigned int curses_sleep(unsigned int seconds)
     rv = select(1, &fds, NULL, NULL, &tv);
     if (rv)
     {
+        int ch;
+
         switch ((ch = getch()))
         {
         case 'q':
