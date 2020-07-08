@@ -4,6 +4,8 @@
 #   make V=1
 
 #
+# SPDX-License-Identifer: GPL-2.0-or-later
+#
 # Copyright (C) 2014  Vyacheslav Trushkin
 # Copyright (C) 2020  Boian Bonev
 #
