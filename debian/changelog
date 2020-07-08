@@ -1,4 +1,4 @@
-iotop-c (1.7-1) unstable; urgency=medium
+iotop-c (1.8-1) unstable; urgency=medium
 
   * Initial release (Closes: #963612)
 
