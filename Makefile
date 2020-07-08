@@ -35,7 +35,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(E) LD $@
-	$(Q)$(CC) $(MYLDFLAGS) -o $@ $^ $(MYLIBS)
+	$(Q)$(CC) -o $@ $(MYLDFLAGS) $^ $(MYLIBS)
 
 bld/%.o: src/%.c bld/.mkdir
 	$(E) DE $@
