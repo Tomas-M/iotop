@@ -3,6 +3,11 @@
 # use the default Debian build options; do not strip as dh_* scripts strip the binary
 export NO_FLTO=1
 export STRIP=/bin/true
+ifeq (,$(filter terse,$(DEB_BUILD_OPTIONS)))
+export V=1
+else
+export V=0
+endif
 
 %:
 	dh $@
