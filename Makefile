@@ -17,7 +17,8 @@ CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
 
 MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) -std=gnu90 -Wall -Wextra
-MYLDFLAGS=$(LDFLAGS) -lncursesw
+MYLIBS=$(LIBS) -lncursesw
+MYLDFLAGS=$(LDFLAGS)
 STRIP?=strip
 
 PREFIX?=$(DESTDIR)/usr
@@ -34,7 +35,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(E) LD $@
-	$(Q)$(CC) -o $@ $^ $(MYLDFLAGS)
+	$(Q)$(CC) $(MYLDFLAGS) -o $@ $^ $(MYLIBS)
 
 bld/%.o: src/%.c bld/.mkdir
 	$(E) DE $@
