@@ -1,3 +1,7 @@
 version=4
 
-opts="filenamemangle=s%(?:.*?)?v?(\d[\d.]*)\.tar\.gz%iotop-c_$1.orig.tar.gz%" https://github.com/Tomas-M/iotop/tags (?:.*?/)?v?(\d[\d.]*)\.tar\.gz debian uupdate
+opts=\
+	"filenamemangle=s%(?:.*?)?v?(\d[\d.]*)\.tar\.gz%iotop-c_$1.orig.tar.gz%,pgpsigurlmangle=s/archive\/v([0-9.]+)\.tar\.gz/releases\/download\/v$1\/iotop-$1\.tar\.gz\.asc/" \
+	https://github.com/Tomas-M/iotop/tags \
+	(?:.*?/)?v?(\d[\d.]*)\.tar\.gz \
+	debian uupdate
