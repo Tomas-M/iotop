@@ -8,6 +8,8 @@ Build-Depends:
 Standards-Version: 4.5.0
 Rules-Requires-Root: no
 Homepage: https://github.com/Tomas-M/iotop
+Vcs-Browser: https://github.com/Tomas-M/iotop
+Vcs-Git: https://github.com/Tomas-M/iotop.git
 
 Package: iotop-c
 Architecture: linux-any
