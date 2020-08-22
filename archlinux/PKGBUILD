@@ -1,7 +1,7 @@
 # Maintainer: Rumen Jekov <rvjekov@gmail.com>
 
 pkgname=iotop-c
-pkgver=1.8
+pkgver=1.9
 pkgrel=1
 pkgdesc="simple top-like I/O monitor (implemented in C)"
 arch=('any')
