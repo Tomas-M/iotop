@@ -54,7 +54,7 @@ print_help(void)
         "option, a to toggle the --accumulated option, i to change I/O priority, q to\n"
         "quit, any other key to force a refresh.\n\n"
         "Options:\n"
-        "  --version             show program's version number and exit\n"
+        "  -v, --version         show program's version number and exit\n"
         "  -h, --help            show this help message and exit\n"
         "  -o, --only            only show processes or threads actually doing I/O\n"
         "  -b, --batch           non-interactive mode\n"
@@ -69,7 +69,7 @@ print_help(void)
         "  -c, --fullcmdline     show full command line\n"
         "  -s, --iohistory       show pseudo-graphical IO history column\n"
         "  -q, --quiet           suppress some lines of header (implies --batch)\n"
-        "  --no-help             suppress listing of shortcuts\n",
+        "  -H, --no-help         suppress listing of shortcuts\n",
         progname
     );
 }
@@ -103,7 +103,7 @@ parse_args(int argc, char *argv[])
             {NULL, 0, NULL, 0}
         };
 
-        int c = getopt_long(argc, argv, "vhbon:d:p:u:Paktqc",
+        int c = getopt_long(argc, argv, "vhbon:d:p:u:PaktqcsH",
                             long_options, NULL);
 
         if (c == -1)
