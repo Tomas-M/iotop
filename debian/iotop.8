@@ -29,7 +29,7 @@ Use the left and right arrows to change the sorting, r to reverse the
 sorting order, o to toggle the \-\-only option, p to toggle the \-\-processes option, a to toggle the \-\-accumulated option, q to quit or i to change the priority of a thread or a process's thread(s). Any other key will force a refresh.
 .SH OPTIONS
 .TP
-\fB\-\-version\fR
+\fB\-v\fR, \fB\-\-version\fR
 Show the version number and exit
 .TP
 \fB\-h\fR, \fB\-\-help\fR
@@ -70,6 +70,9 @@ Add a timestamp on each line (implies \-\-batch). Each line will be prefixed by 
 .TP
 \fB\-c\fR, \fB\-\-fullcmdline\fR
 Show processes' full file path & parameters.
+.TP
+\fB\-s\fR, \fB\-\-iohistory\fR
+Display one more column with text mode pseudo-graph of IO percentage.
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 suppress some lines of header (implies \-\-batch). This option can be specified up to three times to remove header lines.
