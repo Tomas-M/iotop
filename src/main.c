@@ -38,7 +38,7 @@ init_params(void)
     params.user_id = -1;
 }
 
-static const char str_opt[] = "boPaktqHc";
+static const char str_opt[] = "boPaktqHcs";
 
 static inline void
 print_help(void)
@@ -67,6 +67,7 @@ print_help(void)
         "  -k, --kilobytes       use kilobytes instead of a human friendly unit\n"
         "  -t, --time            add a timestamp on each line (implies --batch)\n"
         "  -c, --fullcmdline     show full command line\n"
+        "  -s, --iohistory       show pseudo-graphical IO history column\n"
         "  -q, --quiet           suppress some lines of header (implies --batch)\n"
         "  --no-help             suppress listing of shortcuts\n",
         progname
@@ -98,6 +99,7 @@ parse_args(int argc, char *argv[])
             {"quiet",       no_argument, NULL, 'q'},
             {"no-help",     no_argument, NULL, 'H'},
             {"fullcmdline", no_argument, NULL, 'c'},
+            {"iohistory",   no_argument, NULL, 's'},
             {NULL, 0, NULL, 0}
         };
 
@@ -124,6 +126,7 @@ parse_args(int argc, char *argv[])
         case 'q':
         case 'H':
         case 'c':
+        case 's':
             config.opts[(unsigned int) (strchr(str_opt, c) - str_opt)] = 1;
             break;
         case 'n':

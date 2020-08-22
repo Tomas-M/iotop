@@ -69,17 +69,29 @@ static const char *column_name[] =
     "COMMAND",
 };
 
+// Braille unicode - 2x5 levels graph per character
+static const char *br_graph[5][5] =
+{
+    {"⠀", "⢀", "⢠", "⢰", "⢸", },
+    {"⡀", "⣀", "⣠", "⣰", "⣸", },
+    {"⡄", "⣄", "⣤", "⣴", "⣼", },
+    {"⡆", "⣆", "⣦", "⣶", "⣾", },
+    {"⡇", "⣇", "⣧", "⣷", "⣿", },
+};
+
 static const char *column_format[] =
 {
-    "%5s%c ",
-    "%4s%c  ",
-    "%6s%c   ",
-    "%11s%c ",
-    "%11s%c ",
-    "%6s%c ",
-    "%6s%c ",
-    "%s%c",
+    "%s%c%*s ",
+    "%4s%c%*s  ",
+    "%6s%c%*s   ",
+    "%11s%c%*s ",
+    "%11s%c%*s ",
+    "%7s%c%*s ",
+    "%7s%c%*s ",
+    "%s%c%*s",
 };
+
+static int maxpidlen = 5;
 
 #define __COLUMN_NAME(i) ((i) == 0 ? (config.f.processes ? "PID" : "TID") : column_name[(i)])
 #define __COLUMN_FORMAT(i) (column_format[(i)])
@@ -103,6 +115,7 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
         struct xxxid_stats *c;
         struct xxxid_stats *p;
         double rv, wv;
+        char temp[12];
 
         c = cs->arr[n];
         p = arr_find(ps, c->tid);
@@ -116,6 +129,9 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
             c->write_val = 0;
             c->read_val_acc = 0;
             c->write_val_acc = 0;
+
+            sprintf(temp, "%i", c->tid);
+            maxpidlen = maxpidlen < (int)strlen(temp) ? (int)strlen(temp) : maxpidlen;
             continue;
         }
 
@@ -138,6 +154,12 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
 
         c->read_val_acc = p->read_val_acc + rv;
         c->write_val_acc = p->write_val_acc + wv;
+
+        memcpy(c->iohist + 1, p->iohist, sizeof(c->iohist) - sizeof(c->iohist[0]));
+        c->iohist[0] = (c->blkio_val * 4) / 100;
+
+        sprintf(temp, "%i", c->tid);
+        maxpidlen = maxpidlen < (int)strlen(temp) ? (int)strlen(temp) : maxpidlen;
     }
 
     return diff_size;
@@ -453,9 +475,16 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 
     for (i = 0; i < SORT_BY_MAX; i++)
     {
+        int vwidth = 0;
+
+        if (i == 0)
+            vwidth = maxpidlen - strlen(COLUMN_NAME(0));
+        if (i == 6)
+            vwidth = config.f.iohist ? HISTORY_POS : 0;
+
         if (sort_by == i)
             attron(A_BOLD);
-        printw(COLUMN_FORMAT(i), COLUMN_NAME(i), SORT_CHAR(i));
+        printw(COLUMN_FORMAT(i), COLUMN_NAME(i), SORT_CHAR(i), vwidth, "");
         if (sort_by == i)
             attroff(A_BOLD);
     }
@@ -470,6 +499,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         struct xxxid_stats *s = cs->sor[i];
         double read_val = config.f.accumulated ? s->read_val_acc : s->read_val;
         double write_val = config.f.accumulated ? s->write_val_acc : s->write_val;
+        char iohist[HISTORY_POS * 5];
         char *read_str, *write_str;
         char *pw_name, *cmdline;
         int maxcmdline;
@@ -481,13 +511,24 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         humanize_val(&write_val, &write_str, 1);
 
         maxcmdline = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
+        if (config.f.iohist)
+            maxcmdline -= HISTORY_POS;
         if (maxcmdline < 0)
             maxcmdline = 0;
 
         pw_name = u8strpadt(s->pw_name, 9);
         cmdline = u8strpadt(s->cmdline, maxcmdline);
+        if (config.f.iohist)
+        {
+            int j;
 
-        mvprintw(line, 0, "%5i  %4s  %s  %7.2f %-3.3s  %7.2f %-3.3s %5.2f %% %5.2f %%  %s\n",
+            for (j = 0; j < HISTORY_POS; j++)
+                sprintf(iohist + (j ? strlen(iohist) : 0), "%s",
+                    br_graph[s->iohist[j * 2]][s->iohist[j * 2 + 1]]);
+        }
+
+        mvprintw(line, 0, "%*i  %4s  %s  %7.2f %-3.3s  %7.2f %-3.3s %6.2f %% %6.2f %% %s %s\n",
+                 maxpidlen,
                  s->tid,
                  str_ioprio(s->io_prio),
                  pw_name ? pw_name : "(null)",
@@ -497,6 +538,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
                  write_str,
                  s->swapin_val,
                  s->blkio_val,
+                 config.f.iohist ? iohist : "",
                  cmdline
                 );
 
@@ -540,6 +582,10 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         printw("a");
         attroff(A_UNDERLINE);
         printw(": %s  ", config.f.accumulated ? "bandwidth" : "accum");
+        attron(A_UNDERLINE);
+        printw("s");
+        attroff(A_UNDERLINE);
+        printw(": graph  ");
         attron(A_UNDERLINE);
         printw("h");
         attroff(A_UNDERLINE);
@@ -693,6 +739,10 @@ inline unsigned int curses_sleep(unsigned int seconds)
         case 'c':
         case 'C':
             config.f.fullcmdline = !config.f.fullcmdline;
+            return 0;
+        case 's':
+        case 'S':
+            config.f.iohist = !config.f.iohist;
             return 0;
         case 'i':
         case 'I':

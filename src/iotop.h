@@ -36,8 +36,9 @@ typedef union
         int quiet;
         int nohelp;
         int fullcmdline;
+        int iohist;
     } f;
-    int opts[9];
+    int opts[10];
 } config_t;
 
 typedef struct
@@ -51,6 +52,9 @@ typedef struct
 extern config_t config;
 extern params_t params;
 
+
+#define HISTORY_POS 5
+#define HISTORY_CNT (HISTORY_POS * 2)
 
 struct xxxid_stats
 {
@@ -72,6 +76,8 @@ struct xxxid_stats
     int euid;
     char *cmdline;
     char *pw_name;
+
+    uint8_t iohist[HISTORY_CNT];
 };
 
 #define PROC_LIST_SZ_INC 1024
