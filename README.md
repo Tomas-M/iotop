@@ -36,7 +36,7 @@ Options
 =======
 
 ```
---version             show program's version number and exit
+-v, --version         show program's version number and exit
 -h, --help            show this help message and exit
 -o, --only            only show processes or threads actually doing I/O
 -b, --batch           non-interactive mode
@@ -49,8 +49,9 @@ Options
 -k, --kilobytes       use kilobytes instead of a human friendly unit
 -t, --time            add a timestamp on each line (implies --batch)
 -c, --fullcmdline     show full command line
+-s, --iohistory       show pseudo-graphical IO history column
 -q, --quiet           suppress some lines of header (implies --batch)
---no-help             suppress listing of shortcuts
+-H, --no-help         suppress listing of shortcuts
 ```
 
 Contribute
