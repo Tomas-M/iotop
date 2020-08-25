@@ -2,6 +2,7 @@ iotop-c (1.9-1) unstable; urgency=medium
 
   * Add Vcs-* tags
   * Update to new upstream release of 1.9
+  * Bump debhelper-compat to 13
 
  -- Boian Bonev <bbonev@ipacct.com>  Sat, 22 Aug 2020 02:10:44 +0000
 
