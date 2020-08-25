@@ -3,7 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Boian Bonev <bbonev@ipacct.com>
 Build-Depends:
- debhelper-compat (= 12),
+ debhelper-compat (= 13),
  libncurses-dev,
 Standards-Version: 4.5.0
 Rules-Requires-Root: no
