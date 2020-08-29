@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <string.h>
 #include <unistd.h>
 #include <curses.h>
+#include <locale.h>
 #include <sys/time.h>
 
 #define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s |   Total DISK WRITE:   %7.2f %s"
@@ -32,6 +33,8 @@ static int ionice_class = IOPRIO_CLASS_RT;
 static int ionice_prio = 0;
 static int ionice_id_changed = 0;
 static double total_read = 0, total_write = 0;
+static int has_unicode = 0;
+static int unicode = 1;
 
 #define RRV(to, from) (((to) < (from)) ? (xxx) - (to) + (from) : (to) - (from))
 #define RRVf(pto, pfrom, fld) RRV(pto->fld, pfrom->fld)
@@ -78,6 +81,8 @@ static const char *br_graph[5][5] =
     {"⡆", "⣆", "⣦", "⣶", "⣾", },
     {"⡇", "⣇", "⣧", "⣷", "⣿", },
 };
+
+static const char *as_graph[5] = {" ", "_", ".", ":", "|", };
 
 static const char *column_format[] =
 {
@@ -156,7 +161,16 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
         c->write_val_acc = p->write_val_acc + wv;
 
         memcpy(c->iohist + 1, p->iohist, sizeof(c->iohist) - sizeof(c->iohist[0]));
-        c->iohist[0] = (c->blkio_val * 4) / 100;
+        if (c->blkio_val > 75)
+            c->iohist[0] = 4;
+        else if (c->blkio_val > 50)
+            c->iohist[0] = 3;
+        else if (c->blkio_val > 25)
+            c->iohist[0] = 2;
+        else if (c->blkio_val > 0)
+            c->iohist[0] = 1;
+        else
+            c->iohist[0] = 0;
 
         sprintf(temp, "%i", c->tid);
         maxpidlen = maxpidlen < (int)strlen(temp) ? (int)strlen(temp) : maxpidlen;
@@ -384,6 +398,9 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         noecho();
         curs_set(FALSE);
         nodelay(stdscr, TRUE);
+        if (setlocale(LC_CTYPE, "C.UTF-8"))
+            if (strcmp(getenv("TERM"), "linux"))
+                has_unicode = 1;
     }
 
     maxy = getmaxy(stdscr);
@@ -522,9 +539,18 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         {
             int j;
 
-            for (j = 0; j < HISTORY_POS; j++)
-                sprintf(iohist + (j ? strlen(iohist) : 0), "%s",
-                    br_graph[s->iohist[j * 2]][s->iohist[j * 2 + 1]]);
+            if (has_unicode && unicode)
+            {
+                for (j = 0; j < HISTORY_POS; j++)
+                    sprintf(iohist + (j ? strlen(iohist) : 0), "%s",
+                        br_graph[s->iohist[j * 2]][s->iohist[j * 2 + 1]]);
+            }
+            else
+            {
+                for (j = 0; j < HISTORY_POS; j++)
+                    sprintf(iohist + (j ? strlen(iohist) : 0), "%s",
+                        as_graph[s->iohist[j]]);
+            }
         }
 
         mvprintw(line, 0, "%*i  %4s  %s  %7.2f %-3.3s  %7.2f %-3.3s %6.2f %% %6.2f %% %s %s\n",
@@ -750,6 +776,10 @@ inline unsigned int curses_sleep(unsigned int seconds)
             ionice_id[0] = 0;
             ionice_cl = 1;
             ionice_id_changed = 1;
+            return 0;
+        case 'u':
+        case 'U':
+            unicode = !unicode;
             return 0;
         case 27: // ESC
             in_ionice = 0;
