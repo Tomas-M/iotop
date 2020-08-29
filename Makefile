@@ -65,6 +65,7 @@ install: $(TARGET)
 	$(Q)$(STRIP) $(TARGET)
 	$(E) INSTALL $(TARGET)
 	$(Q)install -TD -m 0755 $(TARGET) $(PREFIX)/sbin/$(TARGET)
+	$(Q)install -TD -m 0644 iotop.8 $(PREFIX)/share/man/man8/iotop.8
 
 uninstall:
 	$(E) UNINSTALL $(TARGET)

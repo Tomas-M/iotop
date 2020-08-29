@@ -16,5 +16,4 @@ export DEB_BUILD_MAINT_OPTIONS=hardening=+bindnow
 override_dh_install:
 	dh_install
 	mv debian/iotop-c/usr/sbin/iotop debian/iotop-c/usr/sbin/iotop-c
-	mkdir -p debian/iotop-c/usr/share/man/man8
-	cp debian/iotop.8 debian/iotop-c/usr/share/man/man8/iotop-c.8
+	mv debian/iotop-c/usr/share/man/man.8/iotop.8 debian/iotop-c/usr/share/man/man.8/iotop-c.8
