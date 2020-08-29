@@ -94,6 +94,50 @@ the I/O summary is never printed.
 Suppress the keyboard shortcuts help display.
 .PD 1
 .RE
+.SH KEYBOARD SHORTCUTS
+.TP
+\fBq\fR, \fBQ\fR
+Exit
+.TP
+\fB<space>\fR, \fBr\fR, \fBR\fR
+Toggle sort order
+.TP
+\fB<home>\fR
+Sort by column PID/TID
+.TP
+\fB<end>\fR
+Sort by column COMMAND
+.TP
+\fB<right>\fR
+Sort by next column
+.TP
+\fB<left>\fR
+Sort by previous column
+.TP
+\fBo\fR, \fBO\fR
+Toggle showing only processes with IO activity
+.TP
+\fBp\fR, \fBP\fR
+Toggle showing processes/threads
+.TP
+\fBa\fR, \fBA\fR
+Toggle showing accumulated/current values
+.TP
+\fB?\fR, \fBh\fR, \fBH\fR
+Toggle showing shortcut help
+.TP
+\fBc\fR, \fBC\fR
+Toggle showing full command line
+.TP
+\fBs\fR, \fBS\fR
+Toggle showing column with pseudo graphical IO history
+.TP
+\fBi\fR, \fBI\fR
+IOnice a process/thread (depends on process/thread display mode)
+.TP
+\fBu\fR, \fBU\fR
+Toggle using Unicode/ASCII characters for pseudo graph
+.RE
 .SH SEE ALSO
 .BR ionice (1),
 .BR top (1),
