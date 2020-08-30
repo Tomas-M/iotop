@@ -29,8 +29,20 @@ else
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
 
-MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) -std=gnu90 -Wall -Wextra
-MYLIBS=$(LIBS) -lncursesw
+PKG_CONFIG?=pkg-config
+NCCC?=$(shell $(PKG_CONFIG) --cflags ncursesw)
+NCLD?=$(shell $(PKG_CONFIG) --libs ncursesw)
+ifeq ("$(NCLD)","")
+NCCC:=$(shell $(PKG_CONFIG) --cflags ncurses)
+NCLD:=$(shell $(PKG_CONFIG) --libs ncurses)
+endif
+ifeq ("$(NCLD)","")
+NCCC:=-lncursesw
+NCLD:=
+endif
+
+MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -std=gnu90 -Wall -Wextra
+MYLIBS=$(LIBS) $(NCLD)
 MYLDFLAGS=$(LDFLAGS)
 STRIP?=strip
 
