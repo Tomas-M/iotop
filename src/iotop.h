@@ -14,9 +14,15 @@ You should have received a copy of the GNU General Public License along with thi
 #ifndef __IOTOP_H__
 #define __IOTOP_H__
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE
+#endif
+#ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
+#endif
 
 #include <sys/types.h>
 #include <stdint.h>
