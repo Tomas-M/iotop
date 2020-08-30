@@ -733,9 +733,6 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         attroff(A_REVERSE);
     }
 
-for (i=0;i<HISTORY_CNT;i++)
-	mvprintw(i+3,0,"  %7.2f    - %3d   ",hist_t_r[i],i);
-
     if (show)
         move(promptx, prompty);
     curs_set(show);
