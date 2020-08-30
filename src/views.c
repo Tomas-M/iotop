@@ -13,6 +13,9 @@ You should have received a copy of the GNU General Public License along with thi
 
 #include "iotop.h"
 
+// allow ncurses printf-like arguments checking
+#define GCC_PRINTF
+
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,8 +25,8 @@ You should have received a copy of the GNU General Public License along with thi
 #include <locale.h>
 #include <sys/time.h>
 
-#define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s |   Total DISK WRITE:   %7.2f %s"
-#define HEADER2_FORMAT "Current DISK READ:   %7.2f %s | Current DISK WRITE:   %7.2f %s"
+#define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s%s |   Total DISK WRITE:   %7.2f %s%s"
+#define HEADER2_FORMAT "Current DISK READ:   %7.2f %s%s | Current DISK WRITE:   %7.2f %s%s"
 
 static uint64_t xxx = ~0ULL;
 static int in_ionice = 0;
@@ -32,9 +35,12 @@ static int ionice_cl = 1; // select what to edit class(1) or prio(0)
 static int ionice_class = IOPRIO_CLASS_RT;
 static int ionice_prio = 0;
 static int ionice_id_changed = 0;
-static double total_read = 0, total_write = 0;
 static int has_unicode = 0;
 static int unicode = 1;
+static double hist_t_r[HISTORY_CNT] = {0};
+static double hist_t_w[HISTORY_CNT] = {0};
+static double hist_a_r[HISTORY_CNT] = {0};
+static double hist_a_w[HISTORY_CNT] = {0};
 
 #define RRV(to, from) (((to) < (from)) ? (xxx) - (to) + (from) : (to) - (from))
 #define RRVf(pto, pfrom, fld) RRV(pto->fld, pfrom->fld)
@@ -72,7 +78,7 @@ static const char *column_name[] =
     "COMMAND",
 };
 
-// Braille unicode - 2x5 levels graph per character
+// Braille unicode pseudo graph - 2x5 levels graph per character
 static const char *br_graph[5][5] =
 {
     {"⠀", "⢀", "⢠", "⢰", "⢸", },
@@ -82,6 +88,7 @@ static const char *br_graph[5][5] =
     {"⡇", "⣇", "⣧", "⣷", "⣿", },
 };
 
+// ASCII pseudo graph - 1x5 levels graph per character
 static const char *as_graph[5] = {" ", "_", ".", ":", "|", };
 
 static const char *column_format[] =
@@ -109,6 +116,21 @@ static int maxpidlen = 5;
 static int sort_by = SORT_BY_IO;
 static int sort_order = SORT_DESC;
 
+
+static inline int value2scale(double val, double mx)
+{
+    val = 100.0 * val / mx;
+
+    if (val > 75)
+        return 4;
+    if (val > 50)
+        return 3;
+    if (val > 25)
+        return 2;
+    if (val > 0)
+        return 1;
+    return 0;
+}
 
 inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, double time_s)
 {
@@ -160,17 +182,8 @@ inline int create_diff(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, d
         c->read_val_acc = p->read_val_acc + rv;
         c->write_val_acc = p->write_val_acc + wv;
 
-        memcpy(c->iohist + 1, p->iohist, sizeof(c->iohist) - sizeof(c->iohist[0]));
-        if (c->blkio_val > 75)
-            c->iohist[0] = 4;
-        else if (c->blkio_val > 50)
-            c->iohist[0] = 3;
-        else if (c->blkio_val > 25)
-            c->iohist[0] = 2;
-        else if (c->blkio_val > 0)
-            c->iohist[0] = 1;
-        else
-            c->iohist[0] = 0;
+        memcpy(c->iohist + 1, p->iohist, sizeof c->iohist - sizeof *c->iohist);
+        c->iohist[0] = value2scale(c->blkio_val, 100.0);
 
         sprintf(temp, "%i", c->tid);
         maxpidlen = maxpidlen < (int)strlen(temp) ? (int)strlen(temp) : maxpidlen;
@@ -216,7 +229,7 @@ inline void calc_a_total(struct act_stats *act, double *read, double *write, dou
     }
 }
 
-inline void humanize_val(double *value, char **str, int allow_accum)
+static inline void humanize_val(double *value, char **str, int allow_accum)
 {
     static char *prefix_acc[] = {"B  ", "K  ", "M  ", "G  ", "T  "};
     static char *prefix[] = {"B/s", "K/s", "M/s", "G/s", "T/s"};
@@ -290,6 +303,7 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
 {
     double time_s = TIMEDIFF_IN_S(act->ts_o, act->ts_c);
     int diff_len = create_diff(cs, ps, time_s);
+    double total_read, total_write;
     double total_a_read, total_a_write;
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
@@ -306,8 +320,10 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
     printf(HEADER1_FORMAT,
            total_read,
            str_read,
+           "",
            total_write,
-           str_write
+           str_write,
+           ""
           );
 
     if (config.f.timestamp)
@@ -322,8 +338,10 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
     printf(HEADER2_FORMAT,
            total_a_read,
            str_a_read,
+           "",
            total_a_write,
-           str_a_write
+           str_a_write,
+           ""
           );
 
     printf("\n");
@@ -380,7 +398,12 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 {
     double time_s = TIMEDIFF_IN_S(act->ts_o, act->ts_c);
     int diff_len = create_diff(cs, ps, time_s);
+    double total_read, total_write;
     double total_a_read, total_a_write;
+    char pg_t_r[HISTORY_POS * 5] = {0};
+    char pg_t_w[HISTORY_POS * 5] = {0};
+    char pg_a_r[HISTORY_POS * 5] = {0};
+    char pg_a_w[HISTORY_POS * 5] = {0};
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
     int promptx = 0, prompty = 0, show;
@@ -409,17 +432,82 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     calc_total(cs, &total_read, &total_write);
     calc_a_total(act, &total_a_read, &total_a_write, time_s);
 
+    memmove(hist_t_r + 1, hist_t_r, sizeof hist_t_r - sizeof *hist_t_r);
+    memmove(hist_t_w + 1, hist_t_w, sizeof hist_t_w - sizeof *hist_t_w);
+    memmove(hist_a_r + 1, hist_a_r, sizeof hist_a_r - sizeof *hist_a_r);
+    memmove(hist_a_w + 1, hist_a_w, sizeof hist_a_w - sizeof *hist_a_w);
+    hist_t_r[0] = total_read;
+    hist_t_w[0] = total_write;
+    hist_a_r[0] = total_a_read;
+    hist_a_w[0] = total_a_write;
+
     humanize_val(&total_read, &str_read, 1);
     humanize_val(&total_write, &str_write, 1);
     humanize_val(&total_a_read, &str_a_read, 0);
     humanize_val(&total_a_write, &str_a_write, 0);
 
+    if (config.f.iohist)
+    {
+        double mx_t_r = 1000.0;
+        double mx_t_w = 1000.0;
+        double mx_a_r = 1000.0;
+        double mx_a_w = 1000.0;
+        int i, j;
+
+        for (i = 0; i < ((has_unicode && unicode) ? HISTORY_CNT : HISTORY_POS); i++)
+        {
+            if (mx_t_r < hist_t_r[i])
+                mx_t_r = hist_t_r[i];
+            if (mx_t_w < hist_t_w[i])
+                mx_t_w = hist_t_w[i];
+            if (mx_a_r < hist_a_r[i])
+                mx_a_r = hist_a_r[i];
+            if (mx_a_w < hist_a_w[i])
+                mx_a_w = hist_a_w[i];
+        }
+        strcpy(pg_t_r, " ");
+        strcpy(pg_t_w, " ");
+        strcpy(pg_a_r, " ");
+        strcpy(pg_a_w, " ");
+        for (j = 0; j < HISTORY_POS; j++)
+        {
+            if (has_unicode && unicode)
+            {
+                sprintf(pg_t_r + strlen(pg_t_r), "%s",
+                    br_graph[value2scale(hist_t_r[j * 2], mx_t_r)]
+                            [value2scale(hist_t_r[j * 2 + 1], mx_t_r)]);
+                sprintf(pg_t_w + strlen(pg_t_w), "%s",
+                    br_graph[value2scale(hist_t_w[j * 2], mx_t_w)]
+                            [value2scale(hist_t_w[j * 2 + 1], mx_t_w)]);
+                sprintf(pg_a_r + strlen(pg_a_r), "%s",
+                    br_graph[value2scale(hist_a_r[j * 2], mx_a_r)]
+                            [value2scale(hist_a_r[j * 2 + 1], mx_a_r)]);
+                sprintf(pg_a_w + strlen(pg_a_w), "%s",
+                    br_graph[value2scale(hist_a_w[j * 2], mx_a_w)]
+                            [value2scale(hist_a_w[j * 2 + 1], mx_a_w)]);
+            }
+            else
+            {
+                sprintf(pg_t_r + strlen(pg_t_r), "%s",
+                    as_graph[value2scale(hist_t_r[j], mx_t_r)]);
+                sprintf(pg_t_w + strlen(pg_t_w), "%s",
+                    as_graph[value2scale(hist_t_w[j], mx_t_w)]);
+                sprintf(pg_a_r + strlen(pg_a_r), "%s",
+                    as_graph[value2scale(hist_a_r[j], mx_a_r)]);
+                sprintf(pg_a_w + strlen(pg_a_w), "%s",
+                    as_graph[value2scale(hist_a_w[j], mx_a_w)]);
+            }
+        }
+    }
+
     mvhline(0, 0, ' ', maxx);
     mvprintw(0, 0, HEADER1_FORMAT,
              total_read,
              str_read,
+             config.f.iohist ? pg_t_r : "",
              total_write,
-             str_write
+             str_write,
+             config.f.iohist ? pg_t_w : ""
             );
 
     mvhline(1, 0, ' ', maxx);
@@ -428,8 +516,10 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         mvprintw(1, 0, HEADER2_FORMAT,
                  total_a_read,
                  str_a_read,
+                 config.f.iohist ? pg_a_r : "",
                  total_a_write,
-                 str_a_write
+                 str_a_write,
+                 config.f.iohist ? pg_a_w : ""
                 );
         show = FALSE;
     }
@@ -477,7 +567,8 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
             }
             else
                 printw(" (invalid %s)", COLUMN_NAME(0));
-        } else
+        }
+        else
             printw(" (select %s)", COLUMN_NAME(0));
         printw(" ");
         attron(A_REVERSE);
@@ -641,6 +732,9 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 
         attroff(A_REVERSE);
     }
+
+for (i=0;i<HISTORY_CNT;i++)
+	mvprintw(i+3,0,"  %7.2f    - %3d   ",hist_t_r[i],i);
 
     if (show)
         move(promptx, prompty);
