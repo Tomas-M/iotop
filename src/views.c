@@ -527,7 +527,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     {
         mvprintw(1, 0, "%s: ", COLUMN_NAME(0));
         attron(A_BOLD);
-        printw(ionice_id);
+        printw("%s", ionice_id);
         attroff(A_BOLD);
         getyx(stdscr, promptx, prompty);
 
