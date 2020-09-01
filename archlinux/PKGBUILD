@@ -1,7 +1,7 @@
 # Maintainer: Rumen Jekov <rvjekov@gmail.com>
 
 pkgname=iotop-c
-pkgver=1.9
+pkgver=1.10
 pkgrel=1
 pkgdesc="simple top-like I/O monitor (implemented in C)"
 arch=('any')
@@ -29,5 +29,5 @@ prepare() {
 package() {
 	cd "${srcdir}/$_gitname"
 	make  DESTDIR="$pkgdir/"  install
-	install -Dm644 ${srcdir}/$_gitname/debian/iotop.8 "$pkgdir/usr/share/man/man8/iotop.8"
+	install -Dm644 ${srcdir}/$_gitname/iotop.8 "$pkgdir/usr/share/man/man8/iotop.8"
 }
