@@ -1,3 +1,15 @@
+iotop-c (1.10-1) unstable; urgency=medium
+
+  * Update to new upstream release of 1.10
+    - add pseudo graphs for total IO activity
+    - add detection of UTF support, fallback to ASCII
+    - add shortcut to toggle UTF/ASCII
+    - improve build checks for printf-like ncurses API
+  * Convert alternatives to debhelper instead of shell scripts
+  * Add debian/upstream/metadata
+
+ -- Boian Bonev <bbonev@ipacct.com>  Tue, 01 Sep 2020 19:02:39 +0000
+
 iotop-c (1.9-1) unstable; urgency=medium
 
   * Add Vcs-* tags
