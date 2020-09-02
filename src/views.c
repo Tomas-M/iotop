@@ -624,7 +624,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         int maxcmdline;
 
         // visible history is non-zero
-        if (config.f.only && memcmp(s->iohist, iohist_z, (has_unicode && unicode) ? gr_width * 2 : gr_width))
+        if (config.f.only && !memcmp(s->iohist, iohist_z, (has_unicode && unicode) ? gr_width * 2 : gr_width))
             continue;
 
         humanize_val(&read_val, &read_str, 1);
