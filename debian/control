@@ -4,7 +4,8 @@ Priority: optional
 Maintainer: Boian Bonev <bbonev@ipacct.com>
 Build-Depends:
  debhelper-compat (= 13),
- libncurses-dev
+ libncurses-dev,
+ pkg-config,
 Standards-Version: 4.5.0
 Rules-Requires-Root: no
 Homepage: https://github.com/Tomas-M/iotop
@@ -15,11 +16,11 @@ Package: iotop-c
 Architecture: linux-any
 Depends:
  ${misc:Depends},
- ${shlibs:Depends}
+ ${shlibs:Depends},
 Replaces:
- iotop (<= 0.6-24-g733f3f8-1)
+ iotop (<= 0.6-24-g733f3f8-1),
 Breaks:
- iotop (<= 0.6-24-g733f3f8-1)
+ iotop (<= 0.6-24-g733f3f8-1),
 Description: simple top-like I/O monitor (implemented in C)
  iotop-c does for I/O usage what top(1) does for CPU usage. It watches I/O
  usage information output by the Linux kernel and displays a table of
