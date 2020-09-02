@@ -409,6 +409,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     char *str_a_read, *str_a_write;
     int promptx = 0, prompty = 0, show;
     int line, lastline;
+    int gr_width;
     int maxy;
     int maxx;
     int i;
@@ -461,7 +462,14 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         double mx_a_w = 1000.0;
         int i, j;
 
-        for (i = 0; i < ((has_unicode && unicode) ? HISTORY_CNT : HISTORY_POS); i++)
+        gr_width = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
+        gr_width /= 4;
+        if (gr_width < 5)
+            gr_width = 5;
+        if (gr_width > HISTORY_POS)
+            gr_width = HISTORY_POS;
+
+        for (i = 0; i < ((has_unicode && unicode) ? gr_width * 2 : gr_width); i++)
         {
             if (mx_t_r < hist_t_r[i])
                 mx_t_r = hist_t_r[i];
@@ -476,7 +484,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         strcpy(pg_t_w, " ");
         strcpy(pg_a_r, " ");
         strcpy(pg_a_w, " ");
-        for (j = 0; j < HISTORY_POS; j++)
+        for (j = 0; j < gr_width; j++)
         {
             if (has_unicode && unicode)
             {
@@ -595,7 +603,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         if (i == 0)
             vwidth = maxpidlen - strlen(COLUMN_NAME(0));
         if (i == 6)
-            vwidth = config.f.iohist ? HISTORY_POS : 0;
+            vwidth = config.f.iohist ? gr_width : 0;
 
         if (sort_by == i)
             attron(A_BOLD);
@@ -627,7 +635,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 
         maxcmdline = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
         if (config.f.iohist)
-            maxcmdline -= HISTORY_POS;
+            maxcmdline -= gr_width;
         if (maxcmdline < 0)
             maxcmdline = 0;
 
@@ -637,18 +645,13 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         {
             int j;
 
-            if (has_unicode && unicode)
-            {
-                for (j = 0; j < HISTORY_POS; j++)
+            for (j = 0; j < gr_width; j++)
+                if (has_unicode && unicode)
                     sprintf(iohist + (j ? strlen(iohist) : 0), "%s",
                         br_graph[s->iohist[j * 2]][s->iohist[j * 2 + 1]]);
-            }
             else
-            {
-                for (j = 0; j < HISTORY_POS; j++)
                     sprintf(iohist + (j ? strlen(iohist) : 0), "%s",
                         as_graph[s->iohist[j]]);
-            }
         }
 
         mvprintw(line, 0, "%*i  %4s  %s  %7.2f %-3.3s  %7.2f %-3.3s %6.2f %% %6.2f %% %s %s\n",

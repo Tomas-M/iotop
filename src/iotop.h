@@ -59,7 +59,7 @@ extern config_t config;
 extern params_t params;
 
 
-#define HISTORY_POS 5
+#define HISTORY_POS 60
 #define HISTORY_CNT (HISTORY_POS * 2)
 
 struct xxxid_stats
