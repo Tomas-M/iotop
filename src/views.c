@@ -398,6 +398,7 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
 inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, struct act_stats *act)
 {
     double time_s = TIMEDIFF_IN_S(act->ts_o, act->ts_c);
+    static const uint8_t iohist_z[HISTORY_CNT] = {0};
     int diff_len = create_diff(cs, ps, time_s);
     double total_read, total_write;
     double total_a_read, total_a_write;
@@ -408,11 +409,15 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
     int promptx = 0, prompty = 0, show;
+    double mx_t_r = 1000.0;
+    double mx_t_w = 1000.0;
+    double mx_a_r = 1000.0;
+    double mx_a_w = 1000.0;
     int line, lastline;
-    int gr_width = 0;
+    int gr_width;
     int maxy;
     int maxx;
-    int i;
+    int i, j;
 
     if (!stdscr)
     {
@@ -454,64 +459,55 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     humanize_val(&total_a_read, &str_a_read, 0);
     humanize_val(&total_a_write, &str_a_write, 0);
 
-    if (config.f.iohist)
+    gr_width = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
+    gr_width /= 4;
+    if (gr_width < 5)
+        gr_width = 5;
+    if (gr_width > HISTORY_POS)
+        gr_width = HISTORY_POS;
+
+    for (i = 0; i < ((has_unicode && unicode) ? gr_width * 2 : gr_width); i++)
     {
-        double mx_t_r = 1000.0;
-        double mx_t_w = 1000.0;
-        double mx_a_r = 1000.0;
-        double mx_a_w = 1000.0;
-        int i, j;
-
-        gr_width = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
-        gr_width /= 4;
-        if (gr_width < 5)
-            gr_width = 5;
-        if (gr_width > HISTORY_POS)
-            gr_width = HISTORY_POS;
-
-        for (i = 0; i < ((has_unicode && unicode) ? gr_width * 2 : gr_width); i++)
+        if (mx_t_r < hist_t_r[i])
+            mx_t_r = hist_t_r[i];
+        if (mx_t_w < hist_t_w[i])
+            mx_t_w = hist_t_w[i];
+        if (mx_a_r < hist_a_r[i])
+            mx_a_r = hist_a_r[i];
+        if (mx_a_w < hist_a_w[i])
+            mx_a_w = hist_a_w[i];
+    }
+    strcpy(pg_t_r, " ");
+    strcpy(pg_t_w, " ");
+    strcpy(pg_a_r, " ");
+    strcpy(pg_a_w, " ");
+    for (j = 0; j < gr_width; j++)
+    {
+        if (has_unicode && unicode)
         {
-            if (mx_t_r < hist_t_r[i])
-                mx_t_r = hist_t_r[i];
-            if (mx_t_w < hist_t_w[i])
-                mx_t_w = hist_t_w[i];
-            if (mx_a_r < hist_a_r[i])
-                mx_a_r = hist_a_r[i];
-            if (mx_a_w < hist_a_w[i])
-                mx_a_w = hist_a_w[i];
+            sprintf(pg_t_r + strlen(pg_t_r), "%s",
+                br_graph[value2scale(hist_t_r[j * 2], mx_t_r)]
+                        [value2scale(hist_t_r[j * 2 + 1], mx_t_r)]);
+            sprintf(pg_t_w + strlen(pg_t_w), "%s",
+                br_graph[value2scale(hist_t_w[j * 2], mx_t_w)]
+                        [value2scale(hist_t_w[j * 2 + 1], mx_t_w)]);
+            sprintf(pg_a_r + strlen(pg_a_r), "%s",
+                br_graph[value2scale(hist_a_r[j * 2], mx_a_r)]
+                        [value2scale(hist_a_r[j * 2 + 1], mx_a_r)]);
+            sprintf(pg_a_w + strlen(pg_a_w), "%s",
+                br_graph[value2scale(hist_a_w[j * 2], mx_a_w)]
+                        [value2scale(hist_a_w[j * 2 + 1], mx_a_w)]);
         }
-        strcpy(pg_t_r, " ");
-        strcpy(pg_t_w, " ");
-        strcpy(pg_a_r, " ");
-        strcpy(pg_a_w, " ");
-        for (j = 0; j < gr_width; j++)
+        else
         {
-            if (has_unicode && unicode)
-            {
-                sprintf(pg_t_r + strlen(pg_t_r), "%s",
-                    br_graph[value2scale(hist_t_r[j * 2], mx_t_r)]
-                            [value2scale(hist_t_r[j * 2 + 1], mx_t_r)]);
-                sprintf(pg_t_w + strlen(pg_t_w), "%s",
-                    br_graph[value2scale(hist_t_w[j * 2], mx_t_w)]
-                            [value2scale(hist_t_w[j * 2 + 1], mx_t_w)]);
-                sprintf(pg_a_r + strlen(pg_a_r), "%s",
-                    br_graph[value2scale(hist_a_r[j * 2], mx_a_r)]
-                            [value2scale(hist_a_r[j * 2 + 1], mx_a_r)]);
-                sprintf(pg_a_w + strlen(pg_a_w), "%s",
-                    br_graph[value2scale(hist_a_w[j * 2], mx_a_w)]
-                            [value2scale(hist_a_w[j * 2 + 1], mx_a_w)]);
-            }
-            else
-            {
-                sprintf(pg_t_r + strlen(pg_t_r), "%s",
-                    as_graph[value2scale(hist_t_r[j], mx_t_r)]);
-                sprintf(pg_t_w + strlen(pg_t_w), "%s",
-                    as_graph[value2scale(hist_t_w[j], mx_t_w)]);
-                sprintf(pg_a_r + strlen(pg_a_r), "%s",
-                    as_graph[value2scale(hist_a_r[j], mx_a_r)]);
-                sprintf(pg_a_w + strlen(pg_a_w), "%s",
-                    as_graph[value2scale(hist_a_w[j], mx_a_w)]);
-            }
+            sprintf(pg_t_r + strlen(pg_t_r), "%s",
+                as_graph[value2scale(hist_t_r[j], mx_t_r)]);
+            sprintf(pg_t_w + strlen(pg_t_w), "%s",
+                as_graph[value2scale(hist_t_w[j], mx_t_w)]);
+            sprintf(pg_a_r + strlen(pg_a_r), "%s",
+                as_graph[value2scale(hist_a_r[j], mx_a_r)]);
+            sprintf(pg_a_w + strlen(pg_a_w), "%s",
+                as_graph[value2scale(hist_a_w[j], mx_a_w)]);
         }
     }
 
@@ -627,7 +623,8 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         char *pw_name, *cmdline;
         int maxcmdline;
 
-        if (config.f.only && !read_val && !write_val)
+        // visible history is non-zero
+        if (config.f.only && memcmp(s->iohist, iohist_z, (has_unicode && unicode) ? gr_width * 2 : gr_width))
             continue;
 
         humanize_val(&read_val, &read_str, 1);
@@ -641,6 +638,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 
         pw_name = u8strpadt(s->pw_name, 9);
         cmdline = u8strpadt(s->cmdline, maxcmdline);
+
         if (config.f.iohist)
         {
             int j;
