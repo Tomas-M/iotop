@@ -409,7 +409,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     char *str_a_read, *str_a_write;
     int promptx = 0, prompty = 0, show;
     int line, lastline;
-    int gr_width;
+    int gr_width = 0;
     int maxy;
     int maxx;
     int i;
