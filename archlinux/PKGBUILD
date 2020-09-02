@@ -11,7 +11,8 @@ url="https://github.com/Tomas-M/iotop"
 license=('GPL2')
 depends=('ncurses')
 makedepends=('git' 'pkgconf')
-conflicts=('iotop')
+conflicts=('iotop' 'iotop-git')
+provides=('iotop')
 source=("git+${url}.git#tag=v${pkgver}")
 sha256sums=('SKIP')
 
