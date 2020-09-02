@@ -13,10 +13,11 @@ depends=('ncurses')
 makedepends=('git' 'pkgconf')
 conflicts=('iotop' 'iotop-git')
 provides=('iotop')
-source=("git+${url}.git#tag=v${pkgver}")
-sha256sums=('SKIP')
+source=("iotop-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz" "${url}/releases/download/v${pkgver}/iotop-${pkgver}.tar.gz.asc")
+validpgpkeys=('BA60BC20F37E59444D6D25001365720913D2F22D')
+md5sums=('SKIP' 'SKIP')
 
 package() {
-	cd "${srcdir}/iotop"
+	cd "${srcdir}/iotop-${pkgver}"
 	make DESTDIR="${pkgdir}" V=1 install
 }
