@@ -1,4 +1,4 @@
-iotop-c (1.10-1) unstable; urgency=medium
+iotop-c (1.11-1) unstable; urgency=medium
 
   * Update to new upstream release of 1.10
     - add pseudo graphs for total IO activity
@@ -7,8 +7,18 @@ iotop-c (1.10-1) unstable; urgency=medium
     - improve build checks for printf-like ncurses API
   * Convert alternatives to debhelper instead of shell scripts
   * Add debian/upstream/metadata
+  * Update to new upstream release of 1.11
+    - better detection of locale/terminal
+    - add graph and UTF/ASCII toggles to help
+    - increase history to 60 datapoints
+    - make graphs scale as screen size changes
+    - always keep track of history data (graph display toggle no
+      longer affects the data collected)
+    - use the history data as 'only' filter in interactive mode
+  * Add build-dep on pkg-config
+  * wrap-and-sort in the proper way
 
- -- Boian Bonev <bbonev@ipacct.com>  Tue, 01 Sep 2020 19:02:39 +0000
+ -- Boian Bonev <bbonev@ipacct.com>  Wed, 02 Sep 2020 20:41:00 +0300
 
 iotop-c (1.9-1) unstable; urgency=medium
 
