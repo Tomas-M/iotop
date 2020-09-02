@@ -5,7 +5,7 @@
 pkgname=iotop-c
 pkgver=1.12
 pkgrel=2
-pkgdesc="Simple top-like I/O monitor (implemented in C)"
+pkgdesc="simple top-like I/O monitor (implemented in C)"
 arch=('any')
 url="https://github.com/Tomas-M/iotop"
 license=('GPL2')
