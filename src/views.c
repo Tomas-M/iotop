@@ -23,6 +23,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <unistd.h>
 #include <curses.h>
 #include <locale.h>
+#include <langinfo.h>
 #include <sys/time.h>
 
 #define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s%s |   Total DISK WRITE:   %7.2f %s%s"
@@ -414,6 +415,15 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 
     if (!stdscr)
     {
+        if (strcmp(getenv("TERM"), "linux"))
+        {
+            if (setlocale(LC_CTYPE, "C.UTF-8"))
+                has_unicode = 1;
+            else
+                if (setlocale(LC_CTYPE, ""))
+                    if (!strcmp("UTF-8", nl_langinfo(CODESET)))
+                        has_unicode = 1;
+        }
         initscr();
         keypad(stdscr, TRUE);
         nonl();
@@ -421,9 +431,6 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         noecho();
         curs_set(FALSE);
         nodelay(stdscr, TRUE);
-        if (setlocale(LC_CTYPE, "C.UTF-8"))
-            if (strcmp(getenv("TERM"), "linux"))
-                has_unicode = 1;
     }
 
     maxy = getmaxy(stdscr);
@@ -702,7 +709,14 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         attron(A_UNDERLINE);
         printw("s");
         attroff(A_UNDERLINE);
-        printw(": graph  ");
+        printw(": %s  ", config.f.iohist ? "no-graph" : "graph");
+        if (has_unicode)
+        {
+            attron(A_UNDERLINE);
+            printw("u");
+            attroff(A_UNDERLINE);
+            printw(": %s  ", unicode ? "ASCII" : "UTF");
+        }
         attron(A_UNDERLINE);
         printw("h");
         attroff(A_UNDERLINE);
