@@ -4,7 +4,7 @@
 
 pkgname=iotop-c
 pkgver=1.11
-pkgrel=1
+pkgrel=2
 pkgdesc="simple top-like I/O monitor (implemented in C)"
 arch=('any')
 url="https://github.com/Tomas-M/iotop"
@@ -19,5 +19,6 @@ md5sums=('SKIP' 'SKIP')
 
 package() {
 	cd "${srcdir}/iotop-${pkgver}"
+	sed -i 's/sbin/bin/g' Makefile
 	make DESTDIR="${pkgdir}" V=1 install
 }
