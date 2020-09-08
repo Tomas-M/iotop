@@ -293,7 +293,7 @@ static inline int my_sort_cb(const void *a,const void *b,void *arg)
             res = pa->swapin_val - pb->swapin_val;
             break;
         case SORT_BY_IO:
-            res = pa->blkio_val - pb->blkio_val;
+            res = pa->blkio_val > pb->blkio_val ? 1 : pa->blkio_val < pb->blkio_val ? -1 : 0;
             break;
     }
     res *= order;
