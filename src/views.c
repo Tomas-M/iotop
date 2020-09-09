@@ -279,18 +279,18 @@ static inline int my_sort_cb(const void *a,const void *b,void *arg)
             break;
         case SORT_BY_READ:
             if (config.f.accumulated)
-                res = pa->read_val_acc - pb->read_val_acc;
+                res = pa->read_val_acc > pb->read_val_acc ? 1 : pa->read_val_acc < pb->read_val_acc ? -1 : 0;
             else
-                res = pa->read_val - pb->read_val;
+                res = pa->read_val > pb->read_val ? 1 : pa->read_val < pb->read_val ? -1 : 0;
             break;
         case SORT_BY_WRITE:
             if (config.f.accumulated)
-                res = pa->write_val_acc - pb->write_val_acc;
+                res = pa->write_val_acc > pb->write_val_acc ? 1 : pa->write_val_acc < pb->write_val_acc ? -1 : 0;
             else
-                res = pa->write_val - pb->write_val;
+                res = pa->write_val > pb->write_val ? 1 : pa->write_val < pb->write_val ? -1 : 0;
             break;
         case SORT_BY_SWAPIN:
-            res = pa->swapin_val - pb->swapin_val;
+            res = pa->swapin_val > pb->swapin_val ? 1 : pa->swapin_val < pb->swapin_val ? -1 : 0;
             break;
         case SORT_BY_IO:
             res = pa->blkio_val > pb->blkio_val ? 1 : pa->blkio_val < pb->blkio_val ? -1 : 0;
