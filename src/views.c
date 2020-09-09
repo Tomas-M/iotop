@@ -26,13 +26,14 @@ You should have received a copy of the GNU General Public License along with thi
 #include <langinfo.h>
 #include <sys/time.h>
 
-#define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s%s |   Total DISK WRITE:   %7.2f %s%s"
-#define HEADER2_FORMAT "Current DISK READ:   %7.2f %s%s | Current DISK WRITE:   %7.2f %s%s"
-#define HEADER_XXS_FORMAT "T R:%4.0f%s%s W:%4.0f%s%s|C R:%4.0f%s%s W:%4.0f%s%s"
-#define HEADER_XS_FORMAT "T R:%7.2f%s%s W:%7.2f%s%s|C R:%7.2f%s%s W:%7.2f%s%s"
-#define HEADER_S_FORMAT "Total R:%7.2f%s%s W:%7.2f%s%s|Current R:%7.2f%s%s W:%7.2f%s%s"
-#define HEADER_M_FORMAT "Total Read:%7.2f %s%s Write:%7.2f %s%s|Current Read:%7.2f %s%s Write:%7.2f %s%s"
-#define HEADER_L_FORMAT "Total Read: %7.2f %s%s Write: %7.2f %s%s | Current Read: %7.2f %s%s Write: %7.2f %s%s"
+#define HEADER1_FORMAT "  Total DISK READ: %7.2f %s%s |   Total DISK WRITE: %7.2f %s%s"
+#define HEADER2_FORMAT "Current DISK READ: %7.2f %s%s | Current DISK WRITE: %7.2f %s%s"
+#define HEADER_XXS_FORMAT "%4.0f%s%s/%4.0f%s%s|%4.0f%s%s/%4.0f%s%s"
+#define HEADER_XS_FORMAT "TR:%4.0f%s%sW:%4.0f%s%s|CR:%4.0f%s%sW:%4.0f%s%s"
+#define HEADER_S_FORMAT "T R:%7.2f%s%s W:%7.2f%s%s|C R:%7.2f%s%s W:%7.2f%s%s"
+#define HEADER_M_FORMAT "T Read:%7.2f%s%s Write:%7.2f%s%s|C Read:%7.2f%s%s Write:%7.2f%s%s"
+#define HEADER_L_FORMAT "Total Read:%7.2f %s%s Write:%7.2f %s%s|Current Read:%7.2f %s%s Write:%7.2f %s%s"
+#define HEADER_XL_FORMAT "Total Read: %7.2f %s%s Write: %7.2f %s%s | Current Read: %7.2f %s%s Write: %7.2f %s%s"
 
 static uint64_t xxx = ~0ULL;
 static int in_ionice = 0;
@@ -413,6 +414,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     char pg_a_w[HISTORY_POS * 5] = {0};
     char str_read[4], str_write[4];
     char str_a_read[4], str_a_write[4];
+    char *head1row_format;
     int promptx = 0, prompty = 0, show;
     int nohelp = config.f.nohelp;
     double mx_t_r = 1000.0;
@@ -421,6 +423,9 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     double mx_a_w = 1000.0;
     int line, lastline;
     int ionicepos = 1;
+    int shrink_dm = 0;
+    int head1row = 0;
+    int gr_width_h;
     int gr_width;
     int maxy;
     int maxx;
@@ -466,14 +471,58 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     humanize_val(&total_a_read, str_a_read, 0);
     humanize_val(&total_a_write, str_a_write, 0);
 
-    gr_width = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
+    gr_width = maxx - maxpidlen - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
     gr_width /= 4;
     if (gr_width < 5)
         gr_width = 5;
     if (gr_width > HISTORY_POS)
         gr_width = HISTORY_POS;
+    gr_width_h = gr_width;
+    if (maxy < 10 || maxx < (int)strlen(HEADER1_FORMAT) + 2 * (7 - 5 + 3 - 2 + (config.f.iohist ? gr_width_h + 1 : 0) - 2))
+    {
+        int size_off;
 
-    for (i = 0; i < ((has_unicode && unicode) ? gr_width * 2 : gr_width); i++)
+        head1row = 1;
+
+        gr_width_h /= 2;
+        if (gr_width_h < 3)
+            gr_width_h = 3;
+
+        size_off = 7 - 5 + 3 - 2 + (config.f.iohist ? gr_width_h + 1 : 0) - 2;
+
+        if (maxx >= (int)strlen(HEADER_XL_FORMAT) + 4 * size_off)
+            head1row_format = HEADER_XL_FORMAT;
+        else if (maxx >= (int)strlen(HEADER_L_FORMAT) + 4 * size_off)
+            head1row_format = HEADER_L_FORMAT;
+        else if (maxx >= (int)strlen(HEADER_M_FORMAT) + 4 * size_off)
+            head1row_format = HEADER_M_FORMAT;
+        else if (maxx >= (int)strlen(HEADER_S_FORMAT) + 4 * (size_off - 2))
+        {
+            head1row_format = HEADER_S_FORMAT;
+            shrink_dm = 1;
+            size_off -= 2;
+        }
+        else if (maxx >= (int)strlen(HEADER_XS_FORMAT) + 4 * (size_off - 5))
+        {
+            head1row_format = HEADER_XS_FORMAT;
+            shrink_dm = 1;
+            size_off -= 5;
+        }
+        else
+        {
+            head1row_format = HEADER_XXS_FORMAT;
+            shrink_dm = 1;
+            size_off -= 5;
+        }
+        if (config.f.iohist)
+            while (gr_width_h < gr_width && maxx >= (int)strlen(head1row_format) + 4 * (size_off + 1))
+            {
+                size_off++;
+                gr_width_h++;
+            }
+    }
+
+    for (i = 0; i < ((has_unicode && unicode) ? gr_width_h * 2 : gr_width_h); i++)
     {
         if (mx_t_r < hist_t_r[i])
             mx_t_r = hist_t_r[i];
@@ -488,7 +537,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     strcpy(pg_t_w, " ");
     strcpy(pg_a_r, " ");
     strcpy(pg_a_w, " ");
-    for (j = 0; j < gr_width; j++)
+    for (j = 0; j < gr_width_h; j++)
     {
         if (has_unicode && unicode)
         {
@@ -518,43 +567,20 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         }
     }
 
-    if (maxy < 10 || maxx < (int)strlen(HEADER1_FORMAT) + 2 * (7 + 3 + (config.f.iohist ? gr_width : 0)))
+    if (head1row)
     {
         ionicepos = 0;
         if (!in_ionice)
         {
-            char *fmt;
-
-            if (maxx >= (int)strlen(HEADER_L_FORMAT) + 4 * (7 + 3 + (config.f.iohist ? gr_width : 0)))
-                fmt = HEADER_L_FORMAT;
-            else if (maxx >= (int)strlen(HEADER_M_FORMAT) + 4 * (7 + 3 + (config.f.iohist ? gr_width : 0)))
-                fmt = HEADER_M_FORMAT;
-            else if (maxx >= (int)strlen(HEADER_S_FORMAT) + 4 * (7 + 1 + (config.f.iohist ? gr_width : 0)))
+            if (shrink_dm)
             {
-                fmt = HEADER_S_FORMAT;
-                str_read[1] = 0;
-                str_write[1] = 0;
-                str_a_read[1] = 0;
-                str_a_write[1] = 0;
-            }
-            else if (maxx >= (int)strlen(HEADER_XS_FORMAT) + 4 * (7 + 1 + (config.f.iohist ? gr_width : 0)))
-            {
-                fmt = HEADER_XS_FORMAT;
-                str_read[1] = 0;
-                str_write[1] = 0;
-                str_a_read[1] = 0;
-                str_a_write[1] = 0;
-            }
-            else
-            {
-                fmt = HEADER_XXS_FORMAT;
                 str_read[1] = 0;
                 str_write[1] = 0;
                 str_a_read[1] = 0;
                 str_a_write[1] = 0;
             }
             mvhline(0, 0, ' ', maxx);
-            mvprintw(0, 0, fmt,
+            mvprintw(0, 0, head1row_format,
                      total_read,
                      str_read,
                      config.f.iohist ? pg_t_r : "",
@@ -696,7 +722,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         humanize_val(&read_val, read_str, 1);
         humanize_val(&write_val, write_str, 1);
 
-        maxcmdline = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
+        maxcmdline = maxx - maxpidlen - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
         if (config.f.iohist)
             maxcmdline -= gr_width;
         if (maxcmdline < 0)
