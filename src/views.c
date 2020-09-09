@@ -409,6 +409,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     char *str_read, *str_write;
     char *str_a_read, *str_a_write;
     int promptx = 0, prompty = 0, show;
+    int nohelp = config.f.nohelp;
     double mx_t_r = 1000.0;
     double mx_t_w = 1000.0;
     double mx_a_r = 1000.0;
@@ -611,6 +612,8 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 
     arr_sort(cs,my_sort_cb,(void *)(long)(sort_by * 2 + !!(sort_order == SORT_ASC)));
 
+    if (maxy < 10)
+        nohelp = 1;
     line = 3;
     lastline = line;
     for (i = 0; cs->sor && i < diff_len; i++)
@@ -674,13 +677,13 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 
         line++;
         lastline = line;
-        if (line > maxy - (config.f.nohelp ? 1 : 3)) // do not draw out of screen, keep 2 lines for help
+        if (line > maxy - (nohelp ? 1 : 3)) // do not draw out of screen, keep 2 lines for help
             break;
     }
-    for (line = lastline; line <= maxy - (config.f.nohelp ? 1 : 3); line++) // always draw empty lines
+    for (line = lastline; line <= maxy - (nohelp ? 1 : 3); line++) // always draw empty lines
         mvhline(line, 0, ' ', maxx);
 
-    if (!config.f.nohelp)
+    if (!nohelp)
     {
         attron(A_REVERSE);
 
