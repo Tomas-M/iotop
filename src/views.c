@@ -28,6 +28,11 @@ You should have received a copy of the GNU General Public License along with thi
 
 #define HEADER1_FORMAT "  Total DISK READ:   %7.2f %s%s |   Total DISK WRITE:   %7.2f %s%s"
 #define HEADER2_FORMAT "Current DISK READ:   %7.2f %s%s | Current DISK WRITE:   %7.2f %s%s"
+#define HEADER_XXS_FORMAT "T R:%4.0f%s%s W:%4.0f%s%s|C R:%4.0f%s%s W:%4.0f%s%s"
+#define HEADER_XS_FORMAT "T R:%7.2f%s%s W:%7.2f%s%s|C R:%7.2f%s%s W:%7.2f%s%s"
+#define HEADER_S_FORMAT "Total R:%7.2f%s%s W:%7.2f%s%s|Current R:%7.2f%s%s W:%7.2f%s%s"
+#define HEADER_M_FORMAT "Total Read:%7.2f %s%s Write:%7.2f %s%s|Current Read:%7.2f %s%s Write:%7.2f %s%s"
+#define HEADER_L_FORMAT "Total Read: %7.2f %s%s Write: %7.2f %s%s | Current Read: %7.2f %s%s Write: %7.2f %s%s"
 
 static uint64_t xxx = ~0ULL;
 static int in_ionice = 0;
@@ -230,7 +235,7 @@ inline void calc_a_total(struct act_stats *act, double *read, double *write, dou
     }
 }
 
-static inline void humanize_val(double *value, char **str, int allow_accum)
+static inline void humanize_val(double *value, char *str, int allow_accum)
 {
     static char *prefix_acc[] = {"B  ", "K  ", "M  ", "G  ", "T  "};
     static char *prefix[] = {"B/s", "K/s", "M/s", "G/s", "T/s"};
@@ -239,7 +244,7 @@ static inline void humanize_val(double *value, char **str, int allow_accum)
     if (config.f.kilobytes)
     {
         *value /= 1000.0;
-        *str = config.f.accumulated && allow_accum ? prefix_acc[1] : prefix[1];
+        strcpy(str, config.f.accumulated && allow_accum ? prefix_acc[1] : prefix[1]);
         return;
     }
 
@@ -250,7 +255,7 @@ static inline void humanize_val(double *value, char **str, int allow_accum)
         p++;
     }
 
-    *str = config.f.accumulated && allow_accum ? prefix_acc[p] : prefix[p];
+    strcpy(str, config.f.accumulated && allow_accum ? prefix_acc[p] : prefix[p]);
 }
 
 static inline int my_sort_cb(const void *a,const void *b,void *arg)
@@ -306,17 +311,17 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
     int diff_len = create_diff(cs, ps, time_s);
     double total_read, total_write;
     double total_a_read, total_a_write;
-    char *str_read, *str_write;
-    char *str_a_read, *str_a_write;
+    char str_read[4], str_write[4];
+    char str_a_read[4], str_a_write[4];
     int i;
 
     calc_total(cs, &total_read, &total_write);
     calc_a_total(act, &total_a_read, &total_a_write, time_s);
 
-    humanize_val(&total_read, &str_read, 1);
-    humanize_val(&total_write, &str_write, 1);
-    humanize_val(&total_a_read, &str_a_read, 0);
-    humanize_val(&total_a_write, &str_a_write, 0);
+    humanize_val(&total_read, str_read, 1);
+    humanize_val(&total_write, str_write, 1);
+    humanize_val(&total_a_read, str_a_read, 0);
+    humanize_val(&total_a_write, str_a_write, 0);
 
     printf(HEADER1_FORMAT,
            total_read,
@@ -372,8 +377,8 @@ inline void view_batch(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, s
         if (config.f.only && !read_val && !write_val)
             continue;
 
-        humanize_val(&read_val, &read_str, 1);
-        humanize_val(&write_val, &write_str, 1);
+        humanize_val(&read_val, read_str, 1);
+        humanize_val(&write_val, write_str, 1);
 
         pw_name = u8strpadt(s->pw_name, 10);
 
@@ -406,8 +411,8 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     char pg_t_w[HISTORY_POS * 5] = {0};
     char pg_a_r[HISTORY_POS * 5] = {0};
     char pg_a_w[HISTORY_POS * 5] = {0};
-    char *str_read, *str_write;
-    char *str_a_read, *str_a_write;
+    char str_read[4], str_write[4];
+    char str_a_read[4], str_a_write[4];
     int promptx = 0, prompty = 0, show;
     int nohelp = config.f.nohelp;
     double mx_t_r = 1000.0;
@@ -415,6 +420,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     double mx_a_r = 1000.0;
     double mx_a_w = 1000.0;
     int line, lastline;
+    int ionicepos = 1;
     int gr_width;
     int maxy;
     int maxx;
@@ -455,10 +461,10 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     hist_a_r[0] = total_a_read;
     hist_a_w[0] = total_a_write;
 
-    humanize_val(&total_read, &str_read, 1);
-    humanize_val(&total_write, &str_write, 1);
-    humanize_val(&total_a_read, &str_a_read, 0);
-    humanize_val(&total_a_write, &str_a_write, 0);
+    humanize_val(&total_read, str_read, 1);
+    humanize_val(&total_write, str_write, 1);
+    humanize_val(&total_a_read, str_a_read, 0);
+    humanize_val(&total_a_write, str_a_write, 0);
 
     gr_width = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
     gr_width /= 4;
@@ -512,32 +518,89 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         }
     }
 
-    mvhline(0, 0, ' ', maxx);
-    mvprintw(0, 0, HEADER1_FORMAT,
-             total_read,
-             str_read,
-             config.f.iohist ? pg_t_r : "",
-             total_write,
-             str_write,
-             config.f.iohist ? pg_t_w : ""
-            );
-
-    mvhline(1, 0, ' ', maxx);
-    if (!in_ionice)
+    if (maxy < 10 || maxx < (int)strlen(HEADER1_FORMAT) + 2 * (7 + 3 + (config.f.iohist ? gr_width : 0)))
     {
-        mvprintw(1, 0, HEADER2_FORMAT,
-                 total_a_read,
-                 str_a_read,
-                 config.f.iohist ? pg_a_r : "",
-                 total_a_write,
-                 str_a_write,
-                 config.f.iohist ? pg_a_w : ""
-                );
-        show = FALSE;
+        ionicepos = 0;
+        if (!in_ionice)
+        {
+            char *fmt;
+
+            if (maxx >= (int)strlen(HEADER_L_FORMAT) + 4 * (7 + 3 + (config.f.iohist ? gr_width : 0)))
+                fmt = HEADER_L_FORMAT;
+            else if (maxx >= (int)strlen(HEADER_M_FORMAT) + 4 * (7 + 3 + (config.f.iohist ? gr_width : 0)))
+                fmt = HEADER_M_FORMAT;
+            else if (maxx >= (int)strlen(HEADER_S_FORMAT) + 4 * (7 + 1 + (config.f.iohist ? gr_width : 0)))
+            {
+                fmt = HEADER_S_FORMAT;
+                str_read[1] = 0;
+                str_write[1] = 0;
+                str_a_read[1] = 0;
+                str_a_write[1] = 0;
+            }
+            else if (maxx >= (int)strlen(HEADER_XS_FORMAT) + 4 * (7 + 1 + (config.f.iohist ? gr_width : 0)))
+            {
+                fmt = HEADER_XS_FORMAT;
+                str_read[1] = 0;
+                str_write[1] = 0;
+                str_a_read[1] = 0;
+                str_a_write[1] = 0;
+            }
+            else
+            {
+                fmt = HEADER_XXS_FORMAT;
+                str_read[1] = 0;
+                str_write[1] = 0;
+                str_a_read[1] = 0;
+                str_a_write[1] = 0;
+            }
+            mvhline(0, 0, ' ', maxx);
+            mvprintw(0, 0, fmt,
+                     total_read,
+                     str_read,
+                     config.f.iohist ? pg_t_r : "",
+                     total_write,
+                     str_write,
+                     config.f.iohist ? pg_t_w : "",
+                     total_a_read,
+                     str_a_read,
+                     config.f.iohist ? pg_a_r : "",
+                     total_a_write,
+                     str_a_write,
+                     config.f.iohist ? pg_a_w : ""
+                    );
+            show = FALSE;
+        }
     }
     else
     {
-        mvprintw(1, 0, "%s: ", COLUMN_NAME(0));
+        mvhline(0, 0, ' ', maxx);
+        mvprintw(0, 0, HEADER1_FORMAT,
+                 total_read,
+                 str_read,
+                 config.f.iohist ? pg_t_r : "",
+                 total_write,
+                 str_write,
+                 config.f.iohist ? pg_t_w : ""
+                );
+
+        if (!in_ionice)
+        {
+            mvhline(1, 0, ' ', maxx);
+            mvprintw(1, 0, HEADER2_FORMAT,
+                     total_a_read,
+                     str_a_read,
+                     config.f.iohist ? pg_a_r : "",
+                     total_a_write,
+                     str_a_write,
+                     config.f.iohist ? pg_a_w : ""
+                    );
+            show = FALSE;
+        }
+    }
+    if (in_ionice)
+    {
+        mvhline(ionicepos, 0, ' ', maxx);
+        mvprintw(ionicepos, 0, "%s: ", COLUMN_NAME(0));
         attron(A_BOLD);
         printw("%s", ionice_id);
         attroff(A_BOLD);
@@ -590,8 +653,8 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     }
 
     attron(A_REVERSE);
-    mvhline(2, 0, ' ', maxx);
-    move(2, 0);
+    mvhline(ionicepos + 1, 0, ' ', maxx);
+    move(ionicepos + 1, 0);
 
     for (i = 0; i < SORT_BY_MAX; i++)
     {
@@ -614,7 +677,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 
     if (maxy < 10)
         nohelp = 1;
-    line = 3;
+    line = ionicepos + 2;
     lastline = line;
     for (i = 0; cs->sor && i < diff_len; i++)
     {
@@ -622,7 +685,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         double read_val = config.f.accumulated ? s->read_val_acc : s->read_val;
         double write_val = config.f.accumulated ? s->write_val_acc : s->write_val;
         char iohist[HISTORY_POS * 5];
-        char *read_str, *write_str;
+        char read_str[4], write_str[4];
         char *pw_name, *cmdline;
         int maxcmdline;
 
@@ -630,8 +693,8 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         if (config.f.only && !memcmp(s->iohist, iohist_z, (has_unicode && unicode) ? gr_width * 2 : gr_width))
             continue;
 
-        humanize_val(&read_val, &read_str, 1);
-        humanize_val(&write_val, &write_str, 1);
+        humanize_val(&read_val, read_str, 1);
+        humanize_val(&write_val, write_str, 1);
 
         maxcmdline = maxx - 5 - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
         if (config.f.iohist)
