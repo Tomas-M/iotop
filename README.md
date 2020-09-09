@@ -67,3 +67,16 @@ Contacts of current maintainers are:
 
 - Tomas Matejicek <tomas@slax.org>
 - Boian Bonev <bbonev@ipacct.com>
+
+Notable contributions (ordered by time of last contribution):
+
+- Paul Wise <pabs@debian.org> - Debian packaging, man page, multiple reviews and ideas
+- Rumen Jekov <rvjekov@gmail.com> - Arch Linux packaging and testing
+- Arthur Zamarin <arthurzam+gentoo@gmail.com> - Gentoo packaging and testing
+- Yuriy M. Kaminskiy <yumkam@gmail.com> - code fixes and improvements
+- alicektx <alicekot13@gmail.com> - documentation imrpovements
+- Filip Kofron <filip.kofron.cz@gmail.com> - build system imrpovements
+
+**Thanks!!! This project is what it is now because the steam you have put into it!**
+
+*NB. In case you have contributed to the project and do not see your name in the list, please note that the above list is updated manually and it is an omission - notify the maintainers to fix it.*
