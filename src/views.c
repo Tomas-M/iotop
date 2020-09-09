@@ -100,14 +100,14 @@ static const char *as_graph[5] = {" ", "_", ".", ":", "|", };
 
 static const char *column_format[] =
 {
-    "%s%c%*s ",
-    "%4s%c%*s  ",
-    "%6s%c%*s   ",
-    "%11s%c%*s ",
-    "%11s%c%*s ",
-    "%7s%c%*s ",
-    "%7s%c%*s ",
-    "%s%c%*s",
+    "%s%c%*s ",   // PID/TID
+    "%4s%c%*s ",  // PRIO
+    "%8s%c%*s  ", // USER
+    "%11s%c%*s ", // READ
+    "%11s%c%*s",  // WRITE
+    "%7s%c%*s ",  // SWAPIN
+    "%7s%c%*s ",  // IO
+    " %s%c%*s",   // COMMAND
 };
 
 static int maxpidlen = 5;
@@ -425,6 +425,7 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     int ionicepos = 1;
     int shrink_dm = 0;
     int head1row = 0;
+    int maxcmdline;
     int gr_width_h;
     int gr_width;
     int maxy;
@@ -471,12 +472,31 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
     humanize_val(&total_a_read, str_a_read, 0);
     humanize_val(&total_a_write, str_a_write, 0);
 
-    gr_width = maxx - maxpidlen - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
-    gr_width /= 4;
+    maxcmdline = maxx;
+    if (!config.f.hidepid)
+        maxcmdline -= maxpidlen + 2;
+    if (!config.f.hideprio)
+        maxcmdline -= 4 + 2;
+    if (!config.f.hideuser)
+        maxcmdline -= 9 + 2;
+    if (!config.f.hideread)
+        maxcmdline -= 11 + 2;
+    if (!config.f.hidewrite)
+        maxcmdline -= 11 + 1;
+    if (!config.f.hideswapin)
+        maxcmdline -= 9 + 1;
+    if (!config.f.hideio)
+        maxcmdline -= 9 + 2;
+    gr_width = maxcmdline / 4;
     if (gr_width < 5)
         gr_width = 5;
     if (gr_width > HISTORY_POS)
         gr_width = HISTORY_POS;
+    if (config.f.iohist)
+        maxcmdline -= gr_width;
+    if (maxcmdline < 0)
+        maxcmdline = 0;
+
     gr_width_h = gr_width;
     if (maxy < 10 || maxx < (int)strlen(HEADER1_FORMAT) + 2 * (7 - 5 + 3 - 2 + (config.f.iohist ? gr_width_h + 1 : 0) - 2))
     {
@@ -691,6 +711,12 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         if (i == 6)
             vwidth = config.f.iohist ? gr_width : 0;
 
+        if (config.opts[&config.f.hidepid - config.opts + i])
+        {
+            if (i == 6)
+                printw("%*s", vwidth, "");
+            continue;
+        }
         if (sort_by == i)
             attron(A_BOLD);
         printw(COLUMN_FORMAT(i), COLUMN_NAME(i), SORT_CHAR(i), vwidth, "");
@@ -713,7 +739,6 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
         char iohist[HISTORY_POS * 5];
         char read_str[4], write_str[4];
         char *pw_name, *cmdline;
-        int maxcmdline;
 
         // visible history is non-zero
         if (config.f.only && !memcmp(s->iohist, iohist_z, (has_unicode && unicode) ? gr_width * 2 : gr_width))
@@ -721,12 +746,6 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
 
         humanize_val(&read_val, read_str, 1);
         humanize_val(&write_val, write_str, 1);
-
-        maxcmdline = maxx - maxpidlen - 2 - 4 - 2 - 9 - 7 - 1 - 3 - 2 - 7 - 1 - 3 - 1 - 5 - 3 - 5 - 4 - 2;
-        if (config.f.iohist)
-            maxcmdline -= gr_width;
-        if (maxcmdline < 0)
-            maxcmdline = 0;
 
         pw_name = u8strpadt(s->pw_name, 9);
         cmdline = u8strpadt(s->cmdline, maxcmdline);
@@ -744,20 +763,25 @@ inline void view_curses(struct xxxid_stats_arr *cs, struct xxxid_stats_arr *ps, 
                         as_graph[s->iohist[j]]);
         }
 
-        mvprintw(line, 0, "%*i  %4s  %s  %7.2f %-3.3s  %7.2f %-3.3s %6.2f %% %6.2f %% %s %s\n",
-                 maxpidlen,
-                 s->tid,
-                 str_ioprio(s->io_prio),
-                 pw_name ? pw_name : "(null)",
-                 read_val,
-                 read_str,
-                 write_val,
-                 write_str,
-                 s->swapin_val,
-                 s->blkio_val,
-                 config.f.iohist ? iohist : "",
-                 cmdline
-                );
+        mvhline(line, 0, ' ', maxx);
+        move(line, 0);
+        if (!config.f.hidepid)
+            printw("%*i  ", maxpidlen, s->tid);
+        if (!config.f.hideprio)
+            printw("%4s  ", str_ioprio(s->io_prio));
+        if (!config.f.hideuser)
+            printw("%s  ", pw_name ? pw_name : "(null)");
+        if (!config.f.hideread)
+            printw("%7.2f %-3.3s  ", read_val, read_str);
+        if (!config.f.hidewrite)
+            printw("%7.2f %-3.3s ", write_val, write_str);
+        if (!config.f.hideswapin)
+            printw("%6.2f %% ", s->swapin_val);
+        if (!config.f.hideio)
+            printw("%6.2f %% ", s->blkio_val);
+        printw("%s ", config.f.iohist ? iohist : "");
+        if (!config.f.hidecmd)
+            printw("%s", cmdline);
 
         if (pw_name)
             free(pw_name);
@@ -1025,6 +1049,9 @@ inline unsigned int curses_sleep(unsigned int seconds)
                     ionice_id_changed = 1;
                 }
             }
+            else
+                if (ch >= '1' && ch <= '8')
+                    config.opts[&config.f.hidepid - config.opts + ch - '1'] ^= 1;
             break;
         }
     }

@@ -43,8 +43,16 @@ typedef union
         int nohelp;
         int fullcmdline;
         int iohist;
+        int hidepid;
+        int hideprio;
+        int hideuser;
+        int hideread;
+        int hidewrite;
+        int hideswapin;
+        int hideio;
+        int hidecmd;
     } f;
-    int opts[10];
+    int opts[18];
 } config_t;
 
 typedef struct

@@ -38,7 +38,7 @@ init_params(void)
     params.user_id = -1;
 }
 
-static const char str_opt[] = "boPaktqHcs";
+static const char str_opt[] = "boPaktqHcs12345678";
 
 static inline void
 print_help(void)
@@ -68,6 +68,14 @@ print_help(void)
         "  -t, --time            add a timestamp on each line (implies --batch)\n"
         "  -c, --fullcmdline     show full command line\n"
         "  -s, --iohistory       show pseudo-graphical IO history column\n"
+        "  -1, --hide-pid        hide PID/TID column\n"
+        "  -2, --hide-prio       hide PRIO column\n"
+        "  -3, --hide-user       hide USER column\n"
+        "  -4, --hide-read       hide DISK READ column\n"
+        "  -5, --hide-write      hide DISK WRITE column\n"
+        "  -6, --hide-swapin     hide SWAPIN column\n"
+        "  -7, --hide-io         hide IO column\n"
+        "  -8, --hide-command    hide COMMAND column\n"
         "  -q, --quiet           suppress some lines of header (implies --batch)\n"
         "  -H, --no-help         suppress listing of shortcuts\n",
         progname
@@ -100,10 +108,18 @@ parse_args(int argc, char *argv[])
             {"no-help",     no_argument, NULL, 'H'},
             {"fullcmdline", no_argument, NULL, 'c'},
             {"iohistory",   no_argument, NULL, 's'},
+            {"hide-pid",    no_argument, NULL, '1'},
+            {"hide-prio",   no_argument, NULL, '2'},
+            {"hide-user",   no_argument, NULL, '3'},
+            {"hide-read",   no_argument, NULL, '4'},
+            {"hide-write",  no_argument, NULL, '5'},
+            {"hide-swapin", no_argument, NULL, '6'},
+            {"hide-io",     no_argument, NULL, '7'},
+            {"hide-command",no_argument, NULL, '8'},
             {NULL, 0, NULL, 0}
         };
 
-        int c = getopt_long(argc, argv, "vhbon:d:p:u:PaktqcsH",
+        int c = getopt_long(argc, argv, "vhbon:d:p:u:PaktqcsH12345678",
                             long_options, NULL);
 
         if (c == -1)
@@ -127,6 +143,7 @@ parse_args(int argc, char *argv[])
         case 'H':
         case 'c':
         case 's':
+        case '1' ... '8':
             config.opts[(unsigned int) (strchr(str_opt, c) - str_opt)] = 1;
             break;
         case 'n':
