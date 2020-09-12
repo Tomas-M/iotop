@@ -22,6 +22,7 @@ by Boian Bonev so it runs without Python at all.
 
 iotop is licensed GPL-2.0+
 
+[![Packaging status](https://repology.org/badge/tiny-repos/iotop-c.svg)](https://repology.org/project/iotop-c/versions)
 
 How to make
 ===========
