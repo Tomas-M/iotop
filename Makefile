@@ -23,8 +23,9 @@ OBJS:=$(patsubst %c,%o,$(patsubst src/%,bld/%,$(SRCS)))
 DEPS:=$(OBJS:.o=.d)
 
 ifndef NO_FLTO
-CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign -flto
-LDFLAGS+=-O3 -fno-stack-protector -mno-stackrealign -flto
+CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
+CFLAGS+=-flto
+LDFLAGS+=$(CFLAGS)
 else
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
