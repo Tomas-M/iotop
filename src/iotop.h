@@ -215,7 +215,7 @@ inline struct xxxid_stats_arr *arr_alloc(void);
 inline int arr_add(struct xxxid_stats_arr *a,struct xxxid_stats *s);
 inline struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa,pid_t tid);
 inline void arr_free(struct xxxid_stats_arr *pa);
-inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b,void *arg),void *arg);
+inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b));
 
 #define HEADER1_FORMAT "  Total DISK READ: %7.2f %s%s |   Total DISK WRITE: %7.2f %s%s"
 #define HEADER2_FORMAT "Current DISK READ: %7.2f %s%s | Current DISK WRITE: %7.2f %s%s"
@@ -223,7 +223,7 @@ inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const vo
 inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write);
 inline void calc_a_total(struct act_stats *act,double *read,double *write,double time_s);
 inline void humanize_val(double *value,char *str,int allow_accum);
-inline int iotop_sort_cb(const void *a,const void *b,void *arg);
+inline int iotop_sort_cb(const void *a,const void *b);
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s);
 inline int value2scale(double val,double mx);
 inline int filter1(struct xxxid_stats *s);

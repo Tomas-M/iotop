@@ -153,7 +153,7 @@ inline void arr_free(struct xxxid_stats_arr *pa) {
 	free(pa);
 }
 
-inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b,void *arg),void *arg) {
+inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b)) {
 	if (!pa)
 		return;
 	if (pa->sor)
@@ -166,6 +166,6 @@ inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const vo
 		return;
 
 	memcpy(pa->sor,pa->arr,pa->length*sizeof *pa->arr);
-	qsort_r(pa->sor,pa->length,sizeof *pa->sor,cb,arg);
+	qsort(pa->sor,pa->length,sizeof *pa->sor,cb);
 }
 

@@ -137,17 +137,17 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 	strcpy(str,config.f.accumulated&&allow_accum?prefix_acc[p]:prefix[p]);
 }
 
-inline int iotop_sort_cb(const void *a,const void *b,void *arg) {
-	int order=(((long)arg)&1)?1:-1; // SORT_ASC is bit 0=1, else should reverse sort
+inline int iotop_sort_cb(const void *a,const void *b) {
+	int order=config.f.sort_order?1:-1; // SORT_ASC is bit 0=1, else should reverse sort
 	struct xxxid_stats **ppa=(struct xxxid_stats **)a;
 	struct xxxid_stats **ppb=(struct xxxid_stats **)b;
 	struct xxxid_stats *pa,*pb;
-	int type=((long)arg)>>1;
+	int type=config.f.sort_by;
 	static int grlen=0;
 	int res=0;
 
-	if (!a||!b) {
-		grlen=(long)arg;
+	if (!a) {
+		grlen=(long)b;
 		return 0;
 	}
 

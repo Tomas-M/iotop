@@ -52,7 +52,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 	if (!config.f.quiet)
 		printf("%6s %4s %8s %11s %11s %6s %6s %s\n",config.f.processes?"PID":"TID","PRIO","USER","DISK READ","DISK WRITE","SWAPIN","IO","COMMAND");
-	arr_sort(cs,iotop_sort_cb,(void *)(long)SORT_ASC);
+	arr_sort(cs,iotop_sort_cb);
 
 	for (i=0;cs->sor&&i<diff_len;i++) {
 		struct xxxid_stats *s=cs->sor[i];

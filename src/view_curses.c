@@ -338,8 +338,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	}
 	attroff(A_REVERSE);
 
-	iotop_sort_cb(NULL,NULL,(void *)(long)((has_unicode&&unicode)?gr_width*2:gr_width));
-	arr_sort(cs,iotop_sort_cb,(void *)(long)(config.f.sort_by*2+!!(config.f.sort_order==SORT_ASC)));
+	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&unicode)?gr_width*2:gr_width));
+	arr_sort(cs,iotop_sort_cb);
 
 	if (maxy<10)
 		nohelp=1;
