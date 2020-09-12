@@ -31,7 +31,7 @@ Description: simple top-like I/O monitor (implemented in C)
  CONFIG_TASK_DELAY_ACCT, CONFIG_TASK_IO_ACCOUNTING and
  CONFIG_VM_EVENT_COUNTERS config options on.
  .
- iotop-c is an alternative reimplementation of iotop in C, optimized for
+ iotop-c is an alternative re-implementation of iotop in C, optimized for
  performance. Normally a monitoring tool intended to be used on a system
  under heavy stress should use the least additional resources as
  possible.
