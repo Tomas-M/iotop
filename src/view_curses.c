@@ -101,7 +101,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	char pg_a_w[HISTORY_POS*5]={0};
 	char str_read[4],str_write[4];
 	char str_a_read[4],str_a_write[4];
-	char *head1row_format;
+	char *head1row_format="";
 	int promptx=0,prompty=0,show;
 	int nohelp=config.f.nohelp;
 	double mx_t_r=1000.0;
