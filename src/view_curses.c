@@ -313,7 +313,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	move(ionicepos+1,0);
 
 	for (i=0;i<SORT_BY_MAX;i++) {
-		int wi=column_width[i];
+		int wt,wi=column_width[i];
 		char t[50];
 
 		if (i==SORT_BY_PID)
@@ -325,14 +325,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 		if (config.opts[&config.f.hidepid-config.opts+i])
 			continue;
+
+		wt=strlen(COLUMN_NAME(i));
+		if (wt>wi-1)
+			wt=wi-1;
 		if (config.f.sort_by==i)
 			attron(A_BOLD);
-		sprintf(t,"%-*.*s",wi,wi,COLUMN_NAME(i));
-		if (strlen(t)>strlen(COLUMN_NAME(i)))
-			t[strlen(COLUMN_NAME(i))]=SORT_CHAR(i);
-		else
-			t[strlen(t)-1]=SORT_CHAR(i);
-		printw("%s",t);
+		snprintf(t,sizeof t-1,"%-*.*s%c",wt,wt,COLUMN_NAME(i),SORT_CHAR(i));
+		printw("%-*.*s",wi,wi,t);
 		if (config.f.sort_by==i)
 			attroff(A_BOLD);
 	}
