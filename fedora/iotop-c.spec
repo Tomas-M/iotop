@@ -10,8 +10,10 @@ Source0:        https://github.com/Tomas-M/iotop/archive/v%{version}.tar.gz
 Source1:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.gz.asc
 Source2:        https://raw.githubusercontent.com/Tomas-M/iotop/master/debian/upstream/signing-key.asc
 
+BuildRequires:  gcc
 BuildRequires:  gnupg2
 BuildRequires:  ncurses-devel
+BuildRequires:  make
 BuildRequires:  pkgconfig(ncursesw)
 
 %description
