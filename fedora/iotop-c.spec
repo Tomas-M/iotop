@@ -2,7 +2,6 @@ Name:           iotop-c
 Version:        1.11
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
-Packager:       Boian Bonev <bbonev@ipacct.com>
 Conflicts:      iotop
 
 License:        GPLv2+
