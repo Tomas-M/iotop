@@ -224,15 +224,15 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	strcpy(pg_a_w," ");
 	for (j=0;j<gr_width_h;j++) {
 		if (has_unicode&&unicode) {
-			sprintf(pg_t_r+strlen(pg_t_r),"%s",br_graph[value2scale(hist_t_r[j*2],mx_t_r)][value2scale(hist_t_r[j*2+1],mx_t_r)]);
-			sprintf(pg_t_w+strlen(pg_t_w),"%s",br_graph[value2scale(hist_t_w[j*2],mx_t_w)][value2scale(hist_t_w[j*2+1],mx_t_w)]);
-			sprintf(pg_a_r+strlen(pg_a_r),"%s",br_graph[value2scale(hist_a_r[j*2],mx_a_r)][value2scale(hist_a_r[j*2+1],mx_a_r)]);
-			sprintf(pg_a_w+strlen(pg_a_w),"%s",br_graph[value2scale(hist_a_w[j*2],mx_a_w)][value2scale(hist_a_w[j*2+1],mx_a_w)]);
+			strcat(pg_t_r,br_graph[value2scale(hist_t_r[j*2],mx_t_r)][value2scale(hist_t_r[j*2+1],mx_t_r)]);
+			strcat(pg_t_w,br_graph[value2scale(hist_t_w[j*2],mx_t_w)][value2scale(hist_t_w[j*2+1],mx_t_w)]);
+			strcat(pg_a_r,br_graph[value2scale(hist_a_r[j*2],mx_a_r)][value2scale(hist_a_r[j*2+1],mx_a_r)]);
+			strcat(pg_a_w,br_graph[value2scale(hist_a_w[j*2],mx_a_w)][value2scale(hist_a_w[j*2+1],mx_a_w)]);
 		} else {
-			sprintf(pg_t_r+strlen(pg_t_r),"%s",as_graph[value2scale(hist_t_r[j],mx_t_r)]);
-			sprintf(pg_t_w+strlen(pg_t_w),"%s",as_graph[value2scale(hist_t_w[j],mx_t_w)]);
-			sprintf(pg_a_r+strlen(pg_a_r),"%s",as_graph[value2scale(hist_a_r[j],mx_a_r)]);
-			sprintf(pg_a_w+strlen(pg_a_w),"%s",as_graph[value2scale(hist_a_w[j],mx_a_w)]);
+			strcat(pg_t_r,as_graph[value2scale(hist_t_r[j],mx_t_r)]);
+			strcat(pg_t_w,as_graph[value2scale(hist_t_w[j],mx_t_w)]);
+			strcat(pg_a_r,as_graph[value2scale(hist_a_r[j],mx_a_r)]);
+			strcat(pg_a_w,as_graph[value2scale(hist_a_w[j],mx_a_w)]);
 		}
 	}
 
