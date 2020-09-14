@@ -29,7 +29,7 @@ inline char *read_cmdline2(int pid) {
 	char path[30];
 	int fd;
 
-	sprintf(path,"/proc/%d/cmdline",pid);
+	snprintf(path,sizeof path-1,"/proc/%d/cmdline",pid);
 	fd=open(path,O_RDONLY);
 	if (fd!=-1) {
 		char *dbuf=malloc(BUFSIZ+1);
@@ -89,7 +89,7 @@ inline char *read_cmdline2(int pid) {
 	if (rv)
 		return rv;
 
-	sprintf(path,"/proc/%d/status",pid);
+	snprintf(path,sizeof path,"/proc/%d/status",pid);
 	fd=open(path,O_RDONLY);
 	if (fd!=-1) {
 		char buf[BUFSIZ+1];
@@ -104,10 +104,13 @@ inline char *read_cmdline2(int pid) {
 			eol=strchr(buf,'\n');
 			tab=strchr(buf,'\t');
 			if (eol&&tab&&eol>tab) {
+				size_t rvlen;
+
 				eol[0]=0;
-				rv=malloc(strlen(tab+1)+2+1);
+				rvlen=strlen(tab+1)+2+1;
+				rv=malloc(rvlen);
 				if (rv)
-					sprintf(rv,config.f.fullcmdline?"[%s]":"%s",tab+1);
+					snprintf(rv,rvlen-1,config.f.fullcmdline?"[%s]":"%s",tab+1);
 			}
 		}
 	}
@@ -180,7 +183,7 @@ inline int pidgen_next(struct pidgen *pg) {
 	if (pid&&(pg->__flags&PIDGEN_FLAGS_TASK)) {
 		char path[30];
 
-		sprintf(path,"/proc/%d/task",pid);
+		snprintf(path,sizeof path-1,"/proc/%d/task",pid);
 		pg->__task=(DIR *)opendir(path);
 		return pidgen_next(pg);
 	}

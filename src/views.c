@@ -84,7 +84,7 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 			c->read_val_acc=0;
 			c->write_val_acc=0;
 
-			sprintf(temp,"%i",c->tid);
+			snprintf(temp,sizeof temp-1,"%i",c->tid);
 			maxpidlen=maxpidlen<(int)strlen(temp)?(int)strlen(temp):maxpidlen;
 			continue;
 		}
@@ -110,7 +110,7 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 		memcpy(c->iohist+1,p->iohist,sizeof c->iohist-sizeof *c->iohist);
 		c->iohist[0]=value2scale(c->blkio_val,100.0);
 
-		sprintf(temp,"%i",c->tid);
+		snprintf(temp,sizeof temp-1,"%i",c->tid);
 		maxpidlen=maxpidlen<(int)strlen(temp)?(int)strlen(temp):maxpidlen;
 	}
 
