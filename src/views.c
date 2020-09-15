@@ -118,23 +118,23 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 }
 
 inline void humanize_val(double *value,char *str,int allow_accum) {
-	static char *prefix_acc[]={"B  ","K  ","M  ","G  ","T  "};
-	static char *prefix[]={"B/s","K/s","M/s","G/s","T/s"};
-	int p;
+	const char *u="BKMGTPEZY";
+	size_t p=0;
 
 	if (config.f.kilobytes) {
+		p=1;
 		*value/=1000.0;
-		strcpy(str,config.f.accumulated&&allow_accum?prefix_acc[1]:prefix[1]);
-		return;
+	} else {
+		while (*value>10000) {
+			if (p+1<strlen(u)) {
+				*value/=1000.0;
+				p++;
+			} else
+				break;
+		}
 	}
 
-	p=0;
-	while (*value>10000&&p<5) {
-		*value/=1000.0;
-		p++;
-	}
-
-	strcpy(str,config.f.accumulated&&allow_accum?prefix_acc[p]:prefix[p]);
+	sprintf(str,"%c%s",u[p],config.f.accumulated&&allow_accum?"  ":"/s");
 }
 
 inline int iotop_sort_cb(const void *a,const void *b) {
