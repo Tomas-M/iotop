@@ -50,7 +50,15 @@ Options
 -k, --kilobytes       use kilobytes instead of a human friendly unit
 -t, --time            add a timestamp on each line (implies --batch)
 -c, --fullcmdline     show full command line
--s, --iohistory       show pseudo-graphical IO history column
+-1, --hide-pid        hide PID/TID column
+-2, --hide-prio       hide PRIO column
+-3, --hide-user       hide USER column
+-4, --hide-read       hide DISK READ column
+-5, --hide-write      hide DISK WRITE column
+-6, --hide-swapin     hide SWAPIN column
+-7, --hide-io         hide IO column
+-8, --hide-graph      hide GRAPH column
+-9, --hide-command    hide COMMAND column
 -q, --quiet           suppress some lines of header (implies --batch)
 -H, --no-help         suppress listing of shortcuts
 ```
