@@ -366,11 +366,12 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (!config.f.hidegraph) {
 			int j;
 
+			*iohist=0;
 			for (j=0;j<gr_width;j++)
 				if (has_unicode&&unicode)
-					sprintf(iohist+(j?strlen(iohist):0),"%s",br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
-			else
-					sprintf(iohist+(j?strlen(iohist):0),"%s",as_graph[s->iohist[j]]);
+					strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
+				else
+					strcat(iohist,as_graph[s->iohist[j]]);
 		}
 
 		mvhline(line,0,' ',maxx);
