@@ -134,7 +134,7 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 		}
 	}
 
-	sprintf(str,"%c%s",u[p],config.f.accumulated&&allow_accum?"  ":"/s");
+	snprintf(str,4,"%c%s",u[p],config.f.accumulated&&allow_accum?"  ":"/s");
 }
 
 inline int iotop_sort_cb(const void *a,const void *b) {
