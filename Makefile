@@ -88,6 +88,16 @@ bld/.mkdir:
 	$(Q)mkdir -p bld
 	$(Q)touch bld/.mkdir
 
+VER:=$(shell head -n1 debian/changelog|tr '\(\)-' ' '|awk '{print $$3}')
+mkotar:
+	$(MAKE) clean
+	dh_clean
+	tar \
+		--exclude ./.git \
+		-Jcvf ../iotop-c_$(VER).orig.tar.xz .
+	-rm -f ../iotop-c_$(VER).orig.tar.xz.asc
+	gpg -a --detach-sign ../iotop-c_$(VER).orig.tar.xz
+
 -include $(DEPS)
 
 .PHONY: clean install uninstall
