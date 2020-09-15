@@ -1,5 +1,5 @@
 Name:           iotop-c
-Version:        1.12
+Version:        1.11
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 Conflicts:      iotop
@@ -8,7 +8,7 @@ License:        GPLv2+
 URL:            https://github.com/Tomas-M/iotop/
 Source0:        https://github.com/Tomas-M/iotop/archive/v%{version}.tar.gz
 Source1:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.gz.asc
-Source2:        https://raw.githubusercontent.com/Tomas-M/iotop/master/debian/upstream/signing-key.asc
+Source2:        https://raw.githubusercontent.com/Tomas-M/iotop/v%{version}/debian/upstream/signing-key.asc
 
 BuildRequires:  gcc
 BuildRequires:  gnupg2
@@ -42,13 +42,12 @@ possible.
 NO_FLTO=1 %make_build
 
 %install
-rm -rf $RPM_BUILD_ROOT
 V=1 STRIP=: %make_install
 
 %files
 %license LICENSE
-/usr/sbin/iotop
-/usr/share/man/man8/iotop.8.gz
+%{_sbindir}/iotop
+%{_mandir}/man8/iotop.8*
 
 %changelog
 * Sat Sep 12 2020 Boian Bonev <bbonev@ipacct.com> - 1.11-1
