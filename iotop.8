@@ -71,8 +71,32 @@ Add a timestamp on each line (implies \-\-batch). Each line will be prefixed by 
 \fB\-c\fR, \fB\-\-fullcmdline\fR
 Show processes' full file path & parameters.
 .TP
-\fB\-s\fR, \fB\-\-iohistory\fR
-Display one more column with text mode pseudo-graph of IO percentage.
+\fB\-1\fR, \fB\-\-hide-pid\fR
+Hide PID/TID column
+.TP
+\fB\-2\fR, \fB\-\-hide-prio\fR
+Hide PRIO column
+.TP
+\fB\-3\fR, \fB\-\-hide-user\fR
+Hide USER column
+.TP
+\fB\-4\fR, \fB\-\-hide-read\fR
+Hide DISK READ column
+.TP
+\fB\-5\fR, \fB\-\-hide-write\fR
+Hide DISK WRITE column
+.TP
+\fB\-6\fR, \fB\-\-hide-swapin\fR
+Hide SWAPIN column
+.TP
+\fB\-7\fR, \fB\-\-hide-io\fR
+Hide IO column
+.TP
+\fB\-8\fR, \fB\-\-hide-graph\fR
+Hide GRAPH column
+.TP
+\fB\-9\fR, \fB\-\-hide-command\fR
+Hide COMMAND column
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress some lines of header (implies \-\-batch). This option can be specified up to three times to remove header lines.
@@ -129,8 +153,8 @@ Toggle showing shortcut help
 \fBc\fR, \fBC\fR
 Toggle showing full command line
 .TP
-\fBs\fR, \fBS\fR
-Toggle showing column with pseudo graphical IO history
+\fB1\fR, \fB2\fR, \fB3\fR, \fB4\fR, \fB5\fR, \fB6\fR, \fB7\fR, \fB8\fR, \fB9\fR
+Toggle showing the column (column number corresponds to the shortcut)
 .TP
 \fBi\fR, \fBI\fR
 IOnice a process/thread (depends on process/thread display mode)
