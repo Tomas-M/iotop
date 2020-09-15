@@ -1,3 +1,18 @@
+iotop-c (1.12-1) unstable; urgency=medium
+
+  * Update to new upstream release of 1.12
+    - fix SIGSEGV in humanize_val on large values
+    - convert the pseudo-graph to a normal column
+    - remove option -s (replaced by -8 with inverse logic)
+    - add sort by the pseudo-graph column
+    - make sort by the pseudo-graph the default
+    - implement hiding columns by options and shortcuts 1...9
+    - revise column widths
+    - rewrite curses event loop to make data collection separate from refresh
+    - fix sorting (proper double value comparison)
+
+ -- Boian Bonev <bbonev@ipacct.com>  Tue, 15 Sep 2020 00:43:34 +0000
+
 iotop-c (1.11-1) unstable; urgency=medium
 
   * Update to new upstream release of 1.10
