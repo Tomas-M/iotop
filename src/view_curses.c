@@ -676,8 +676,9 @@ inline void view_curses_loop(void) {
 			ps=cs;
 			act.read_bytes_o=act.read_bytes;
 			act.write_bytes_o=act.write_bytes;
+			if (act.ts_c)
+				act.have_o=1;
 			act.ts_o=act.ts_c;
-			act.have_o=1;
 
 			cs=fetch_data(config.f.processes,filter1);
 			if (!ps) {
