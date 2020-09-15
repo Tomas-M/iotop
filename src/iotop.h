@@ -109,7 +109,7 @@ struct act_stats {
 	uint64_t write_bytes_o;
 	uint64_t ts_c;
 	uint64_t ts_o;
-	int have_o;
+	uint8_t have_o;
 };
 
 inline void nl_init(void);
