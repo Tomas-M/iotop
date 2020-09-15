@@ -145,17 +145,17 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	if (!config.f.hidepid)
 		maxcmdline-=maxpidlen+2;
 	if (!config.f.hideprio)
-		maxcmdline-=4+2;
+		maxcmdline-=column_width[SORT_BY_PRIO];
 	if (!config.f.hideuser)
-		maxcmdline-=9+2;
+		maxcmdline-=column_width[SORT_BY_USER];
 	if (!config.f.hideread)
-		maxcmdline-=11+2;
+		maxcmdline-=column_width[SORT_BY_READ];
 	if (!config.f.hidewrite)
-		maxcmdline-=11+1;
+		maxcmdline-=column_width[SORT_BY_WRITE];
 	if (!config.f.hideswapin)
-		maxcmdline-=9+1;
+		maxcmdline-=column_width[SORT_BY_SWAPIN];
 	if (!config.f.hideio)
-		maxcmdline-=9+2;
+		maxcmdline-=column_width[SORT_BY_IO];
 	gr_width=maxcmdline/4;
 	if (gr_width<5)
 		gr_width=5;
