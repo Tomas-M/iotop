@@ -21,7 +21,7 @@ Replaces:
  iotop (<= 0.6-24-g733f3f8-1),
 Breaks:
  iotop (<= 0.6-24-g733f3f8-1),
-Description: Simple top-like I/O monitor (implemented in C)
+Description: simple top-like I/O monitor (implemented in C)
  iotop-c does for I/O usage what top(1) does for CPU usage. It watches I/O
  usage information output by the Linux kernel and displays a table of
  current I/O usage by processes on the system. It is handy for answering
