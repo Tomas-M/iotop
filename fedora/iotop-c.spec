@@ -1,5 +1,5 @@
 Name:           iotop-c
-Version:        1.11
+Version:        1.12
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 Conflicts:      iotop
@@ -50,5 +50,5 @@ V=1 STRIP=: %make_install
 %{_mandir}/man8/iotop.8*
 
 %changelog
-* Sat Sep 12 2020 Boian Bonev <bbonev@ipacct.com> - 1.11-1
+* Sat Sep 12 2020 Boian Bonev <bbonev@ipacct.com> - 1.12-1
 - Initial packaging for Fedora
