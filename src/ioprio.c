@@ -65,7 +65,7 @@ inline const char *str_ioprio(int io_prio) {
 	if (io_class>=IOPRIO_CLASS_MAX)
 		return corrupted;
 
-	snprintf(buf,IOPRIO_STR_MAXSIZ,IOPRIO_STR_FORMAT,str_ioprio_class[io_class],io_prio);
+	snprintf(buf,sizeof buf,IOPRIO_STR_FORMAT,str_ioprio_class[io_class],io_prio);
 
 	return (const char *)buf;
 }

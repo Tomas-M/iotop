@@ -331,7 +331,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			wt=wi-1;
 		if (config.f.sort_by==i)
 			attron(A_BOLD);
-		snprintf(t,sizeof t-1,"%-*.*s%c",wt,wt,COLUMN_NAME(i),SORT_CHAR(i));
+		snprintf(t,sizeof t,"%-*.*s%c",wt,wt,COLUMN_NAME(i),SORT_CHAR(i));
 		printw("%-*.*s",wi,wi,t);
 		if (config.f.sort_by==i)
 			attroff(A_BOLD);
