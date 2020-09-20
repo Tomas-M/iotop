@@ -89,7 +89,7 @@ inline char *read_cmdline2(int pid) {
 	if (rv)
 		return rv;
 
-	snprintf(path,sizeof path,"/proc/%d/status",pid);
+	snprintf(path,sizeof path-1,"/proc/%d/status",pid);
 	fd=open(path,O_RDONLY);
 	if (fd!=-1) {
 		char buf[BUFSIZ+1];
@@ -107,7 +107,7 @@ inline char *read_cmdline2(int pid) {
 				size_t rvlen;
 
 				eol[0]=0;
-				rvlen=strlen(tab+1)+2+1;
+				rvlen=strlen(tab+1)+4;
 				rv=malloc(rvlen);
 				if (rv)
 					snprintf(rv,rvlen-1,config.f.fullcmdline?"[%s]":"%s",tab+1);
