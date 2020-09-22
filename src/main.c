@@ -40,7 +40,7 @@ inline void init_params(void) {
 	params.user_id=-1;
 }
 
-static const char str_opt[]="boPaktqHcs123456789";
+static const char str_opt[]="boPaktqHc123456789";
 
 static inline void print_help(void) {
 	printf(
@@ -105,7 +105,6 @@ static inline void parse_args(int argc,char *argv[]) {
 			{"quiet",no_argument,NULL,'q'},
 			{"no-help",no_argument,NULL,'H'},
 			{"fullcmdline",no_argument,NULL,'c'},
-			{"iohistory",no_argument,NULL,'s'},
 			{"hide-pid",no_argument,NULL,'1'},
 			{"hide-prio",no_argument,NULL,'2'},
 			{"hide-user",no_argument,NULL,'3'},
@@ -118,10 +117,18 @@ static inline void parse_args(int argc,char *argv[]) {
 			{NULL,0,NULL,0}
 		};
 
-		int c=getopt_long(argc,argv,"vhbon:d:p:u:PaktqcsH123456789",long_options,NULL);
+		int c=getopt_long(argc,argv,"vhbon:d:p:u:PaktqcH123456789",long_options,NULL);
 
-		if (c==-1)
+		if (c==-1) {
+			if (optind<argc) {
+				int i;
+
+				for (i=optind;i<argc;i++)
+					fprintf(stderr,"%s: unknown argument: %s\n",progname,argv[i]);
+				exit(EXIT_FAILURE);
+			}
 			break;
+		}
 
 		switch (c) {
 			case 'v':
@@ -139,7 +146,6 @@ static inline void parse_args(int argc,char *argv[]) {
 			case 'q':
 			case 'H':
 			case 'c':
-			case 's':
 			case '1' ... '9':
 				config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
 				break;
@@ -166,7 +172,6 @@ static inline void parse_args(int argc,char *argv[]) {
 				}
 				break;
 			default:
-				fprintf(stderr,"%s: unknown option\n",progname);
 				exit(EXIT_FAILURE);
 		}
 	}
