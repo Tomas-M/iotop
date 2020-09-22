@@ -14,51 +14,72 @@ You should have received a copy of the GNU General Public License along with thi
 #include "iotop.h"
 
 #include <errno.h>
-#include <stdio.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-#define PGIN "pgpgin "
-#define PGOUT "pgpgout "
+#define BSIZ 4096
+#define PGIN "\npgpgin "
+#define PGOU "\npgpgout "
 
-inline int get_vm_counters(uint64_t *pgpgin,uint64_t *pgpgout) {
-	char buf[200];
-	int haveout=0;
-	int havein=0;
-	FILE *f;
+inline int get_vm_counters(uint64_t *pgpgin,uint64_t *pgpgou) {
+	size_t l,bs=BSIZ,bp=0;
+	char *buf,*pi,*po,*t;
+	int fd;
 
-	if (!pgpgin||!pgpgout)
+	if (!pgpgin||!pgpgou)
 		return EINVAL;
 
-	if (NULL==(f=fopen("/proc/vmstat","r")))
+	if (-1==(fd=open("/proc/vmstat",O_RDONLY)))
 		return ENOENT;
 
-	buf[sizeof buf-1]=0;
-	while (!feof(f)) {
-		char *t;
-
-		if (fgets(buf,sizeof buf-1,f)) {
-			while (strlen(buf)&&buf[strlen(buf)-1]=='\n')
-				buf[strlen(buf)-1]=0;
-			if (!strncmp(buf,PGIN,strlen(PGIN))) {
-				*pgpgin=1024*strtoull(buf+strlen(PGIN),&t,10);
-				if (!*t)
-					havein=1;
-			}
-			if (!strncmp(buf,PGOUT,strlen(PGOUT))) {
-				*pgpgout=1024*strtoull(buf+strlen(PGOUT),&t,10);
-				if (!*t)
-					haveout=1;
-			}
-		}
-		if (havein&&haveout)
-			break;
+	buf=malloc(bs);
+	if (!buf) {
+		close(fd);
+		return ENOMEM;
 	}
 
-	fclose(f);
+	for (;;) {
+		l=read(fd,buf+bp,bs-bp);
+		if (l<=0)
+			break;
+		if (l==bs-bp) {
+			char *t=realloc(buf,bs+BSIZ);
 
-	if (!havein||!haveout)
+			if (!t) {
+				free(buf);
+				close(fd);
+				return ENOMEM;
+			}
+			buf=t;
+			bs+=BSIZ;
+		}
+		bp+=l;
+	}
+	buf[bp]=0;
+	pi=strstr(buf,PGIN);
+	po=strstr(buf,PGOU);
+	if (!pi||!po) {
+		free(buf);
+		close(fd);
 		return ENOENT;
-
+	}
+	*pgpgin=1024*strtoull(pi+strlen(PGIN),&t,10);
+	if (*t!='\n') {
+		free(buf);
+		close(fd);
+		return ENOENT;
+	}
+	*pgpgou=1024*strtoull(po+strlen(PGOU),&t,10);
+	if (*t!='\n') {
+		free(buf);
+		close(fd);
+		return ENOENT;
+	}
+	free(buf);
+	close(fd);
 	return 0;
 }

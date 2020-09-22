@@ -204,7 +204,7 @@ inline int ioprio2prio(int ioprio);
 
 /* vmstat.c */
 
-inline int get_vm_counters(uint64_t *pgpgin,uint64_t *pgpgout);
+inline int get_vm_counters(uint64_t *pgpgin,uint64_t *pgpgou);
 
 /* checks.c */
 
