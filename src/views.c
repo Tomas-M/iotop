@@ -172,7 +172,7 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 			res=pa->io_prio-pb->io_prio;
 			break;
 		case SORT_BY_COMMAND:
-			res=strcmp(pa->cmdline,pb->cmdline);
+			res=strcmp(config.f.fullcmdline?pa->cmdline2:pa->cmdline1,config.f.fullcmdline?pb->cmdline2:pb->cmdline1);
 			break;
 		case SORT_BY_PID:
 			res=pa->tid-pb->tid;

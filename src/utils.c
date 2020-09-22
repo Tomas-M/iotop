@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <sys/stat.h>
 #include <sys/types.h>
 
-inline char *read_cmdline2(int pid) {
+inline char *read_cmdline(int pid,int isshort) {
 	char *rv=NULL;
 	char path[30];
 	int fd;
@@ -59,7 +59,7 @@ inline char *read_cmdline2(int pid) {
 
 		if (p>0) {
 			dbuf[p]=0;
-			if (!config.f.fullcmdline&&(dbuf[0]=='/'||(p>1&&dbuf[0]=='.'&&dbuf[1]=='/')||(p>2&&dbuf[0]=='.'&&dbuf[1]=='.'&&dbuf[2]=='/'))) {
+			if (isshort&&(dbuf[0]=='/'||(p>1&&dbuf[0]=='.'&&dbuf[1]=='/')||(p>2&&dbuf[0]=='.'&&dbuf[1]=='.'&&dbuf[2]=='/'))) {
 				char *ep;
 
 				ep=strrchr(dbuf,'/');
@@ -74,7 +74,7 @@ inline char *read_cmdline2(int pid) {
 				}
 			}
 
-			if (config.f.fullcmdline) {
+			if (!isshort) {
 				size_t k;
 
 				for (k=0;k<p;k++)
@@ -110,7 +110,7 @@ inline char *read_cmdline2(int pid) {
 				rvlen=strlen(tab+1)+3;
 				rv=malloc(rvlen);
 				if (rv)
-					snprintf(rv,rvlen,config.f.fullcmdline?"[%s]":"%s",tab+1);
+					snprintf(rv,rvlen,!isshort?"[%s]":"%s",tab+1);
 			}
 		}
 	}

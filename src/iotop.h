@@ -87,7 +87,8 @@ struct xxxid_stats {
 	int io_prio;
 
 	int euid;
-	char *cmdline;
+	char *cmdline1;
+	char *cmdline2;
 	char *pw_name;
 
 	uint8_t iohist[HISTORY_CNT];
@@ -149,7 +150,7 @@ struct pidgen {
 	int __flags;
 };
 
-inline char *read_cmdline2(int pid);
+inline char *read_cmdline(int pid,int isshort);
 
 inline struct pidgen *openpidgen(int flags);
 inline void closepidgen(struct pidgen *pg);

@@ -361,7 +361,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		humanize_val(&write_val,write_str,1);
 
 		pw_name=u8strpadt(s->pw_name,9);
-		cmdline=u8strpadt(s->cmdline,maxcmdline);
+		cmdline=u8strpadt(config.f.fullcmdline?s->cmdline2:s->cmdline1,maxcmdline);
 
 		if (!config.f.hidegraph) {
 			int j;

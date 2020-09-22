@@ -207,8 +207,10 @@ inline void nl_fini(void) {
 }
 
 inline void free_stats(struct xxxid_stats *s) {
-	if (s->cmdline)
-		free(s->cmdline);
+	if (s->cmdline1)
+		free(s->cmdline1);
+	if (s->cmdline2)
+		free(s->cmdline2);
 	if (s->pw_name)
 		free(s->pw_name);
 
@@ -216,21 +218,21 @@ inline void free_stats(struct xxxid_stats *s) {
 }
 
 inline struct xxxid_stats *make_stats(int pid) {
-	struct xxxid_stats *s=malloc(sizeof(struct xxxid_stats));
+	struct xxxid_stats *s=calloc(1,sizeof *s);
 	struct passwd *pwd;
 
 	if (!s)
 		return NULL;
 
-	memset(s,0,sizeof(struct xxxid_stats));
-
 	if (nl_xxxid_info(pid,s))
 		goto error;
 
 	static const char unknown[]="<unknown>";
-	char *cmdline=read_cmdline2(pid);
+	char *cmdline1=read_cmdline(pid,1);
+	char *cmdline2=read_cmdline(pid,0);
 
-	s->cmdline=cmdline?cmdline:strdup(unknown);
+	s->cmdline1=cmdline1?cmdline1:strdup(unknown);
+	s->cmdline2=cmdline2?cmdline2:strdup(unknown);
 	pwd=getpwuid(s->euid);
 	s->pw_name=strdup(pwd&&pwd->pw_name?pwd->pw_name:unknown);
 

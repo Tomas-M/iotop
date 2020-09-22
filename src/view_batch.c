@@ -69,7 +69,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 		pw_name=u8strpadt(s->pw_name,10);
 
-		printf("%6i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str,write_val,write_str,s->swapin_val,s->blkio_val,s->cmdline);
+		printf("%6i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str,write_val,write_str,s->swapin_val,s->blkio_val,config.f.fullcmdline?s->cmdline2:s->cmdline1);
 
 		if (pw_name)
 			free(pw_name);
