@@ -1,7 +1,7 @@
 version=4
 
 opts=\
-	"filenamemangle=s%(?:.*?)?iotop-?(\d[\d.]*)\.tar\.xz%iotop-c_$1.orig.tar.xz%,pgpsigurlmangle=s/archive\/v([0-9.]+)\.tar\.xz/releases\/download\/v$1\/iotop-$1\.tar\.xz\.asc/" \
-	https://github.com/Tomas-M/iotop/tags \
-	(?:.*?/)?v?(\d[\d.]*)\.tar\.gz \
+	"filenamemangle=s%(?:.*?)?iotop-?(\d[\d.]*)\.tar\.xz%iotop-c_$1.orig.tar.xz%,pgpsigurlmangle=s/releases\/download\/v([0-9.]+)\/iotop-([0-9.]+)\.tar\.xz/releases\/download\/v$1\/iotop-$1\.tar\.xz\.asc/" \
+	https://github.com/Tomas-M/iotop/releases \
+	(?:.*?/)?iotop-?(\d[\d.]*)\.tar\.xz \
 	debian uupdate
