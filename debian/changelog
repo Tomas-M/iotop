@@ -13,7 +13,8 @@ iotop-c (1.14-1) unstable; urgency=medium
   * Update to new upstream release of 1.14
     - fix off-by-one errors in size calculation to avoid truncated strings
     - unify snprintf usage according to glibc semantics
-    - keep both variants of cmdline in memory for immediate display change (hotkey c)
+    - keep both variants of cmdline in memory for immediate display change
+      (hotkey c)
     - rewrite get_vm_counters with simpler io
     - nuke the remnants of -s/--iohistory options
     - be more strict to unrecognized arguments
