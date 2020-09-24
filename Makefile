@@ -94,10 +94,13 @@ mkotar:
 	dh_clean
 	tar \
 		--exclude ./.git \
+		--exclude ./.gitignore \
 		--exclude ./debian \
 		-Jcvf ../iotop-c_$(VER).orig.tar.xz .
 	-rm -f ../iotop-c_$(VER).orig.tar.xz.asc
 	gpg -a --detach-sign ../iotop-c_$(VER).orig.tar.xz
+	cp -fa ../iotop-c_$(VER).orig.tar.xz ../iotop-$(VER).tar.xz
+	cp -fa ../iotop-c_$(VER).orig.tar.xz.asc ../iotop-$(VER).tar.xz.asc
 
 -include $(DEPS)
 
