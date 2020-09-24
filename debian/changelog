@@ -1,4 +1,4 @@
-iotop-c (1.12-1) unstable; urgency=medium
+iotop-c (1.14-1) unstable; urgency=medium
 
   * Update to new upstream release of 1.12
     - fix SIGSEGV in humanize_val on large values
@@ -10,8 +10,17 @@ iotop-c (1.12-1) unstable; urgency=medium
     - revise column widths
     - rewrite curses event loop to make data collection separate from refresh
     - fix sorting (proper double value comparison)
+  * Update to new upstream release of 1.14
+    - fix off-by-one errors in size calculation to avoid truncated strings
+    - unify snprintf usage according to glibc semantics
+    - keep both variants of cmdline in memory for immediate display change (hotkey c)
+    - rewrite get_vm_counters with simpler io
+    - nuke the remnants of -s/--iohistory options
+    - be more strict to unrecognized arguments
+  * Remove debian folder from release tarballs (lintian: no-debian-changes)
+  * Change release tarballs url in debian/watch
 
- -- Boian Bonev <bbonev@ipacct.com>  Tue, 15 Sep 2020 00:43:34 +0000
+ -- Boian Bonev <bbonev@ipacct.com>  Thu, 24 Sep 2020 00:28:13 +0000
 
 iotop-c (1.11-1) unstable; urgency=medium
 
