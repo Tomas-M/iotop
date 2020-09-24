@@ -94,6 +94,7 @@ mkotar:
 	dh_clean
 	tar \
 		--exclude ./.git \
+		--exclude ./debian \
 		-Jcvf ../iotop-c_$(VER).orig.tar.xz .
 	-rm -f ../iotop-c_$(VER).orig.tar.xz.asc
 	gpg -a --detach-sign ../iotop-c_$(VER).orig.tar.xz
