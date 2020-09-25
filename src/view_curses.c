@@ -364,8 +364,6 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		cmdline=u8strpadt(config.f.fullcmdline?s->cmdline2:s->cmdline1,maxcmdline);
 
 		if (!config.f.hidegraph) {
-			int j;
-
 			*iohist=0;
 			for (j=0;j<gr_width;j++)
 				if (has_unicode&&unicode)
@@ -663,11 +661,11 @@ inline void view_curses_loop(void) {
 	struct xxxid_stats_arr *ps=NULL;
 	struct xxxid_stats_arr *cs=NULL;
 	struct act_stats act={0};
-	uint64_t now,bef=0;
+	uint64_t bef=0;
 	int k=ERR;
 
 	for (;;) {
-		now=monotime();
+		uint64_t now=monotime();
 		if (bef+1000*params.delay<now) {
 			bef=now;
 			if (ps)
