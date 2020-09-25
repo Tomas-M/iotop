@@ -662,10 +662,12 @@ inline void view_curses_loop(void) {
 	struct xxxid_stats_arr *cs=NULL;
 	struct act_stats act={0};
 	uint64_t bef=0;
+	int refresh=0;
 	int k=ERR;
 
 	for (;;) {
 		uint64_t now=monotime();
+
 		if (bef+1000*params.delay<now) {
 			bef=now;
 			if (ps)
@@ -685,15 +687,19 @@ inline void view_curses_loop(void) {
 			}
 			get_vm_counters(&act.read_bytes,&act.write_bytes);
 			act.ts_c=now;
-			k=KEY_REFRESH;
+			refresh=1;
 		}
+		if (refresh&&k==ERR)
+			k=KEY_REFRESH;
 		if (k!=ERR) {
 			int kres;
 
 			if ((kres=curses_key(k))>0)
 				break;
-			if (kres==0)
-				view_curses(cs,ps,&act,k==KEY_REFRESH);
+			if (kres==0) {
+				view_curses(cs,ps,&act,refresh);
+				refresh=0;
+			}
 		}
 		if ((params.iter>-1)&&((--params.iter)==0))
 			break;
