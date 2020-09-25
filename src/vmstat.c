@@ -26,7 +26,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define PGOU "\npgpgout "
 
 inline int get_vm_counters(uint64_t *pgpgin,uint64_t *pgpgou) {
-	size_t l,bs=BSIZ,bp=0;
+	ssize_t bs=BSIZ,bp=0;
 	char *buf,*pi,*po,*t;
 	int fd;
 
@@ -43,11 +43,11 @@ inline int get_vm_counters(uint64_t *pgpgin,uint64_t *pgpgou) {
 	}
 
 	for (;;) {
-		l=read(fd,buf+bp,bs-bp);
+		ssize_t l=read(fd,buf+bp,bs-bp);
 		if (l<=0)
 			break;
 		if (l==bs-bp) {
-			char *t=realloc(buf,bs+BSIZ);
+			t=realloc(buf,bs+BSIZ);
 
 			if (!t) {
 				free(buf);
