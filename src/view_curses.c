@@ -162,7 +162,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	if (gr_width>HISTORY_POS)
 		gr_width=HISTORY_POS;
 	if (!config.f.hidegraph)
-		maxcmdline-=gr_width;
+		maxcmdline-=gr_width+1;
 	if (maxcmdline<0)
 		maxcmdline=0;
 
@@ -319,7 +319,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (i==SORT_BY_PID)
 			wi=maxpidlen+2;
 		if (i==SORT_BY_GRAPH)
-			wi=gr_width;
+			wi=gr_width+1;
 		if (i==SORT_BY_COMMAND)
 			wi=maxcmdline;
 
@@ -370,6 +370,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
 				else
 					strcat(iohist,as_graph[s->iohist[j]]);
+			strcat(iohist," ");
 		}
 
 		mvhline(line,0,' ',maxx);
