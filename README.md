@@ -86,6 +86,6 @@ Notable contributions (ordered by time of last contribution):
 - alicektx <alicekot13@gmail.com> - documentation imrpovements
 - Filip Kofron <filip.kofron.cz@gmail.com> - build system imrpovements
 
-**Thanks!!! This project is what it is now because the steam you have put into it!**
+**Thanks! This project is what it is now because the steam you have put into it**
 
 *NB. In case you have contributed to the project and do not see your name in the list, please note that the above list is updated manually and it is an omission - notify the maintainers to fix it.*
