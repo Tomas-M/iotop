@@ -33,7 +33,7 @@ inline char *read_cmdline(int pid,int isshort) {
 	fd=open(path,O_RDONLY);
 	if (fd!=-1) {
 		char *dbuf=malloc(BUFSIZ+1);
-		size_t n,p=0,sz=BUFSIZ;
+		ssize_t n,p=0,sz=BUFSIZ;
 
 		if (!dbuf) {
 			close(fd);
@@ -75,7 +75,7 @@ inline char *read_cmdline(int pid,int isshort) {
 			}
 
 			if (!isshort) {
-				size_t k;
+				ssize_t k;
 
 				for (k=0;k<p;k++)
 					dbuf[k]=dbuf[k]?dbuf[k]:' ';
@@ -93,7 +93,7 @@ inline char *read_cmdline(int pid,int isshort) {
 	fd=open(path,O_RDONLY);
 	if (fd!=-1) {
 		char buf[BUFSIZ+1];
-		size_t n=read(fd,buf,BUFSIZ);
+		ssize_t n=read(fd,buf,BUFSIZ);
 
 		close(fd);
 
