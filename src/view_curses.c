@@ -625,9 +625,10 @@ static inline int curses_key(int ch) {
 				if (ch>='1'&&ch<='9')
 					config.opts[&config.f.hidepid-config.opts+ch-'1']^=1;
 			break;
+		case KEY_CTRL_L:
+			redrawwin(stdscr);
 		case KEY_REFRESH:
 		case KEY_RESIZE:
-		case KEY_CTRL_L:
 			break;
 		default:
 			return -1;
