@@ -93,6 +93,7 @@ mkotar:
 	$(MAKE) clean
 	dh_clean
 	tar \
+		--xform 's,^[.],iotop-$(VER),' \
 		--exclude ./.git \
 		--exclude ./.gitignore \
 		--exclude ./debian \
