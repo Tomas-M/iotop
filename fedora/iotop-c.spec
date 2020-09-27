@@ -6,8 +6,8 @@ Conflicts:      iotop
 
 License:        GPLv2+
 URL:            https://github.com/Tomas-M/iotop/
-Source0:        https://github.com/Tomas-M/iotop/archive/v%{version}.tar.gz
-Source1:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.gz.asc
+Source0:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.xz
+Source1:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.xz.asc
 Source2:        https://raw.githubusercontent.com/Tomas-M/iotop/v%{version}/debian/upstream/signing-key.asc
 
 BuildRequires:  gcc
@@ -35,7 +35,7 @@ possible.
 
 %prep
 %{gpgverify} --keyring='%{SOURCE2}' --signature='%{SOURCE1}' --data='%{SOURCE0}'
-%autosetup -n iotop-%{version}
+%autosetup -c iotop-%{version}
 
 %build
 %set_build_flags
@@ -50,5 +50,5 @@ V=1 STRIP=: %make_install
 %{_mandir}/man8/iotop.8*
 
 %changelog
-* Sat Sep 12 2020 Boian Bonev <bbonev@ipacct.com> - 1.14-1
+* Sat Sep 26 2020 Boian Bonev <bbonev@ipacct.com> - 1.14-1
 - Initial packaging for Fedora
