@@ -38,8 +38,8 @@ NCCC:=$(shell $(PKG_CONFIG) --cflags ncurses)
 NCLD:=$(shell $(PKG_CONFIG) --libs ncurses)
 endif
 ifeq ("$(NCLD)","")
-NCCC:=-lncursesw
-NCLD:=
+NCCC:=
+NCLD:=-lncursesw
 endif
 
 MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -std=gnu90 -Wall -Wextra
