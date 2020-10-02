@@ -2,7 +2,6 @@ Name:           iotop-c
 Version:        1.14
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
-Conflicts:      iotop
 
 License:        GPLv2+
 URL:            https://github.com/Tomas-M/iotop/
@@ -43,11 +42,13 @@ NO_FLTO=1 %make_build
 
 %install
 V=1 STRIP=: %make_install
+mv %{buildroot}%{_sbindir}/iotop %{buildroot}%{_sbindir}/iotop-c
+mv %{buildroot}%{_mandir}/man8/iotop.8 %{buildroot}%{_mandir}/man8/iotop-c.8
 
 %files
 %license LICENSE
-%{_sbindir}/iotop
-%{_mandir}/man8/iotop.8*
+%{_sbindir}/iotop-c
+%{_mandir}/man8/iotop-c.8*
 
 %changelog
 * Sat Sep 26 2020 Boian Bonev <bbonev@ipacct.com> - 1.14-1
