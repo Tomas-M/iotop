@@ -1,5 +1,5 @@
 Name:           iotop-c
-Version:        1.14
+Version:        1.15
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
@@ -51,5 +51,5 @@ mv %{buildroot}%{_mandir}/man8/iotop.8 %{buildroot}%{_mandir}/man8/iotop-c.8
 %{_mandir}/man8/iotop-c.8*
 
 %changelog
-* Sat Sep 26 2020 Boian Bonev <bbonev@ipacct.com> - 1.14-1
+* Sat Sep 26 2020 Boian Bonev <bbonev@ipacct.com> - 1.15-1
 - Initial packaging for Fedora
