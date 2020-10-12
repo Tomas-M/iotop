@@ -432,10 +432,6 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		printw("a");
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.accumulated?"bandwidth":"accum");
-		attron(A_UNDERLINE);
-		printw("s");
-		attroff(A_UNDERLINE);
-		printw(": %s ",!config.f.hidegraph?"no-graph":"graph");
 		if (has_unicode) {
 			attron(A_UNDERLINE);
 			printw("u");
