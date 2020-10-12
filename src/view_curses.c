@@ -352,6 +352,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		char iohist[HISTORY_POS*5];
 		char read_str[4],write_str[4];
 		char *pw_name,*cmdline;
+		char *pwt,*cmdt;
 
 		// visible history is non-zero
 		if (config.f.only&&!memcmp(s->iohist,iohist_z,(has_unicode&&unicode)?gr_width*2:gr_width))
@@ -360,8 +361,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		humanize_val(&read_val,read_str,1);
 		humanize_val(&write_val,write_str,1);
 
-		pw_name=u8strpadt(s->pw_name,9);
-		cmdline=u8strpadt(config.f.fullcmdline?s->cmdline2:s->cmdline1,maxcmdline);
+		pwt=esc_low_ascii(s->pw_name);
+		pw_name=u8strpadt(pwt,9);
+		if (pwt)
+			free(pwt);
+		cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline2:s->cmdline1);
+		cmdline=u8strpadt(cmdt,maxcmdline);
+		if (cmdt)
+			free(cmdt);
 
 		if (!config.f.hidegraph) {
 			*iohist=0;

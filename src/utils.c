@@ -201,6 +201,78 @@ inline int64_t monotime(void) {
 	return res;
 }
 
+inline const char *esc_low_ascii1(char c) {
+	static char ehex[0x20][6];
+	static int initialized=0;
+	int i;
+
+	if (c>=0x20) // no escaping needed
+		return NULL;
+	if (!initialized) {
+		for (i=0;i<0x20;i++)
+			sprintf(ehex[i],"\\0x%02x",i);
+		initialized=1;
+	}
+	switch (c) {
+		case 0x00: // shorter form
+			return "\\0";
+		case 0x07:
+			return "\\a";
+		case 0x08:
+			return "\\b";
+		case 0x09:
+			return "\\t";
+		case 0x0a:
+			return "\\n";
+		case 0x0b:
+			return "\\v";
+		case 0x0c:
+			return "\\f";
+		case 0x0d:
+			return "\\r";
+		case 0x1b:
+			return "\\e";
+		default:
+			return ehex[(unsigned)c];
+	}
+}
+
+inline char *esc_low_ascii(char *p) {
+	char *s=p,*res,*rp;
+	int rc=0;
+
+	if (!p)
+		return NULL;
+
+	// count
+	while (*s) {
+		const char *rs=esc_low_ascii1(*s++);
+
+		if (!rs)
+			rc++;
+		else
+			rc+=strlen(rs);
+	}
+	res=malloc(rc+1);
+	if (!res)
+		return NULL;
+	// copy, start over from the beginning
+	// two-pass over the string is faster than using realloc
+	s=p;
+	rp=res;
+	while (*s) {
+		const char *rs=esc_low_ascii1(*s++);
+
+		if (!rs)
+			*rp++=s[-1];
+		else
+			while (*rs)
+				*rp++=*rs++;
+	}
+	*rp=0;
+	return res;
+}
+
 #define UBLEN 1024
 
 inline char *u8strpadt(const char *s,size_t len) {
