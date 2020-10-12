@@ -87,17 +87,11 @@ inline int send_cmd(int sock_fd,__u16 nlmsg_type,__u32 nlmsg_pid,__u8 genl_cmd,_
 }
 
 inline int get_family_id(int sock_fd) {
+	struct msgtemplate ans;
 	static char name[256];
-
-	struct {
-		struct nlmsghdr n;
-		struct genlmsghdr g;
-		char buf[256];
-	} ans;
-
-	int id=0;
 	struct nlattr *na;
 	ssize_t rep_len;
+	int id=0;
 
 	strcpy(name,TASKSTATS_GENL_NAME);
 	if (send_cmd(sock_fd,GENL_ID_CTRL,getpid(),CTRL_CMD_GETFAMILY,CTRL_ATTR_FAMILY_NAME,(void *)name,strlen(TASKSTATS_GENL_NAME)+1))
