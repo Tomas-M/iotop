@@ -8,7 +8,7 @@ export V=1
 else
 export V=0
 endif
-export DEB_BUILD_MAINT_OPTIONS=hardening=+bindnow
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
 %:
 	dh $@
