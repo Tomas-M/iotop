@@ -42,9 +42,9 @@ NCCC:=
 NCLD:=-lncursesw
 endif
 
-MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -std=gnu90 -Wall -Wextra
+MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -std=gnu90 -Wall -Wextra -fPIE
 MYLIBS=$(LIBS) $(NCLD)
-MYLDFLAGS=$(LDFLAGS)
+MYLDFLAGS=$(LDFLAGS) -fPIE -pie
 STRIP?=strip
 
 PREFIX?=$(DESTDIR)/usr
