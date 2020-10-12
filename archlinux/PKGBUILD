@@ -18,6 +18,7 @@ validpgpkeys=('BA60BC20F37E59444D6D25001365720913D2F22D')
 md5sums=('SKIP' 'SKIP')
 
 package() {
+	cd iotop-${pkgver}
 	sed -i 's/sbin/bin/g' Makefile
 	make DESTDIR="${pkgdir}" V=1 install
 }
