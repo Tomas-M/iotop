@@ -364,7 +364,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			printw("%6.2f %% ",s->blkio_val);
 		printw("%s",!config.f.hidegraph?iohist:"");
 		if (!config.f.hidecmd)
-			printw("%s",cmdline);
+			printw("%s",cmdline?cmdline:"(null)");
 		if (ionice_pos==line)
 			attroff(A_UNDERLINE);
 
