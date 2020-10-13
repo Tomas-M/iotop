@@ -33,16 +33,21 @@ You should have received a copy of the GNU General Public License along with thi
 
 static int in_ionice=0;
 static char ionice_id[50];
-static int ionice_cl=1; // select what to edit class(1) or prio(0)
+static int ionice_pos=-1;
+static int ionice_cl=1; // select what to edit class(1) or prio(0) [digit pid enter mode only]
+static int ionice_col=0; // select what to edit pid/tid(0), class(2) or prio(1) [arrow mode only]
 static int ionice_class=IOPRIO_CLASS_RT;
 static int ionice_prio=0;
 static int ionice_id_changed=0;
+static int ionice_line=1;
+static struct xxxid_stats *ionice_pos_data=NULL;
 static int has_unicode=0;
 static int unicode=1;
 static double hist_t_r[HISTORY_CNT]={0};
 static double hist_t_w[HISTORY_CNT]={0};
 static double hist_a_r[HISTORY_CNT]={0};
 static double hist_a_w[HISTORY_CNT]={0};
+static int nohelp=0;
 
 static const char *column_name[]={
 	"xID", // unused, value varies - PID or TID
@@ -103,13 +108,11 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	char str_a_read[4],str_a_write[4];
 	char *head1row_format="";
 	int promptx=0,prompty=0,show;
-	int nohelp=config.f.nohelp;
 	double mx_t_r=1000.0;
 	double mx_t_w=1000.0;
 	double mx_a_r=1000.0;
 	double mx_a_w=1000.0;
 	int line,lastline;
-	int ionicepos=1;
 	int shrink_dm=0;
 	int head1row=0;
 	int maxcmdline;
@@ -118,6 +121,9 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	int maxy;
 	int maxx;
 	int i,j;
+
+	ionice_pos_data=NULL;
+	nohelp=config.f.nohelp;
 
 	maxy=getmaxy(stdscr);
 	maxx=getmaxx(stdscr);
@@ -237,7 +243,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	}
 
 	if (head1row) {
-		ionicepos=0;
+		ionice_line=0;
 		if (!in_ionice) {
 			if (shrink_dm) {
 				str_read[1]=0;
@@ -259,58 +265,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			show=FALSE;
 		}
 	}
-	if (in_ionice) {
-		mvhline(ionicepos,0,' ',maxx);
-		mvprintw(ionicepos,0,"%s: ",COLUMN_NAME(0));
-		attron(A_BOLD);
-		printw("%s",ionice_id);
-		attroff(A_BOLD);
-		getyx(stdscr,promptx,prompty);
-
-		if (strlen(ionice_id)) {
-			struct xxxid_stats *p=NULL;
-			pid_t id=atoi(ionice_id);
-
-			if (id&&(p=arr_find(cs,id))) {
-				printw(" Current: ");
-				attron(A_BOLD);
-				printw("%s",str_ioprio(p->io_prio));
-				attroff(A_BOLD);
-				printw(" Change to: ");
-
-				if (ionice_id_changed) {
-					ionice_id_changed=0;
-					ionice_class=ioprio2class(p->io_prio);
-					ionice_prio=ioprio2prio(p->io_prio);
-				}
-
-				attron(A_BOLD);
-				if (ionice_cl)
-					attron(A_REVERSE);
-				printw("%s",str_ioprio_class[ionice_class]);
-				if (ionice_cl)
-					attroff(A_REVERSE);
-				printw("/");
-				if (!ionice_cl)
-					attron(A_REVERSE);
-				printw("%d",ionice_prio);
-				if (!ionice_cl)
-					attroff(A_REVERSE);
-				attroff(A_BOLD);
-			} else
-				printw(" (invalid %s)",COLUMN_NAME(0));
-		} else
-			printw(" (select %s)",COLUMN_NAME(0));
-		printw(" ");
-		attron(A_REVERSE);
-		printw("[use 0-9/bksp for %s, tab and arrows for prio]",COLUMN_NAME(0));
-		attroff(A_REVERSE);
-		show=TRUE;
-	}
 
 	attron(A_REVERSE);
-	mvhline(ionicepos+1,0,' ',maxx);
-	move(ionicepos+1,0);
+	mvhline(ionice_line+1,0,' ',maxx);
+	move(ionice_line+1,0);
 
 	for (i=0;i<SORT_BY_MAX;i++) {
 		int wt,wi=column_width[i];
@@ -343,7 +301,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 	if (maxy<10)
 		nohelp=1;
-	line=ionicepos+2;
+	line=ionice_line+2;
 	lastline=line;
 	for (i=0;cs->sor&&i<diff_len;i++) {
 		struct xxxid_stats *s=cs->sor[i];
@@ -380,6 +338,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			strcat(iohist," ");
 		}
 
+		if (ionice_pos==line) {
+			attron(A_UNDERLINE);
+			ionice_pos_data=s;
+		}
 		mvhline(line,0,' ',maxx);
 		move(line,0);
 		if (!config.f.hidepid)
@@ -399,6 +361,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		printw("%s",!config.f.hidegraph?iohist:"");
 		if (!config.f.hidecmd)
 			printw("%s",cmdline);
+		if (ionice_pos==line)
+			attroff(A_UNDERLINE);
 
 		if (pw_name)
 			free(pw_name);
@@ -480,6 +444,95 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		attroff(A_REVERSE);
 	}
 
+	if (in_ionice) {
+		mvhline(ionice_line,0,' ',maxx);
+		mvprintw(ionice_line,0,"%s: ",COLUMN_NAME(0));
+
+		if (strlen(ionice_id)) {
+			struct xxxid_stats *p=NULL;
+			pid_t id=atoi(ionice_id);
+
+			attron(A_BOLD);
+			printw("%s",ionice_id);
+			attroff(A_BOLD);
+			getyx(stdscr,promptx,prompty);
+			if (id&&(p=arr_find(cs,id))) {
+				printw(" Current: ");
+				attron(A_BOLD);
+				printw("%s",str_ioprio(p->io_prio));
+				attroff(A_BOLD);
+				printw(" Change to: ");
+
+				if (ionice_id_changed) {
+					ionice_id_changed=0;
+					ionice_class=ioprio2class(p->io_prio);
+					ionice_prio=ioprio2prio(p->io_prio);
+				}
+
+				attron(A_BOLD);
+				if (ionice_cl)
+					attron(A_REVERSE);
+				printw("%s",str_ioprio_class[ionice_class]);
+				if (ionice_cl)
+					attroff(A_REVERSE);
+				printw("/");
+				if (!ionice_cl)
+					attron(A_REVERSE);
+				printw("%d",ionice_prio);
+				if (!ionice_cl)
+					attroff(A_REVERSE);
+				attroff(A_BOLD);
+			} else
+				printw(" (invalid %s)",COLUMN_NAME(0));
+			show=TRUE;
+			printw(" ");
+			attron(A_REVERSE);
+			printw("[use 0-9/bksp for %s, tab and arrows for prio]",COLUMN_NAME(0));
+			attroff(A_REVERSE);
+		} else {
+			if (ionice_pos==-1||ionice_pos_data==NULL)
+				printw(" (select %s by arrows or enter by 0-9/bksp)",COLUMN_NAME(0));
+			else {
+				attron(A_BOLD);
+				if (ionice_col==0)
+					attron(A_REVERSE);
+				printw("%d",ionice_pos_data->tid);
+				if (ionice_col==0)
+					attroff(A_REVERSE);
+				attroff(A_BOLD);
+
+				printw(" Current: ");
+				attron(A_BOLD);
+				printw("%s",str_ioprio(ionice_pos_data->io_prio));
+				attroff(A_BOLD);
+				printw(" Change to: ");
+
+				if (ionice_id_changed) {
+					ionice_id_changed=0;
+					ionice_class=ioprio2class(ionice_pos_data->io_prio);
+					ionice_prio=ioprio2prio(ionice_pos_data->io_prio);
+				}
+
+				attron(A_BOLD);
+				if (ionice_col==1)
+					attron(A_REVERSE);
+				printw("%s",str_ioprio_class[ionice_class]);
+				if (ionice_col==1)
+					attroff(A_REVERSE);
+				printw("/");
+				if (ionice_col==2)
+					attron(A_REVERSE);
+				printw("%d",ionice_prio);
+				if (ionice_col==2)
+					attroff(A_REVERSE);
+				attroff(A_BOLD);
+				printw(" ");
+				attron(A_REVERSE);
+				printw("[use arrows and tab for %s and prio]",COLUMN_NAME(0));
+				attroff(A_REVERSE);
+			}
+		}
+	}
 	if (show)
 		move(promptx,prompty);
 	curs_set(show);
@@ -492,6 +545,8 @@ static inline int curses_key(int ch) {
 		case 'Q':
 			if (in_ionice) {
 				in_ionice=0;
+				ionice_pos=-1;
+				ionice_col=0;
 				break;
 			}
 			return 1;
@@ -513,42 +568,94 @@ static inline int curses_key(int ch) {
 				config.f.sort_by=SORT_BY_MAX-1;
 			break;
 		case KEY_RIGHT:
-			if (in_ionice)
-				ionice_cl=!ionice_cl;
-			else
+			if (in_ionice) {
+				if (strlen(ionice_id))
+					ionice_cl=!ionice_cl;
+				else
+					if (ionice_pos!=-1)
+						ionice_col=(ionice_col+1)%3;
+			} else
 				if (++config.f.sort_by==SORT_BY_MAX)
 					config.f.sort_by=SORT_BY_PID;
 			break;
 		case KEY_LEFT:
-			if (in_ionice)
-				ionice_cl=!ionice_cl;
-			else
+			if (in_ionice) {
+				if (strlen(ionice_id))
+					ionice_cl=!ionice_cl;
+				else
+					if (ionice_pos!=-1)
+						ionice_col=(ionice_col+3-1)%3;
+			} else
 				if (--config.f.sort_by==-1)
 					config.f.sort_by=SORT_BY_MAX-1;
 			break;
 		case KEY_UP:
 			if (in_ionice) {
-				if (ionice_cl) {
-					ionice_class++;
-					if (ionice_class>=IOPRIO_CLASS_MAX)
-						ionice_class=IOPRIO_CLASS_MIN;
+				if (strlen(ionice_id)) {
+					if (ionice_cl) {
+						ionice_class++;
+						if (ionice_class>=IOPRIO_CLASS_MAX)
+							ionice_class=IOPRIO_CLASS_MIN;
+					} else {
+						ionice_prio++;
+						if (ionice_prio>7)
+							ionice_prio=0;
+					}
 				} else {
-					ionice_prio++;
-					if (ionice_prio>7)
-						ionice_prio=0;
+					switch (ionice_col) {
+						case 0:
+							if (ionice_pos>ionice_line+2) {
+								ionice_id_changed=1;
+								ionice_pos--;
+							}
+							break;
+						case 1:
+							ionice_class++;
+							if (ionice_class>=IOPRIO_CLASS_MAX)
+								ionice_class=IOPRIO_CLASS_MIN;
+							break;
+						case 2:
+							ionice_prio++;
+							if (ionice_prio>7)
+								ionice_prio=0;
+							break;
+					}
 				}
 			}
 			break;
 		case KEY_DOWN:
 			if (in_ionice) {
-				if (ionice_cl) {
-					ionice_class--;
-					if (ionice_class<IOPRIO_CLASS_MIN)
-						ionice_class=IOPRIO_CLASS_MAX-1;
+				if (strlen(ionice_id)) {
+					if (ionice_cl) {
+						ionice_class--;
+						if (ionice_class<IOPRIO_CLASS_MIN)
+							ionice_class=IOPRIO_CLASS_MAX-1;
+					} else {
+						ionice_prio--;
+						if (ionice_prio<0)
+							ionice_prio=7;
+					}
 				} else {
-					ionice_prio--;
-					if (ionice_prio<0)
-						ionice_prio=7;
+					switch (ionice_col) {
+						case 0:
+							ionice_id_changed=1;
+							if (ionice_pos==-1)
+								ionice_pos=ionice_line+2;
+							else
+								if (ionice_pos<getmaxy(stdscr)-(nohelp?1:3))
+									ionice_pos++;
+							break;
+						case 1:
+							ionice_class--;
+							if (ionice_class<IOPRIO_CLASS_MIN)
+								ionice_class=IOPRIO_CLASS_MAX-1;
+							break;
+						case 2:
+							ionice_prio--;
+							if (ionice_prio<0)
+								ionice_prio=7;
+							break;
+					}
 				}
 			}
 			break;
@@ -579,6 +686,8 @@ static inline int curses_key(int ch) {
 			ionice_id[0]=0;
 			ionice_cl=1;
 			ionice_id_changed=1;
+			ionice_pos=-1;
+			ionice_col=0;
 			break;
 		case 'u':
 		case 'U':
@@ -586,10 +695,12 @@ static inline int curses_key(int ch) {
 			break;
 		case 27: // ESC
 			in_ionice=0;
+			ionice_pos=-1;
+			ionice_col=0;
 			break;
 		case '\r': // CR
 		case KEY_ENTER:
-			if (in_ionice) {
+			if (in_ionice&&strlen(ionice_id)) {
 				pid_t pgid=atoi(ionice_id);
 				int who=IOPRIO_WHO_PROCESS;
 
@@ -598,12 +709,32 @@ static inline int curses_key(int ch) {
 					who=IOPRIO_WHO_PGRP;
 				}
 				in_ionice=0;
+				ionice_pos=-1;
+				ionice_col=0;
+				set_ioprio(who,pgid,ionice_class,ionice_prio);
+			}
+			if (in_ionice&&ionice_pos_data) {
+				pid_t pgid=ionice_pos_data->tid;
+				int who=IOPRIO_WHO_PROCESS;
+
+				if (config.f.processes) {
+					pgid=getpgid(pgid);
+					who=IOPRIO_WHO_PGRP;
+				}
+				in_ionice=0;
+				ionice_pos=-1;
+				ionice_col=0;
 				set_ioprio(who,pgid,ionice_class,ionice_prio);
 			}
 			break;
 		case '\t': // TAB
-			if (in_ionice)
-				ionice_cl=!ionice_cl;
+			if (in_ionice) {
+				if (strlen(ionice_id))
+					ionice_cl=!ionice_cl;
+				else
+					if (ionice_pos!=-1)
+						ionice_col=(ionice_col+1)%3;
+			}
 			break;
 		case KEY_BACKSPACE:
 			if (in_ionice==1) {
@@ -612,6 +743,11 @@ static inline int curses_key(int ch) {
 				if (idlen) {
 					ionice_id[idlen-1]=0;
 					ionice_id_changed=1;
+					ionice_pos=-1;
+					ionice_col=0;
+				} else {
+					ionice_pos=-1;
+					ionice_col=0;
 				}
 			}
 			break;
@@ -623,6 +759,8 @@ static inline int curses_key(int ch) {
 					ionice_id[idlen++]=ch;
 					ionice_id[idlen]=0;
 					ionice_id_changed=1;
+					ionice_pos=-1;
+					ionice_col=0;
 				}
 			} else
 				if (ch>='1'&&ch<='9')
