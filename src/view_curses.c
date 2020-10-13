@@ -313,8 +313,12 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		char *pwt,*cmdt;
 
 		// visible history is non-zero
-		if (config.f.only&&!memcmp(s->iohist,iohist_z,(has_unicode&&unicode)?gr_width*2:gr_width))
-			continue;
+		if (config.f.only) {
+			if (!config.f.hidegraph&&!memcmp(s->iohist,iohist_z,(has_unicode&&unicode)?gr_width*2:gr_width))
+				continue;
+			if (config.f.hidegraph&&s->blkio_val<=0)
+				continue;
+		}
 
 		humanize_val(&read_val,read_str,1);
 		humanize_val(&write_val,write_str,1);
