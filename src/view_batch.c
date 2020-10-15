@@ -63,6 +63,8 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 		if (config.f.only&&!read_val&&!write_val)
 			continue;
+		if (s->exited) // do not show exited processes in batch view
+			continue;
 
 		humanize_val(&read_val,read_str,1);
 		humanize_val(&write_val,write_str,1);

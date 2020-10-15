@@ -311,12 +311,20 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		char read_str[4],write_str[4];
 		char *pw_name,*cmdline;
 		char *pwt,*cmdt;
+		int hrevpos;
 
 		// visible history is non-zero
 		if (config.f.only) {
 			if (!config.f.hidegraph&&!memcmp(s->iohist,iohist_z,(has_unicode&&unicode)?gr_width*2:gr_width))
 				continue;
 			if (config.f.hidegraph&&s->blkio_val<=0)
+				continue;
+		}
+		if (config.f.hidegraph) {
+			if (s->exited>=3)
+				continue;
+		} else {
+			if (s->exited>=((has_unicode&&unicode)?gr_width*2:gr_width))
 				continue;
 		}
 
@@ -332,13 +340,28 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (cmdt)
 			free(cmdt);
 
+		hrevpos=-1;
 		if (!config.f.hidegraph) {
 			*iohist=0;
-			for (j=0;j<gr_width;j++)
+			for (j=0;j<gr_width;j++) {
+				#if 0
+				if (((has_unicode&&unicode)?j*2:j)<s->exited)
+					strcat(iohist,"x");
+				else {
+					if (has_unicode&&unicode)
+						strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
+					else
+						strcat(iohist,as_graph[s->iohist[j]]);
+				}
+				#else
 				if (has_unicode&&unicode)
 					strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
 				else
 					strcat(iohist,as_graph[s->iohist[j]]);
+				if (((has_unicode&&unicode)?j*2:j)<s->exited)
+					hrevpos=strlen(iohist);
+				#endif
+			}
 			strcat(iohist," ");
 		}
 
@@ -346,6 +369,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			attron(A_UNDERLINE);
 			ionice_pos_data=s;
 		}
+		if (s->exited)
+			attron(A_DIM);
 		mvhline(line,0,' ',maxx);
 		move(line,0);
 		if (!config.f.hidepid)
@@ -362,7 +387,13 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			printw("%6.2f %% ",s->swapin_val);
 		if (!config.f.hideio)
 			printw("%6.2f %% ",s->blkio_val);
-		printw("%s",!config.f.hidegraph?iohist:"");
+		if (!config.f.hidegraph&&hrevpos>0) {
+			attron(A_REVERSE);
+			printw("%*.*s",hrevpos,hrevpos,iohist);
+			attroff(A_REVERSE);
+			printw("%s",iohist+hrevpos);
+		} else
+			printw("%s",!config.f.hidegraph?iohist:"");
 		if (!config.f.hidecmd)
 			printw("%s",cmdline?cmdline:"(null)");
 		if (ionice_pos==line)
@@ -372,6 +403,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			free(pw_name);
 		if (cmdline)
 			free(cmdline);
+		if (s->exited)
+			attroff(A_DIM);
 
 		line++;
 		lastline=line;

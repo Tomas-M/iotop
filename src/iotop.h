@@ -92,6 +92,8 @@ struct xxxid_stats {
 	char *pw_name;
 
 	uint8_t iohist[HISTORY_CNT];
+	int exited; // exited>0 shows for how many refresh cycles the process is gone
+	// there is no point to keep in memory data for processes exited before HISTORY_CNT cycles
 };
 
 #define PROC_LIST_SZ_INC 1024
