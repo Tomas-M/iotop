@@ -1,0 +1,4 @@
+- Scrolling for the main view by UP/DOWN/PGUP/PGDN
+- Freezed, scrollable view of procs/threads for ionice selection
+- Third mode proc+threads, to show threads under the process
+- Rewrite backend to fetch procs+threads every time and let frontend decide what to show
