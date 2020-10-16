@@ -51,8 +51,9 @@ typedef union {
 		int hidecmd;
 		int sort_by;
 		int sort_order;
+		int deadx;
 	} f;
-	int opts[18];
+	int opts[19];
 } config_t;
 
 typedef struct {

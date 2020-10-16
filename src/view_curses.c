@@ -344,23 +344,23 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (!config.f.hidegraph) {
 			*iohist=0;
 			for (j=0;j<gr_width;j++) {
-				#if 0
-				if (((has_unicode&&unicode)?j*2:j)<s->exited)
-					strcat(iohist,"x");
-				else {
+				if (config.f.deadx) {
+					if (((has_unicode&&unicode)?j*2:j)<s->exited)
+						strcat(iohist,"x");
+					else {
+						if (has_unicode&&unicode)
+							strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
+						else
+							strcat(iohist,as_graph[s->iohist[j]]);
+					}
+				} else {
 					if (has_unicode&&unicode)
 						strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
 					else
 						strcat(iohist,as_graph[s->iohist[j]]);
+					if (((has_unicode&&unicode)?j*2:j)<s->exited)
+						hrevpos=strlen(iohist);
 				}
-				#else
-				if (has_unicode&&unicode)
-					strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
-				else
-					strcat(iohist,as_graph[s->iohist[j]]);
-				if (((has_unicode&&unicode)?j*2:j)<s->exited)
-					hrevpos=strlen(iohist);
-				#endif
 			}
 			strcat(iohist," ");
 		}
@@ -446,6 +446,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			attroff(A_UNDERLINE);
 			printw(": %s ",unicode?"ASCII":"UTF");
 		}
+		attron(A_UNDERLINE);
+		printw("x");
+		attroff(A_UNDERLINE);
+		printw(": %s ",config.f.deadx?"bkg":"xxx");
 		attron(A_UNDERLINE);
 		printw("h");
 		attroff(A_UNDERLINE);
@@ -729,6 +733,10 @@ static inline int curses_key(int ch) {
 		case 'u':
 		case 'U':
 			unicode=!unicode;
+			break;
+		case 'x':
+		case 'X':
+			config.f.deadx=!config.f.deadx;
 			break;
 		case 27: // ESC
 			in_ionice=0;

@@ -40,7 +40,7 @@ inline void init_params(void) {
 	params.user_id=-1;
 }
 
-static const char str_opt[]="boPaktqHc123456789";
+static const char str_opt[]="boPaktqHc123456789x";
 
 static inline void print_help(void) {
 	printf(
@@ -77,7 +77,8 @@ static inline void print_help(void) {
 		"  -8, --hide-graph      hide GRAPH column\n"
 		"  -9, --hide-command    hide COMMAND column\n"
 		"  -q, --quiet           suppress some lines of header (implies --batch)\n"
-		"  -H, --no-help         suppress listing of shortcuts\n",
+		"  -H, --no-help         suppress listing of shortcuts\n"
+		"  -x, --dead-x          show dead processes/threads with letter x\n",
 		progname
 	);
 }
@@ -114,10 +115,11 @@ static inline void parse_args(int argc,char *argv[]) {
 			{"hide-io",no_argument,NULL,'7'},
 			{"hide-graph",no_argument,NULL,'8'},
 			{"hide-command",no_argument,NULL,'9'},
+			{"dead-x",no_argument,NULL,'x'},
 			{NULL,0,NULL,0}
 		};
 
-		int c=getopt_long(argc,argv,"vhbon:d:p:u:PaktqcH123456789",long_options,NULL);
+		int c=getopt_long(argc,argv,"vhbon:d:p:u:PaktqcH123456789x",long_options,NULL);
 
 		if (c==-1) {
 			if (optind<argc) {
@@ -147,6 +149,7 @@ static inline void parse_args(int argc,char *argv[]) {
 			case 'H':
 			case 'c':
 			case '1' ... '9':
+			case 'x':
 				config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
 				break;
 			case 'n':
