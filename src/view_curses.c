@@ -345,7 +345,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			*iohist=0;
 			for (j=0;j<gr_width;j++) {
 				if (config.f.deadx) {
-					if (((has_unicode&&unicode)?j*2:j)<s->exited)
+					// +1 avoids stepping on a char with one valid and one invalid value
+					if (((has_unicode&&unicode)?j*2+1:j)<s->exited)
 						strcat(iohist,"x");
 					else {
 						if (has_unicode&&unicode)
@@ -354,6 +355,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 							strcat(iohist,as_graph[s->iohist[j]]);
 					}
 				} else {
+					// stepping on a char with one valid and one invalid value is not a problem with background
 					if (has_unicode&&unicode)
 						strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
 					else
