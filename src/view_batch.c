@@ -61,6 +61,9 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		char read_str[4],write_str[4];
 		char *pw_name;
 
+		// show only processes, if configured
+		if (config.f.processes&&s->pid!=s->tid)
+			continue;
 		if (config.f.only&&!read_val&&!write_val)
 			continue;
 		if (s->exited) // do not show exited processes in batch view
@@ -90,7 +93,7 @@ inline void view_batch_loop(void) {
 	struct act_stats act={0};
 
 	for (;;) {
-		cs=fetch_data(config.f.processes,filter1);
+		cs=fetch_data(filter1);
 		get_vm_counters(&act.read_bytes,&act.write_bytes);
 		act.ts_c=monotime();
 		view_batch(cs,ps,&act);

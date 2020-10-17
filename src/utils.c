@@ -118,77 +118,43 @@ inline char *read_cmdline(int pid,int isshort) {
 	return rv;
 }
 
-static inline int __next_pid(DIR *dir) {
-	while (1) {
-		struct dirent *de=readdir(dir);
+inline void pidgen_cb(pg_cb cb,void *hint1,void *hint2) {
+	DIR *pr;
 
-		if (!de)
-			return 0;
+	if ((pr=opendir("/proc"))) {
+		struct dirent *de=readdir(pr);
 
-		char *eol=NULL;
-		int pid=strtol(de->d_name,&eol,10);
+		for (;de;de=readdir(pr)) {
+			char *eol=NULL;
+			char path[30];
+			int havt=0;
+			pid_t pid;
+			DIR *tr;
 
-		if (*eol!='\0')
-			continue;
+			pid=strtol(de->d_name,&eol,10);
+			if (*eol!='\0')
+				continue;
+			snprintf(path,sizeof path,"/proc/%d/task",pid);
+			if ((tr=opendir(path))) {
+				struct dirent *tde=readdir(tr);
 
-		return pid;
-	}
+				for (;tde;tde=readdir(tr)) {
+					pid_t tid;
 
-	return 0;
-}
-
-inline struct pidgen *openpidgen(int flags) {
-	struct pidgen *pg=malloc(sizeof(struct pidgen));
-
-	if (!pg)
-		return NULL;
-
-	if ((pg->__proc=opendir("/proc"))) {
-		pg->__task=NULL;
-		pg->__flags=flags;
-		return pg;
-	}
-
-	free(pg);
-	return NULL;
-}
-
-inline void closepidgen(struct pidgen *pg) {
-	if (pg->__proc)
-		closedir((DIR *)pg->__proc);
-
-	if (pg->__task)
-		closedir((DIR *)pg->__task);
-
-	free(pg);
-}
-
-inline int pidgen_next(struct pidgen *pg) {
-	int pid;
-
-	if (pg->__task) {
-		pid=__next_pid((DIR *)pg->__task);
-
-		if (pid<1) {
-			closedir((DIR *)pg->__task);
-			pg->__task=NULL;
-			return pidgen_next(pg);
+					eol=NULL;
+					tid=strtol(tde->d_name,&eol,10);
+					if (*eol!='\0')
+						continue;
+					havt=1;
+					cb(pid,tid,hint1,hint2);
+				}
+				closedir(tr);
+			}
+			if (!havt)
+				cb(pid,pid,hint1,hint2);
 		}
-
-		return pid;
+		closedir(pr);
 	}
-
-	pid=__next_pid((DIR *)pg->__proc);
-
-	if (pid&&(pg->__flags&PIDGEN_FLAGS_TASK)) {
-		char path[30];
-
-		snprintf(path,sizeof path,"/proc/%d/task",pid);
-		pg->__task=(DIR *)opendir(path);
-		return pidgen_next(pg);
-	}
-
-	return pid;
 }
 
 inline int64_t monotime(void) {
@@ -204,11 +170,12 @@ inline int64_t monotime(void) {
 inline const char *esc_low_ascii1(char c) {
 	static char ehex[0x20][6];
 	static int initialized=0;
-	int i;
 
 	if (c>=0x20) // no escaping needed
 		return NULL;
 	if (!initialized) {
+		int i;
+
 		for (i=0;i<0x20;i++)
 			sprintf(ehex[i],"\\0x%02x",i);
 		initialized=1;

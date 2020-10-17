@@ -54,7 +54,9 @@ inline int send_cmd(int sock_fd,__u16 nlmsg_type,__u32 nlmsg_pid,__u8 genl_cmd,_
 
 	struct msgtemplate msg;
 
-	memset(&msg,0,sizeof(msg));
+	memset(&msg,0,sizeof msg);
+	// make cppcheck happier; hopefully the optimizer should remove this
+	memset(msg.buf,0,sizeof msg.buf);
 
 	msg.n.nlmsg_len=NLMSG_LENGTH(GENL_HDRLEN);
 	msg.n.nlmsg_type=nlmsg_type;
@@ -73,9 +75,9 @@ inline int send_cmd(int sock_fd,__u16 nlmsg_type,__u32 nlmsg_pid,__u8 genl_cmd,_
 
 	buf=(char *)&msg;
 	buflen=msg.n.nlmsg_len;
-	memset(&nladdr,0,sizeof(nladdr));
+	memset(&nladdr,0,sizeof nladdr);
 	nladdr.nl_family=AF_NETLINK;
-	while ((r=sendto(sock_fd,buf,buflen,0,(struct sockaddr *)&nladdr,sizeof(nladdr)))<buflen) {
+	while ((r=sendto(sock_fd,buf,buflen,0,(struct sockaddr *)&nladdr,sizeof nladdr))<buflen) {
 		if (r>0) {
 			buf+=r;
 			buflen-=r;
@@ -87,7 +89,7 @@ inline int send_cmd(int sock_fd,__u16 nlmsg_type,__u32 nlmsg_pid,__u8 genl_cmd,_
 }
 
 inline int get_family_id(int sock_fd) {
-	struct msgtemplate ans;
+	struct msgtemplate answ;
 	static char name[256];
 	struct nlattr *na;
 	ssize_t rep_len;
@@ -97,11 +99,11 @@ inline int get_family_id(int sock_fd) {
 	if (send_cmd(sock_fd,GENL_ID_CTRL,getpid(),CTRL_CMD_GETFAMILY,CTRL_ATTR_FAMILY_NAME,(void *)name,strlen(TASKSTATS_GENL_NAME)+1))
 		return 0;
 
-	rep_len=recv(sock_fd,&ans,sizeof(ans),0);
-	if (ans.n.nlmsg_type==NLMSG_ERROR||(rep_len<0)||!NLMSG_OK((&ans.n),rep_len))
+	rep_len=recv(sock_fd,&answ,sizeof answ,0);
+	if (answ.n.nlmsg_type==NLMSG_ERROR||(rep_len<0)||!NLMSG_OK((&answ.n),rep_len))
 		return 0;
 
-	na=(struct nlattr *)GENLMSG_DATA(&ans);
+	na=(struct nlattr *)GENLMSG_DATA(&answ);
 	na=(struct nlattr *)((char *)na+NLA_ALIGN(na->nla_len));
 	if (na->nla_type==CTRL_ATTR_FAMILY_ID)
 		id=*(__u16 *)NLA_DATA(na);
@@ -116,10 +118,10 @@ inline void nl_init(void) {
 	if (sock_fd<0)
 		goto error;
 
-	memset(&addr,0,sizeof(addr));
+	memset(&addr,0,sizeof addr);
 	addr.nl_family=AF_NETLINK;
 
-	if (bind(sock_fd,(struct sockaddr *)&addr,sizeof(addr))<0)
+	if (bind(sock_fd,(struct sockaddr *)&addr,sizeof addr)<0)
 		goto error;
 
 	nl_sock=sock_fd;
@@ -135,21 +137,22 @@ error:
 	exit(EXIT_FAILURE);
 }
 
-inline int nl_xxxid_info(pid_t xxxid,struct xxxid_stats *stats) {
+inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 	if (nl_sock<0) {
 		perror("nl_xxxid_info");
 		exit(EXIT_FAILURE);
 	}
 
-	if (send_cmd(nl_sock,nl_fam_id,xxxid,TASKSTATS_CMD_GET,TASKSTATS_CMD_ATTR_PID,&xxxid,sizeof(pid_t))) {
+	if (send_cmd(nl_sock,nl_fam_id,tid,TASKSTATS_CMD_GET,TASKSTATS_CMD_ATTR_PID,&tid,sizeof tid)) {
 		fprintf(stderr,"get_xxxid_info: %s\n",strerror(errno));
 		return -1;
 	}
 
-	stats->tid=xxxid;
+	stats->pid=pid;
+	stats->tid=tid;
 
 	struct msgtemplate msg;
-	ssize_t rv=recv(nl_sock,&msg,sizeof(msg),0);
+	ssize_t rv=recv(nl_sock,&msg,sizeof msg,0);
 
 	if (msg.n.nlmsg_type==NLMSG_ERROR||!NLMSG_OK((&msg.n),rv)) {
 		struct nlmsgerr *err=NLMSG_DATA(&msg);
@@ -190,7 +193,7 @@ inline int nl_xxxid_info(pid_t xxxid,struct xxxid_stats *stats) {
 		na=(struct nlattr *)((char *)GENLMSG_DATA(&msg)+len);
 	}
 
-	stats->io_prio=get_ioprio(xxxid);
+	stats->io_prio=get_ioprio(tid);
 
 	return 0;
 }
@@ -211,19 +214,19 @@ inline void free_stats(struct xxxid_stats *s) {
 	free(s);
 }
 
-inline struct xxxid_stats *make_stats(int pid) {
+inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	struct xxxid_stats *s=calloc(1,sizeof *s);
 	struct passwd *pwd;
 
 	if (!s)
 		return NULL;
 
-	if (nl_xxxid_info(pid,s))
+	if (nl_xxxid_info(tid,pid,s))
 		goto error;
 
 	static const char unknown[]="<unknown>";
-	char *cmdline1=read_cmdline(pid,1);
-	char *cmdline2=read_cmdline(pid,0);
+	char *cmdline1=read_cmdline(tid,1);
+	char *cmdline2=read_cmdline(tid,0);
 
 	s->cmdline1=cmdline1?cmdline1:strdup(unknown);
 	s->cmdline2=cmdline2?cmdline2:strdup(unknown);
@@ -237,31 +240,24 @@ error:
 	return NULL;
 }
 
-inline struct xxxid_stats_arr *fetch_data(int processes,filter_callback filter) {
-	struct xxxid_stats_arr *a=arr_alloc();
+static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback filter) {
+	struct xxxid_stats *s=make_stats(tid,pid);
 
-	if (!a)
-		return NULL;
-
-	struct pidgen *pg=openpidgen(processes?PIDGEN_FLAGS_PROC:PIDGEN_FLAGS_TASK);
-
-	if (!pg) {
-		perror("openpidgen");
-		exit(EXIT_FAILURE);
-	}
-
-	pid_t pid;
-
-	while ((pid=pidgen_next(pg))>0) {
-		struct xxxid_stats *s=make_stats(pid);
-
+	if (s) {
 		if (filter&&filter(s))
 			free_stats(s);
 		else
 			arr_add(a,s);
 	}
+}
 
-	closepidgen(pg);
+inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
+	struct xxxid_stats_arr *a=arr_alloc();
+
+	if (!a)
+		return NULL;
+
+	pidgen_cb((pg_cb)pid_cb,a,filter);
 	return a;
 }
 

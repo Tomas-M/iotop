@@ -114,7 +114,7 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 		snprintf(temp,sizeof temp,"%i",c->tid);
 		maxpidlen=maxpidlen<(int)strlen(temp)?(int)strlen(temp):maxpidlen;
 	}
-	for (n=0;ps->arr&&n<ps->length;n++) { // copy old data for exited processes
+	for (n=0;ps&&ps->arr&&n<ps->length;n++) { // copy old data for exited processes
 		if (ps->arr[n]->exited||!arr_find(cs,ps->arr[n]->tid)) {
 			struct xxxid_stats *p;
 
@@ -251,6 +251,14 @@ inline int filter1(struct xxxid_stats *s) {
 	if ((params.pid!=-1)&&(s->tid!=params.pid))
 		return 1;
 
+	return 0;
+}
+
+inline int filterp(struct xxxid_stats *s) {
+	if (!s)
+		return 1;
+	if (s->pid!=s->tid)
+		return 1;
 	return 0;
 }
 

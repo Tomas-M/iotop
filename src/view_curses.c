@@ -316,6 +316,9 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		// apply uid/pid filter here
 		if (filter1(s))
 			continue;
+		// show only processes, if configured
+		if (config.f.processes&&s->pid!=s->tid)
+			continue;
 		// visible history is non-zero
 		if (config.f.only) {
 			if (!config.f.hidegraph&&!memcmp(s->iohist,iohist_z,(has_unicode&&unicode)?gr_width*2:gr_width))
@@ -873,10 +876,10 @@ inline void view_curses_loop(void) {
 				act.have_o=1;
 			act.ts_o=act.ts_c;
 
-			cs=fetch_data(config.f.processes,NULL);
+			cs=fetch_data(config.f.processes?filterp:NULL);
 			if (!ps) {
 				ps=cs;
-				cs=fetch_data(config.f.processes,NULL);
+				cs=fetch_data(config.f.processes?filterp:NULL);
 			}
 			get_vm_counters(&act.read_bytes,&act.write_bytes);
 			act.ts_c=now;

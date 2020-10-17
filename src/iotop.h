@@ -72,6 +72,7 @@ extern int maxpidlen;
 #define HISTORY_CNT (HISTORY_POS*2)
 
 struct xxxid_stats {
+	pid_t pid;
 	pid_t tid;
 	uint64_t swapin_delay_total; // nanoseconds
 	uint64_t blkio_delay_total; // nanoseconds
@@ -119,11 +120,11 @@ struct act_stats {
 inline void nl_init(void);
 inline void nl_fini(void);
 
-inline int nl_xxxid_info(pid_t xxxid,struct xxxid_stats *stats);
+inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats);
 
 typedef int (*filter_callback)(struct xxxid_stats *);
 
-inline struct xxxid_stats_arr *fetch_data(int processes,filter_callback);
+inline struct xxxid_stats_arr *fetch_data(filter_callback);
 inline void free_stats(struct xxxid_stats *s);
 
 typedef void (*view_loop)(void);
@@ -142,25 +143,14 @@ inline unsigned int curses_sleep(unsigned int seconds);
 
 /* utils.c */
 
-enum {
-	PIDGEN_FLAGS_PROC,
-	PIDGEN_FLAGS_TASK
-};
-
-struct pidgen {
-	void *__proc;
-	void *__task;
-	int __flags;
-};
-
 inline char *read_cmdline(int pid,int isshort);
 
-inline struct pidgen *openpidgen(int flags);
-inline void closepidgen(struct pidgen *pg);
-inline int pidgen_next(struct pidgen *pg);
 inline int64_t monotime(void);
 inline char *u8strpadt(const char *s,size_t len);
 inline char *esc_low_ascii(char *p);
+
+typedef void (*pg_cb)(pid_t pid,pid_t tid,void *hint1,void *hint2);
+inline void pidgen_cb(pg_cb cb,void *hint1,void *hint2);
 
 /* ioprio.c */
 
@@ -232,6 +222,7 @@ inline int iotop_sort_cb(const void *a,const void *b);
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s);
 inline int value2scale(double val,double mx);
 inline int filter1(struct xxxid_stats *s);
+inline int filterp(struct xxxid_stats *s);
 
 #ifndef KEY_CTRL_L
 #define KEY_CTRL_L 014
