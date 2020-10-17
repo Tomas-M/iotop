@@ -128,9 +128,6 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 			ps->arr[n]->write_val=0;
 			ps->arr[n]->read_val_acc=0;
 			ps->arr[n]->write_val_acc=0;
-			// shift history one step
-			memmove(ps->arr[n]->iohist+1,ps->arr[n]->iohist,sizeof ps->arr[n]->iohist-sizeof *ps->arr[n]->iohist);
-			ps->arr[n]->iohist[0]=0;
 			// copy process data to cs
 			p=malloc(sizeof *p);
 			if (p) {
@@ -142,6 +139,9 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 					p->cmdline2=strdup(ps->arr[n]->cmdline2);
 				if (p->pw_name)
 					p->pw_name=strdup(ps->arr[n]->pw_name);
+				// shift history one step
+				memmove(p->iohist+1,p->iohist,sizeof p->iohist-sizeof *p->iohist);
+				p->iohist[0]=0;
 				if (arr_add(cs,p)) { // free the data in case add fails
 					if (p->cmdline1)
 						free(p->cmdline1);
