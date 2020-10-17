@@ -2,3 +2,5 @@
 - Freezed, scrollable view of procs/threads for ionice selection
 - Third mode proc+threads, to show threads under the process
 - Edit pid/user filters from interactive mode
+- Aggregate thread data in process mode
+- Show prio of processes with threads as !be/4
