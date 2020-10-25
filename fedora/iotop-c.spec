@@ -34,7 +34,7 @@ possible.
 
 %prep
 %{gpgverify} --keyring='%{SOURCE2}' --signature='%{SOURCE1}' --data='%{SOURCE0}'
-%autosetup -c iotop-%{version}
+%autosetup -n iotop-%{version}
 
 %build
 %set_build_flags
@@ -46,6 +46,7 @@ mv %{buildroot}%{_sbindir}/iotop %{buildroot}%{_sbindir}/iotop-c
 mv %{buildroot}%{_mandir}/man8/iotop.8 %{buildroot}%{_mandir}/man8/iotop-c.8
 
 %files
+%license COPYING
 %license LICENSE
 %{_sbindir}/iotop-c
 %{_mandir}/man8/iotop-c.8*
