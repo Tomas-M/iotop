@@ -246,8 +246,17 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 	if (s) {
 		if (filter&&filter(s))
 			free_stats(s);
-		else
-			arr_add(a,s);
+		else {
+			if (s->pid!=s->tid) { // maintain a thread list for each process
+				struct xxxid_stats *p=arr_find(a,s->pid); // main process' tid=thread's pid
+
+				if (p)
+					arr_add(&p->threads,s);
+				else
+					free_stats(s);
+			} else
+				arr_add(a,s);
+		}
 	}
 }
 
