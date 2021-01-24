@@ -26,11 +26,12 @@ inline struct xxxid_stats_arr *arr_alloc(void) {
 	if (!a)
 		return NULL;
 
-	a->arr=calloc(PROC_LIST_SZ_INC,sizeof *a->arr);
+	a->arr=calloc(PROC_LIST_SZ_INI,sizeof *a->arr);
 	if (!a->arr) {
 		free(a);
 		return NULL;
 	}
+	a->size=PROC_LIST_SZ_INI;
 	return a;
 }
 
@@ -50,6 +51,7 @@ static inline int arr_resize(struct xxxid_stats_arr *a,int newsize) {
 
 	a->arr=t;
 	a->size=newsize;
+
 	return 0;
 }
 
