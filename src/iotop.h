@@ -71,6 +71,13 @@ extern int maxpidlen;
 #define HISTORY_POS 60
 #define HISTORY_CNT (HISTORY_POS*2)
 
+struct xxxid_stats_arr {
+	struct xxxid_stats **arr;
+	struct xxxid_stats **sor;
+	int length;
+	int size;
+};
+
 struct xxxid_stats {
 	pid_t pid;
 	pid_t tid;
@@ -96,16 +103,14 @@ struct xxxid_stats {
 	uint8_t iohist[HISTORY_CNT];
 	int exited; // exited>0 shows for how many refresh cycles the process is gone
 	// there is no point to keep in memory data for processes exited before HISTORY_CNT cycles
+	struct xxxid_stats_arr threads;
 };
 
-#define PROC_LIST_SZ_INC 1024
-
-struct xxxid_stats_arr {
-	struct xxxid_stats **arr;
-	struct xxxid_stats **sor;
-	int length;
-	int size;
-};
+// arrays are used both for main process/thread list and for inner thread list beloging to a process
+// always start small
+#define PROC_LIST_SZ_INI 16
+// afterwards grow big
+#define PROC_LIST_SZ_INC 2048
 
 struct act_stats {
 	uint64_t read_bytes;
