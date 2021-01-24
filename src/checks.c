@@ -47,6 +47,13 @@ inline int system_checks(void) {
 			"boundaries. If you require the ability to run iotop as a non-root user, please\n"
 			"configure sudo to allow you to run iotop as root.\n"
 			"\n"
+			"Alternatively to using sudo the NET_ADMIN capability can be set by\n"
+			"\n"
+			"\t$ sudo setcap 'cap_net_admin+eip' <path-to>/iotop\n"
+			"\n"
+			"Be warned that this will also allow other users to run it and get access to\n"
+			"information that normally should no be available to them.\n"
+			"\n"
 			"Please do not file bugs on iotop about this.\n");
 
 		return EACCES;

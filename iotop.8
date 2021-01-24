@@ -11,6 +11,17 @@ or threads on the system. At least the CONFIG_TASK_DELAY_ACCT,
 CONFIG_TASK_IO_ACCOUNTING, CONFIG_TASKSTATS and CONFIG_VM_EVENT_COUNTERS
 options need to be enabled in your Linux kernel build configuration.
 .PP
+Running iotop as non-root user is possible by adding the NET_ADMIN capability.
+This can be done by e.g.:
+.RS
+.B
+
+$ sudo setcap 'cap_net_admin+eip' <path-to>/iotop
+
+.RE
+Be warned that this will also allow other users to run it and get access to
+information that normally should no be available to them.
+.PP
 iotop displays columns for the I/O bandwidth read and written by each
 process/thread during the sampling period. It also displays the percentage
 of time the thread/process spent while swapping in and while waiting on I/O. For each process, its I/O priority (class/level) is shown.
