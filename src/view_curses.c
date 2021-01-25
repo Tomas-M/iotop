@@ -51,7 +51,7 @@ static int nohelp=0;
 
 static const char *column_name[]={
 	"xID", // unused, value varies - PID or TID
-	"PRIO",
+	" PRIO",
 	"USER",
 	"DISK READ",
 	"DISK WRITE",
@@ -73,9 +73,12 @@ static const char *br_graph[5][5]={
 // ASCII pseudo graph - 1x5 levels graph per character
 static const char *as_graph[5]={" ","_",".",":","|",};
 
+static const char *th_lines_u[5]={" ","╓","╟","╙","►",};
+static const char *th_lines_a[5]={" ",",","|","`",">",};
+
 static const int column_width[]={
 	0,  // PID/TID
-	5,  // PRIO
+	6,  // PRIO
 	10, // USER
 	12, // READ
 	12, // WRITE
@@ -120,7 +123,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	int gr_width;
 	int maxy;
 	int maxx;
-	int i,j;
+	int i,j,k;
 
 	ionice_pos_data=NULL;
 	nohelp=config.f.nohelp;
@@ -304,121 +307,163 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	line=ionice_line+2;
 	lastline=line;
 	for (i=0;cs->sor&&i<diff_len;i++) {
-		struct xxxid_stats *s=cs->sor[i];
-		double read_val=config.f.accumulated?s->read_val_acc:s->read_val;
-		double write_val=config.f.accumulated?s->write_val_acc:s->write_val;
-		char iohist[HISTORY_POS*5];
+		struct xxxid_stats *ms=cs->sor[i],*s;
 		char read_str[4],write_str[4];
+		char iohist[HISTORY_POS*5];
+		double read_val,write_val;
 		char *pw_name,*cmdline;
+		int th_prio_diff;
 		char *pwt,*cmdt;
 		int hrevpos;
 
-		// apply uid/pid filter here
-		if (filter1(s))
+		// always start showing from processes, threads are kept on the main list for easier search
+		if (ms->pid!=ms->tid)
 			continue;
+		if (ms->threads)
+			arr_sort(ms->threads,iotop_sort_cb);
+		// check if threads use the same prio as the main process
+		th_prio_diff=0;
+		for (k=0;ms->threads&&ms->threads->arr&&k<ms->threads->length;k++)
+			if (ms->io_prio!=ms->threads->arr[k]->io_prio) {
+				th_prio_diff=1;
+				break;
+			}
 		// show only processes, if configured
-		if (config.f.processes&&s->pid!=s->tid)
-			continue;
-		// visible history is non-zero
-		if (config.f.only) {
-			if (!config.f.hidegraph&&!memcmp(s->iohist,iohist_z,(has_unicode&&unicode)?gr_width*2:gr_width))
+		for (k=-1;k<(config.f.processes?0:(ms->threads?ms->threads->length:0));k++) {
+			if (k<0)
+				s=ms;
+			else {
+				if (!ms->threads||!ms->threads->sor)
+					break;
+				s=ms->threads->sor[k];
+			}
+			read_val=config.f.accumulated?s->read_val_acc:s->read_val;
+			write_val=config.f.accumulated?s->write_val_acc:s->write_val;
+			// apply uid/pid filter here
+			if (filter1(s))
 				continue;
-			if (config.f.hidegraph&&s->blkio_val<=0)
-				continue;
-		}
-		if (config.f.hidegraph) {
-			if (s->exited>=3)
-				continue;
-		} else {
-			if (s->exited>=((has_unicode&&unicode)?gr_width*2:gr_width))
-				continue;
-		}
+			// visible history is non-zero
+			if (config.f.only) {
+				if (!config.f.hidegraph&&!memcmp(s->iohist,iohist_z,(has_unicode&&unicode)?gr_width*2:gr_width))
+					continue;
+				if (config.f.hidegraph&&s->blkio_val<=0)
+					continue;
+			}
+			if (config.f.hidegraph) {
+				if (s->exited>=3)
+					continue;
+			} else {
+				if (s->exited>=((has_unicode&&unicode)?gr_width*2:gr_width))
+					continue;
+			}
 
-		humanize_val(&read_val,read_str,1);
-		humanize_val(&write_val,write_str,1);
+			humanize_val(&read_val,read_str,1);
+			humanize_val(&write_val,write_str,1);
 
-		pwt=esc_low_ascii(s->pw_name);
-		pw_name=u8strpadt(pwt,9);
-		if (pwt)
-			free(pwt);
-		cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline2:s->cmdline1);
-		cmdline=u8strpadt(cmdt,maxcmdline);
-		if (cmdt)
-			free(cmdt);
+			pwt=esc_low_ascii(s->pw_name);
+			pw_name=u8strpadt(pwt,9);
+			if (pwt)
+				free(pwt);
+			cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline2:s->cmdline1);
+			cmdline=u8strpadt(cmdt,maxcmdline-1); // -1 for thread/process link chars
+			if (cmdt)
+				free(cmdt);
 
-		hrevpos=-1;
-		if (!config.f.hidegraph) {
-			*iohist=0;
-			for (j=0;j<gr_width;j++) {
-				if (config.f.deadx) {
-					// +1 avoids stepping on a char with one valid and one invalid value
-					if (((has_unicode&&unicode)?j*2+1:j)<s->exited)
-						strcat(iohist,"x");
-					else {
+			hrevpos=-1;
+			if (!config.f.hidegraph) {
+				*iohist=0;
+				for (j=0;j<gr_width;j++) {
+					if (config.f.deadx) {
+						// +1 avoids stepping on a char with one valid and one invalid value
+						if (((has_unicode&&unicode)?j*2+1:j)<s->exited)
+							strcat(iohist,"x");
+						else {
+							if (has_unicode&&unicode)
+								strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
+							else
+								strcat(iohist,as_graph[s->iohist[j]]);
+						}
+					} else {
+						// stepping on a char with one valid and one invalid value is not a problem with background
 						if (has_unicode&&unicode)
 							strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
 						else
 							strcat(iohist,as_graph[s->iohist[j]]);
+						if (((has_unicode&&unicode)?j*2:j)<s->exited)
+							hrevpos=strlen(iohist);
 					}
-				} else {
-					// stepping on a char with one valid and one invalid value is not a problem with background
-					if (has_unicode&&unicode)
-						strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
-					else
-						strcat(iohist,as_graph[s->iohist[j]]);
-					if (((has_unicode&&unicode)?j*2:j)<s->exited)
-						hrevpos=strlen(iohist);
 				}
+				strcat(iohist," ");
 			}
-			strcat(iohist," ");
+
+			if (ionice_pos==line) {
+				attron(A_UNDERLINE);
+				ionice_pos_data=s;
+			}
+			if (s->exited)
+				attron(A_DIM);
+			mvhline(line,0,' ',maxx);
+			move(line,0);
+			if (!config.f.hidepid)
+				printw("%*i  ",maxpidlen,s->tid);
+			if (!config.f.hideprio) {
+				char c=' ';
+
+				if (k==-1&&th_prio_diff)
+					c='!';
+				printw("%c%4s ",c,str_ioprio(s->io_prio));
+			}
+			if (!config.f.hideuser)
+				printw("%s ",pw_name?pw_name:"(null)");
+			if (!config.f.hideread)
+				printw("%7.2f %-3.3s ",read_val,read_str);
+			if (!config.f.hidewrite)
+				printw("%7.2f %-3.3s ",write_val,write_str);
+			if (!config.f.hideswapin)
+				printw("%6.2f %% ",s->swapin_val);
+			if (!config.f.hideio)
+				printw("%6.2f %% ",s->blkio_val);
+			if (!config.f.hidegraph&&hrevpos>0) {
+				attron(A_REVERSE);
+				printw("%*.*s",hrevpos,hrevpos,iohist);
+				attroff(A_REVERSE);
+				printw("%s",iohist+hrevpos);
+			} else
+				printw("%s",!config.f.hidegraph?iohist:"");
+			if (!config.f.hidecmd) {
+				const char *s=(has_unicode&&unicode)?th_lines_u[0]:th_lines_a[0];
+
+				if (ms->threads) {
+					if (k==-1&&ms->threads->length) {
+						if (config.f.processes)
+							s=(has_unicode&&unicode)?th_lines_u[4]:th_lines_a[4];
+						else
+							s=(has_unicode&&unicode)?th_lines_u[1]:th_lines_a[1];
+					}
+					if (k>=0&&k+1<ms->threads->length)
+						s=(has_unicode&&unicode)?th_lines_u[2]:th_lines_a[2];
+					if (k>=0&&k+1==ms->threads->length)
+						s=(has_unicode&&unicode)?th_lines_u[3]:th_lines_a[3];
+				}
+				printw("%s%s",s,cmdline?cmdline:"(null)");
+			}
+			if (ionice_pos==line)
+				attroff(A_UNDERLINE);
+
+			if (pw_name)
+				free(pw_name);
+			if (cmdline)
+				free(cmdline);
+			if (s->exited)
+				attroff(A_DIM);
+
+			line++;
+			lastline=line;
+			if (line>maxy-(nohelp?1:3)) // do not draw out of screen, keep 2 lines for help
+				goto donedraw;
 		}
-
-		if (ionice_pos==line) {
-			attron(A_UNDERLINE);
-			ionice_pos_data=s;
-		}
-		if (s->exited)
-			attron(A_DIM);
-		mvhline(line,0,' ',maxx);
-		move(line,0);
-		if (!config.f.hidepid)
-			printw("%*i  ",maxpidlen,s->tid);
-		if (!config.f.hideprio)
-			printw("%4s ",str_ioprio(s->io_prio));
-		if (!config.f.hideuser)
-			printw("%s ",pw_name?pw_name:"(null)");
-		if (!config.f.hideread)
-			printw("%7.2f %-3.3s ",read_val,read_str);
-		if (!config.f.hidewrite)
-			printw("%7.2f %-3.3s ",write_val,write_str);
-		if (!config.f.hideswapin)
-			printw("%6.2f %% ",s->swapin_val);
-		if (!config.f.hideio)
-			printw("%6.2f %% ",s->blkio_val);
-		if (!config.f.hidegraph&&hrevpos>0) {
-			attron(A_REVERSE);
-			printw("%*.*s",hrevpos,hrevpos,iohist);
-			attroff(A_REVERSE);
-			printw("%s",iohist+hrevpos);
-		} else
-			printw("%s",!config.f.hidegraph?iohist:"");
-		if (!config.f.hidecmd)
-			printw("%s",cmdline?cmdline:"(null)");
-		if (ionice_pos==line)
-			attroff(A_UNDERLINE);
-
-		if (pw_name)
-			free(pw_name);
-		if (cmdline)
-			free(cmdline);
-		if (s->exited)
-			attroff(A_DIM);
-
-		line++;
-		lastline=line;
-		if (line>maxy-(nohelp?1:3)) // do not draw out of screen, keep 2 lines for help
-			break;
 	}
+donedraw:
 	for (line=lastline;line<=maxy-(nohelp?1:3);line++) // always draw empty lines
 		mvhline(line,0,' ',maxx);
 
@@ -789,6 +834,7 @@ static inline int curses_key(int ch) {
 						ionice_col=(ionice_col+1)%3;
 			}
 			break;
+		case 0x08: // Ctrl-H, Backspace on some terminals
 		case KEY_BACKSPACE:
 			if (in_ionice==1) {
 				int idlen=strlen(ionice_id);
@@ -876,10 +922,10 @@ inline void view_curses_loop(void) {
 				act.have_o=1;
 			act.ts_o=act.ts_c;
 
-			cs=fetch_data(config.f.processes?filterp:NULL);
+			cs=fetch_data(NULL);
 			if (!ps) {
 				ps=cs;
-				cs=fetch_data(config.f.processes?filterp:NULL);
+				cs=fetch_data(NULL);
 			}
 			get_vm_counters(&act.read_bytes,&act.write_bytes);
 			act.ts_c=now;
