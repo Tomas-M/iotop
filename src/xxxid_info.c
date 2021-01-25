@@ -210,6 +210,7 @@ inline void free_stats(struct xxxid_stats *s) {
 		free(s->cmdline2);
 	if (s->pw_name)
 		free(s->pw_name);
+	arr_free_noheap_noitem(&s->threads);
 
 	free(s);
 }
@@ -252,10 +253,8 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 
 				if (p)
 					arr_add(&p->threads,s);
-				else
-					free_stats(s);
-			} else
-				arr_add(a,s);
+			}
+			arr_add(a,s);
 		}
 	}
 }
