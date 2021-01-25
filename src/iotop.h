@@ -215,6 +215,7 @@ inline struct xxxid_stats_arr *arr_alloc(void);
 inline int arr_add(struct xxxid_stats_arr *a,struct xxxid_stats *s);
 inline struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa,pid_t tid);
 inline void arr_free(struct xxxid_stats_arr *pa);
+inline void arr_free_noheap_noitem(struct xxxid_stats_arr *pa);
 inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b));
 
 #define HEADER1_FORMAT "  Total DISK READ: %7.2f %s%s |   Total DISK WRITE: %7.2f %s%s"
