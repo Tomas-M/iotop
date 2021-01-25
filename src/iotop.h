@@ -103,7 +103,7 @@ struct xxxid_stats {
 	uint8_t iohist[HISTORY_CNT];
 	int exited; // exited>0 shows for how many refresh cycles the process is gone
 	// there is no point to keep in memory data for processes exited before HISTORY_CNT cycles
-	struct xxxid_stats_arr threads;
+	struct xxxid_stats_arr *threads;
 };
 
 // arrays are used both for main process/thread list and for inner thread list beloging to a process
@@ -215,7 +215,7 @@ inline struct xxxid_stats_arr *arr_alloc(void);
 inline int arr_add(struct xxxid_stats_arr *a,struct xxxid_stats *s);
 inline struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa,pid_t tid);
 inline void arr_free(struct xxxid_stats_arr *pa);
-inline void arr_free_noheap_noitem(struct xxxid_stats_arr *pa);
+inline void arr_free_noitem(struct xxxid_stats_arr *pa);
 inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b));
 
 #define HEADER1_FORMAT "  Total DISK READ: %7.2f %s%s |   Total DISK WRITE: %7.2f %s%s"
