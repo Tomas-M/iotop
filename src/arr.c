@@ -140,19 +140,29 @@ inline struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa,pid_t tid) {
 	}
 }
 
-inline void arr_free(struct xxxid_stats_arr *pa) {
+static inline void _arr_free(struct xxxid_stats_arr *pa,int freepa,int freeitem) {
 	if (!pa)
 		return;
 	if (pa->arr) {
 		int i;
 
-		for (i=0;i<pa->length;i++)
-			free_stats(pa->arr[i]);
+		if (freeitem)
+			for (i=0;i<pa->length;i++)
+				free_stats(pa->arr[i]);
 		free(pa->arr);
 	}
 	if (pa->sor)
 		free(pa->sor);
-	free(pa);
+	if (freepa)
+		free(pa);
+}
+
+inline void arr_free(struct xxxid_stats_arr *pa) {
+	_arr_free(pa,1,1);
+}
+
+inline void arr_free_noheap_noitem(struct xxxid_stats_arr *pa) {
+	_arr_free(pa,0,0);
 }
 
 inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b)) {
