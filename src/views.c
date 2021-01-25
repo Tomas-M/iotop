@@ -131,7 +131,8 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 			// copy process data to cs
 			p=malloc(sizeof *p);
 			if (p) {
-				*p=*ps->arr[n];
+				*p=*ps->arr[n]; // WARNING - all dynamic data inside should always be initialized below
+				p->threads=NULL;
 				// copy dynamic data to avoid double free; in the unlikely case strdup fails, data is just lost
 				if (p->cmdline1)
 					p->cmdline1=strdup(ps->arr[n]->cmdline1);
@@ -152,6 +153,24 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 					free(p);
 				}
 			}
+		}
+	}
+	// reattach exited threads back to their original process
+	for (n=0;cs->arr&&n<cs->length;n++) {
+		struct xxxid_stats *c;
+
+		c=cs->arr[n];
+		if (c->pid!=c->tid&&c->exited) {
+			struct xxxid_stats *p;
+
+			p=arr_find(cs,c->pid); // pid==tid for the main process
+			if (!p)
+				continue;
+			if (!p->threads)
+				p->threads=arr_alloc();
+			if (!p->threads) // ignore the old data in case of memory alloc error
+				continue;
+			arr_add(p->threads,c);
 		}
 	}
 
