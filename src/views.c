@@ -65,7 +65,6 @@ inline int value2scale(double val,double mx) {
 }
 
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s) {
-	int diff_size=cs->length;
 	int n=0;
 
 	for (n=0;cs->arr&&n<cs->length;n++) {
@@ -174,7 +173,7 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 		}
 	}
 
-	return diff_size;
+	return cs->length;
 }
 
 inline void humanize_val(double *value,char *str,int allow_accum) {
