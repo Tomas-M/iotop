@@ -1,6 +1,9 @@
 - Scrolling for the main view by UP/DOWN/PGUP/PGDN
 - Freezed, scrollable view of procs/threads for ionice selection
 - Edit pid/user filters from interactive mode
+- Document exited threads/process display
+- Document the display of processes with different prio (e.g. !be/4)
+- Document the sorting order in thread view (threads always go after their main process)
 
 --- history of finished TODO items ---
 
