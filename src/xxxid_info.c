@@ -210,7 +210,7 @@ inline void free_stats(struct xxxid_stats *s) {
 		free(s->cmdline2);
 	if (s->pw_name)
 		free(s->pw_name);
-	arr_free_noheap_noitem(&s->threads);
+	arr_free_noitem(s->threads);
 
 	free(s);
 }
@@ -251,8 +251,18 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 			if (s->pid!=s->tid) { // maintain a thread list for each process
 				struct xxxid_stats *p=arr_find(a,s->pid); // main process' tid=thread's pid
 
-				if (p)
-					arr_add(&p->threads,s);
+				if (p) {
+					// aggregate thread data into the main process
+					if (!p->threads)
+						p->threads=arr_alloc();
+					if (p->threads) {
+						arr_add(p->threads,s);
+						p->swapin_delay_total+=s->swapin_delay_total;
+						p->blkio_delay_total+=s->blkio_delay_total;
+						p->read_bytes+=s->read_bytes;
+						p->write_bytes+=s->write_bytes;
+					}
+				}
 			}
 			arr_add(a,s);
 		}
