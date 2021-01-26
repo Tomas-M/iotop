@@ -7,6 +7,7 @@
 - Document the sorting order in thread view (threads always go after their main process)
 - Document pid/user filters interactive interface
 - Document 0 shows all columns
+- Document -u +123 command line
 
 --- history of finished TODO items ---
 
