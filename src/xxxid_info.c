@@ -217,7 +217,10 @@ inline void free_stats(struct xxxid_stats *s) {
 
 inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	struct xxxid_stats *s=calloc(1,sizeof *s);
+	static const char unknown[]="<unknown>";
 	struct passwd *pwd;
+	char *cmdline1;
+	char *cmdline2;
 
 	if (!s)
 		return NULL;
@@ -225,9 +228,8 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	if (nl_xxxid_info(tid,pid,s))
 		goto error;
 
-	static const char unknown[]="<unknown>";
-	char *cmdline1=read_cmdline(tid,1);
-	char *cmdline2=read_cmdline(tid,0);
+	cmdline1=read_cmdline(tid,1);
+	cmdline2=read_cmdline(tid,0);
 
 	s->cmdline1=cmdline1?cmdline1:strdup(unknown);
 	s->cmdline2=cmdline2?cmdline2:strdup(unknown);
