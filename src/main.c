@@ -162,12 +162,16 @@ static inline void parse_args(int argc,char *argv[]) {
 				params.pid=atoi(optarg);
 				break;
 			case 'u':
-				if (isdigit(optarg[0]))
-					params.user_id=atoi(optarg);
+				if (optarg[0]=='+') // always interpret as numeric uid
+					params.user_id=atoi(optarg+1);
 				else {
 					struct passwd *pwd=getpwnam(optarg);
 
 					if (!pwd) {
+						if (isdigit(optarg[0])) { // fallback to numeric uid
+							params.user_id=atoi(optarg);
+							break;
+						}
 						fprintf(stderr,"%s: user %s not found\n",progname,optarg);
 						exit(EXIT_FAILURE);
 					}
