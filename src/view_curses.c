@@ -440,7 +440,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				strcat(iohist," ");
 			}
 
-			if (ionice_pos==line) {
+			if (in_ionice&&ionice_pos==line) {
 				attron(A_UNDERLINE);
 				ionice_pos_data=s;
 			}
@@ -493,7 +493,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				}
 				printw("%s%s",s,cmdline?cmdline:"(null)");
 			}
-			if (ionice_pos==line)
+			if (in_ionice&&ionice_pos==line)
 				attroff(A_UNDERLINE);
 
 			if (pw_name)
