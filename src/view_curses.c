@@ -79,8 +79,8 @@ static const char *br_graph[5][5]={
 // ASCII pseudo graph - 1x5 levels graph per character
 static const char *as_graph[5]={" ","_",".",":","|",};
 
-static const char *th_lines_u[5]={" ","╓","╟","╙","►",};
-static const char *th_lines_a[5]={" ",",","|","`",">",};
+static const char *th_lines_u[8]={" ","►","┌","│","└","╭","┊","╰",};
+static const char *th_lines_a[8]={" ",">",",","|","`",",",":","`",};
 
 static const int column_width[]={
 	0,  // PID/TID
@@ -103,9 +103,32 @@ static const int column_width[]={
 
 #define TIMEDIFF_IN_S(sta,end) ((((sta)==(end))||(sta)==0)?0.0001:(((end)-(sta))/1000.0))
 
+static inline int filter_view(struct xxxid_stats *s,int gr_width) {
+	static const uint8_t iohist_z[HISTORY_CNT]={0};
+
+	// apply uid/pid filter
+	if (filter1(s))
+		return 1;
+	// visible history is non-zero
+	if (config.f.only) {
+		if (!config.f.hidegraph&&!memcmp(s->iohist,iohist_z,gr_width))
+			return 1;
+		if (config.f.hidegraph&&s->blkio_val<=0)
+			return 1;
+	}
+	if (config.f.hidegraph) {
+		if (s->exited>=3)
+			return 2;
+	} else {
+		if (s->exited>=gr_width)
+			return 2;
+	}
+
+	return 0;
+}
+
 static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
 	double time_s=TIMEDIFF_IN_S(act->ts_o,act->ts_c);
-	static const uint8_t iohist_z[HISTORY_CNT]={0};
 	int diff_len=create_diff(cs,ps,time_s);
 	double total_read,total_write;
 	double total_a_read,total_a_write;
@@ -313,12 +336,12 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	line=ionice_line+2;
 	lastline=line;
 	for (i=0;cs->sor&&i<diff_len;i++) {
+		int th_prio_diff,th_first,th_have_filtered,th_first_id,th_last_id;
 		struct xxxid_stats *ms=cs->sor[i],*s;
 		char read_str[4],write_str[4];
 		char iohist[HISTORY_POS*5];
 		double read_val,write_val;
 		char *pw_name,*cmdline;
-		int th_prio_diff;
 		char *pwt,*cmdt;
 		int hrevpos;
 
@@ -328,12 +351,40 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (ms->threads)
 			arr_sort(ms->threads,iotop_sort_cb);
 		// check if threads use the same prio as the main process
+		// scan for hidden threads
+		th_first=1;
 		th_prio_diff=0;
-		for (k=0;ms->threads&&ms->threads->arr&&k<ms->threads->length;k++)
-			if (ms->io_prio!=ms->threads->arr[k]->io_prio) {
-				th_prio_diff=1;
-				break;
+		th_have_filtered=0;
+		th_first_id=th_last_id=-2;
+		for (k=-1;ms->threads&&ms->threads->arr&&k<ms->threads->length;k++) {
+			if (k<0)
+				s=ms;
+			else {
+				if (!ms->threads||!ms->threads->sor)
+					break;
+				s=ms->threads->sor[k];
+				if (ms->io_prio!=s->io_prio) {
+					th_prio_diff=1;
+					if (config.f.processes)
+						break;
+				}
 			}
+			if (!config.f.processes) {
+				int fres=filter_view(s,(has_unicode&&unicode)?gr_width*2:gr_width);
+
+				if (fres==2)
+					continue;
+				if (fres) {
+					th_have_filtered=1;
+					continue;
+				}
+				if (th_first) {
+					th_first=0;
+					th_first_id=k;
+				}
+				th_last_id=k;
+			}
+		}
 		// show only processes, if configured
 		for (k=-1;k<(config.f.processes?0:(ms->threads?ms->threads->length:0));k++) {
 			if (k<0)
@@ -343,25 +394,12 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					break;
 				s=ms->threads->sor[k];
 			}
+			// apply filters
+			if (filter_view(s,(has_unicode&&unicode)?gr_width*2:gr_width))
+				continue;
+
 			read_val=config.f.accumulated?s->read_val_acc:s->read_val;
 			write_val=config.f.accumulated?s->write_val_acc:s->write_val;
-			// apply uid/pid filter here
-			if (filter1(s))
-				continue;
-			// visible history is non-zero
-			if (config.f.only) {
-				if (!config.f.hidegraph&&!memcmp(s->iohist,iohist_z,(has_unicode&&unicode)?gr_width*2:gr_width))
-					continue;
-				if (config.f.hidegraph&&s->blkio_val<=0)
-					continue;
-			}
-			if (config.f.hidegraph) {
-				if (s->exited>=3)
-					continue;
-			} else {
-				if (s->exited>=((has_unicode&&unicode)?gr_width*2:gr_width))
-					continue;
-			}
 
 			humanize_val(&read_val,read_str,1);
 			humanize_val(&write_val,write_str,1);
@@ -440,16 +478,18 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				const char *s=(has_unicode&&unicode)?th_lines_u[0]:th_lines_a[0];
 
 				if (ms->threads) {
-					if (k==-1&&ms->threads->length) {
-						if (config.f.processes)
-							s=(has_unicode&&unicode)?th_lines_u[4]:th_lines_a[4];
-						else
+					if (config.f.processes) {
+						if (k==-1&&ms->threads->length)
 							s=(has_unicode&&unicode)?th_lines_u[1]:th_lines_a[1];
-					}
-					if (k>=0&&k+1<ms->threads->length)
-						s=(has_unicode&&unicode)?th_lines_u[2]:th_lines_a[2];
-					if (k>=0&&k+1==ms->threads->length)
-						s=(has_unicode&&unicode)?th_lines_u[3]:th_lines_a[3];
+					} else
+						if (th_first_id!=th_last_id) {
+							if (k==th_first_id)
+								s=(has_unicode&&unicode)?th_lines_u[2+3*th_have_filtered]:th_lines_a[2+3*th_have_filtered];
+							if (k!=th_first_id&&k!=th_last_id)
+								s=(has_unicode&&unicode)?th_lines_u[3+3*th_have_filtered]:th_lines_a[3+3*th_have_filtered];
+							if (k==th_last_id)
+								s=(has_unicode&&unicode)?th_lines_u[4+3*th_have_filtered]:th_lines_a[4+3*th_have_filtered];
+						}
 				}
 				printw("%s%s",s,cmdline?cmdline:"(null)");
 			}
