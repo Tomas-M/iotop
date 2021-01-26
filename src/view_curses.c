@@ -970,9 +970,16 @@ static inline int curses_key(int ch) {
 					(filter_col?filter_pid:filter_uid)[idlen]=0;
 				}
 			}
-			if (!in_ionice&&!in_filter)
+			if (!in_ionice&&!in_filter) {
 				if (ch>='1'&&ch<='9')
 					config.opts[&config.f.hidepid-config.opts+ch-'1']^=1;
+				if (ch=='0') { // show all columns
+					int i;
+
+					for (i=1;i<=9;i++)
+						config.opts[&config.f.hidepid-config.opts+i-1]=0;
+				}
+			}
 			break;
 		case KEY_CTRL_L:
 			redrawwin(stdscr);
