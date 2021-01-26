@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License along with thi
 // allow ncurses printf-like arguments checking
 #define GCC_PRINTF
 
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +24,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <curses.h>
 #include <locale.h>
 #include <langinfo.h>
+#include <sys/types.h>
 
 #define HEADER_XXS_FORMAT "%4.0f%s%s/%4.0f%s%s|%4.0f%s%s/%4.0f%s%s"
 #define HEADER_XS_FORMAT "TR:%4.0f%s%sW:%4.0f%s%s|CR:%4.0f%s%sW:%4.0f%s%s"
@@ -31,7 +33,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define HEADER_L_FORMAT "Total Read:%7.2f %s%s Write:%7.2f %s%s|Current Read:%7.2f %s%s Write:%7.2f %s%s"
 #define HEADER_XL_FORMAT "Total Read: %7.2f %s%s Write: %7.2f %s%s | Current Read: %7.2f %s%s Write: %7.2f %s%s"
 
-static int in_ionice=0;
+static int in_ionice=0; // ionice interface flag and state vars
 static char ionice_id[50];
 static int ionice_pos=-1;
 static int ionice_cl=1; // select what to edit class(1) or prio(0) [digit pid enter mode only]
@@ -40,6 +42,10 @@ static int ionice_class=IOPRIO_CLASS_RT;
 static int ionice_prio=0;
 static int ionice_id_changed=0;
 static int ionice_line=1;
+static int in_filter=0; // filter by pid/uid interface flag and state vars
+static char filter_uid[50];
+static char filter_pid[50];
+static int filter_col=0; // select what to edit uid(0), pid(1)
 static struct xxxid_stats *ionice_pos_data=NULL;
 static int has_unicode=0;
 static int unicode=1;
@@ -247,7 +253,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 	if (head1row) {
 		ionice_line=0;
-		if (!in_ionice) {
+		if (!in_ionice&&!in_filter) {
 			if (shrink_dm) {
 				str_read[1]=0;
 				str_write[1]=0;
@@ -262,7 +268,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		mvhline(0,0,' ',maxx);
 		mvprintw(0,0,HEADER1_FORMAT,total_read,str_read,!config.f.hidegraph?pg_t_r:"",total_write,str_write,!config.f.hidegraph?pg_t_w:"");
 
-		if (!in_ionice) {
+		if (!in_ionice&&!in_filter) {
 			mvhline(1,0,' ',maxx);
 			mvprintw(1,0,HEADER2_FORMAT,total_a_read,str_a_read,!config.f.hidegraph?pg_a_r:"",total_a_write,str_a_write,!config.f.hidegraph?pg_a_w:"");
 			show=FALSE;
@@ -550,6 +556,7 @@ donedraw:
 			printw("%s",ionice_id);
 			attroff(A_BOLD);
 			getyx(stdscr,promptx,prompty);
+			show=TRUE;
 			if (id&&(p=arr_find(cs,id))) {
 				printw(" Current: ");
 				attron(A_BOLD);
@@ -578,7 +585,6 @@ donedraw:
 				attroff(A_BOLD);
 			} else
 				printw(" (invalid %s)",COLUMN_NAME(0));
-			show=TRUE;
 			printw(" ");
 			attron(A_REVERSE);
 			printw("[use 0-9/bksp for %s, tab and arrows for prio]",COLUMN_NAME(0));
@@ -627,6 +633,55 @@ donedraw:
 			}
 		}
 	}
+	if (in_filter) {
+		mvhline(ionice_line,0,' ',maxx);
+		mvprintw(ionice_line,0,"UID: ");
+		attron(A_BOLD);
+		if (params.user_id<0)
+			printw("none");
+		else {
+			struct passwd *pwd;
+
+			pwd=getpwuid(params.user_id);
+			printw("%d [%s]",params.user_id,pwd&&pwd->pw_name?pwd->pw_name:"n/a");
+		}
+		attroff(A_BOLD);
+		printw(" Change to: ");
+		attron(A_BOLD);
+		printw("%s",filter_uid);
+		if (filter_col==0) {
+			getyx(stdscr,promptx,prompty);
+			show=TRUE;
+		}
+		if (strlen(filter_uid)&&strcmp(filter_uid,"none")) {
+			struct passwd *pwd;
+
+			pwd=getpwuid(atoi(filter_uid));
+			printw(" [%s]",pwd&&pwd->pw_name?pwd->pw_name:"n/a");
+		}
+		attroff(A_BOLD);
+
+		printw(" PID: ");
+		attron(A_BOLD);
+		if (params.pid<0)
+			printw("none");
+		else
+			printw("%d",params.pid);
+		attroff(A_BOLD);
+		printw(" Change to: ");
+		attron(A_BOLD);
+		printw("%s",filter_pid);
+		attroff(A_BOLD);
+		if (filter_col==1) {
+			getyx(stdscr,promptx,prompty);
+			show=TRUE;
+		}
+
+		printw("  ");
+		attron(A_REVERSE);
+		printw("[use 0-9/n/bksp for UID/PID, tab to switch UID/PID]");
+		attroff(A_REVERSE);
+	}
 	if (show)
 		move(promptx,prompty);
 	curs_set(show);
@@ -639,8 +694,10 @@ static inline int curses_key(int ch) {
 		case 'Q':
 			if (in_ionice) {
 				in_ionice=0;
-				ionice_pos=-1;
-				ionice_col=0;
+				break;
+			}
+			if (in_filter) {
+				in_filter=0;
 				break;
 			}
 			return 1;
@@ -668,7 +725,8 @@ static inline int curses_key(int ch) {
 				else
 					if (ionice_pos!=-1)
 						ionice_col=(ionice_col+1)%3;
-			} else
+			}
+			if (!in_ionice&&!in_filter)
 				if (++config.f.sort_by==SORT_BY_MAX)
 					config.f.sort_by=SORT_BY_PID;
 			break;
@@ -679,7 +737,8 @@ static inline int curses_key(int ch) {
 				else
 					if (ionice_pos!=-1)
 						ionice_col=(ionice_col+3-1)%3;
-			} else
+			}
+			if (!in_ionice&&!in_filter)
 				if (--config.f.sort_by==-1)
 					config.f.sort_by=SORT_BY_MAX-1;
 			break;
@@ -783,6 +842,24 @@ static inline int curses_key(int ch) {
 			ionice_pos=-1;
 			ionice_col=0;
 			break;
+		case 'f':
+		case 'F':
+			in_filter=1;
+			if (params.user_id==-1)
+				strcpy(filter_uid,"none");
+			else
+				sprintf(filter_uid,"%d",params.user_id);
+			if (params.pid==-1)
+				strcpy(filter_pid,"none");
+			else
+				sprintf(filter_pid,"%d",params.pid);
+			filter_col=0;
+			break;
+		case 'n':
+		case 'N':
+			if (in_filter)
+				strcpy(filter_col?filter_pid:filter_uid,"none");
+			break;
 		case 'u':
 		case 'U':
 			unicode=!unicode;
@@ -792,9 +869,10 @@ static inline int curses_key(int ch) {
 			config.f.deadx=!config.f.deadx;
 			break;
 		case 27: // ESC
-			in_ionice=0;
-			ionice_pos=-1;
-			ionice_col=0;
+			if (in_ionice)
+				in_ionice=0;
+			if (in_filter)
+				in_filter=0;
 			break;
 		case '\r': // CR
 		case KEY_ENTER:
@@ -807,9 +885,18 @@ static inline int curses_key(int ch) {
 					who=IOPRIO_WHO_PGRP;
 				}
 				in_ionice=0;
-				ionice_pos=-1;
-				ionice_col=0;
 				set_ioprio(who,pgid,ionice_class,ionice_prio);
+			}
+			if (in_filter) {
+				if (!strcmp(filter_pid,"")||!strcmp(filter_pid,"none"))
+					params.pid=-1;
+				else
+					params.pid=atoi(filter_pid);
+				if (!strcmp(filter_uid,"")||!strcmp(filter_uid,"none"))
+					params.user_id=-1;
+				else
+					params.user_id=atoi(filter_uid);
+				in_filter=0;
 			}
 			if (in_ionice&&ionice_pos_data) {
 				pid_t pgid=ionice_pos_data->tid;
@@ -820,8 +907,6 @@ static inline int curses_key(int ch) {
 					who=IOPRIO_WHO_PGRP;
 				}
 				in_ionice=0;
-				ionice_pos=-1;
-				ionice_col=0;
 				set_ioprio(who,pgid,ionice_class,ionice_prio);
 			}
 			break;
@@ -833,10 +918,12 @@ static inline int curses_key(int ch) {
 					if (ionice_pos!=-1)
 						ionice_col=(ionice_col+1)%3;
 			}
+			if (in_filter)
+				filter_col^=1;
 			break;
 		case 0x08: // Ctrl-H, Backspace on some terminals
 		case KEY_BACKSPACE:
-			if (in_ionice==1) {
+			if (in_ionice) {
 				int idlen=strlen(ionice_id);
 
 				if (idlen) {
@@ -849,9 +936,18 @@ static inline int curses_key(int ch) {
 					ionice_col=0;
 				}
 			}
+			if (in_filter) {
+				int idlen=strlen(filter_col?filter_pid:filter_uid);
+
+				if (!strcmp(filter_col?filter_pid:filter_uid,"none"))
+					(filter_col?filter_pid:filter_uid)[0]=0;
+				else
+					if (idlen)
+						(filter_col?filter_pid:filter_uid)[idlen-1]=0;
+			}
 			break;
 		case '0'...'9':
-			if (in_ionice==1) {
+			if (in_ionice) {
 				size_t idlen=strlen(ionice_id);
 
 				if (idlen<sizeof ionice_id-1) {
@@ -861,7 +957,20 @@ static inline int curses_key(int ch) {
 					ionice_pos=-1;
 					ionice_col=0;
 				}
-			} else
+			}
+			if (in_filter) {
+				size_t idlen;
+
+				if (!strcmp(filter_col?filter_pid:filter_uid,"none"))
+					(filter_col?filter_pid:filter_uid)[0]=0;
+				idlen=strlen(filter_col?filter_pid:filter_uid);
+
+				if (idlen<(filter_col?sizeof filter_pid:sizeof filter_uid)-1) {
+					(filter_col?filter_pid:filter_uid)[idlen++]=ch;
+					(filter_col?filter_pid:filter_uid)[idlen]=0;
+				}
+			}
+			if (!in_ionice&&!in_filter)
 				if (ch>='1'&&ch<='9')
 					config.opts[&config.f.hidepid-config.opts+ch-'1']^=1;
 			break;
