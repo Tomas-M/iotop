@@ -22,7 +22,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act) {
 	double time_s=TIMEDIFF_IN_S(act->ts_o,act->ts_c);
-	int diff_len=create_diff(cs,ps,time_s);
+	int diff_len=create_diff(cs,ps,time_s,NULL,0,NULL);
 	double total_a_read,total_a_write;
 	char str_a_read[4],str_a_write[4];
 	double total_read,total_write;

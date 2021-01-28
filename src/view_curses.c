@@ -48,12 +48,15 @@ static char filter_pid[50];
 static int filter_col=0; // select what to edit uid(0), pid(1)
 static struct xxxid_stats *ionice_pos_data=NULL;
 static int has_unicode=0;
-static int unicode=1;
+static int unicode=1; // enable unicode (only valid if unicode is available)
 static double hist_t_r[HISTORY_CNT]={0};
 static double hist_t_w[HISTORY_CNT]={0};
 static double hist_a_r[HISTORY_CNT]={0};
 static double hist_a_w[HISTORY_CNT]={0};
-static int nohelp=0;
+static int nohelp=0; // hide help
+static int scrollpos=0; // scroll view start position
+static int viewsizey=0; // how many lines we can show on screen
+static int dispcount=0; // how many lines we have after filters
 
 static const char *column_name[]={
 	"xID", // unused, value varies - PID or TID
@@ -129,7 +132,6 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 
 static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
 	double time_s=TIMEDIFF_IN_S(act->ts_o,act->ts_c);
-	int diff_len=create_diff(cs,ps,time_s);
 	double total_read,total_write;
 	double total_a_read,total_a_write;
 	char pg_t_r[HISTORY_POS*5]={0};
@@ -150,34 +152,17 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	int maxcmdline;
 	int gr_width_h;
 	int gr_width;
+	int diff_len;
+	int i,j,k;
 	int maxy;
 	int maxx;
-	int i,j,k;
+	int skip;
 
 	ionice_pos_data=NULL;
 	nohelp=config.f.nohelp;
 
 	maxy=getmaxy(stdscr);
 	maxx=getmaxx(stdscr);
-
-	calc_total(cs,&total_read,&total_write);
-	calc_a_total(act,&total_a_read,&total_a_write,time_s);
-
-	if (roll) {
-		memmove(hist_t_r+1,hist_t_r,sizeof hist_t_r-sizeof *hist_t_r);
-		memmove(hist_t_w+1,hist_t_w,sizeof hist_t_w-sizeof *hist_t_w);
-		memmove(hist_a_r+1,hist_a_r,sizeof hist_a_r-sizeof *hist_a_r);
-		memmove(hist_a_w+1,hist_a_w,sizeof hist_a_w-sizeof *hist_a_w);
-		hist_t_r[0]=total_read;
-		hist_t_w[0]=total_write;
-		hist_a_r[0]=total_a_read;
-		hist_a_w[0]=total_a_write;
-	}
-
-	humanize_val(&total_read,str_read,1);
-	humanize_val(&total_write,str_write,1);
-	humanize_val(&total_a_read,str_a_read,0);
-	humanize_val(&total_a_write,str_a_write,0);
 
 	maxcmdline=maxx;
 	if (!config.f.hidepid)
@@ -203,6 +188,27 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		maxcmdline-=gr_width+1;
 	if (maxcmdline<0)
 		maxcmdline=0;
+
+	diff_len=create_diff(cs,ps,time_s,filter_view,(has_unicode&&unicode)?gr_width*2:gr_width,&dispcount);
+
+	calc_total(cs,&total_read,&total_write);
+	calc_a_total(act,&total_a_read,&total_a_write,time_s);
+
+	if (roll) {
+		memmove(hist_t_r+1,hist_t_r,sizeof hist_t_r-sizeof *hist_t_r);
+		memmove(hist_t_w+1,hist_t_w,sizeof hist_t_w-sizeof *hist_t_w);
+		memmove(hist_a_r+1,hist_a_r,sizeof hist_a_r-sizeof *hist_a_r);
+		memmove(hist_a_w+1,hist_a_w,sizeof hist_a_w-sizeof *hist_a_w);
+		hist_t_r[0]=total_read;
+		hist_t_w[0]=total_write;
+		hist_a_r[0]=total_a_read;
+		hist_a_w[0]=total_a_write;
+	}
+
+	humanize_val(&total_read,str_read,1);
+	humanize_val(&total_write,str_write,1);
+	humanize_val(&total_a_read,str_a_read,0);
+	humanize_val(&total_a_write,str_a_write,0);
 
 	gr_width_h=gr_width;
 	if (maxy<10||maxx<(int)strlen(HEADER1_FORMAT)+2*(7-5+3-2+(!config.f.hidegraph?gr_width_h+1:0)-2)) {
@@ -335,6 +341,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		nohelp=1;
 	line=ionice_line+2;
 	lastline=line;
+	viewsizey=maxy-1-ionice_line-(nohelp?0:2);
+	if (viewsizey<0)
+		viewsizey=0;
+	skip=scrollpos;
+	if (skip>dispcount-viewsizey)
+		skip=dispcount-viewsizey;
+	if (skip<0)
+		skip=0;
 	for (i=0;cs->sor&&i<diff_len;i++) {
 		int th_prio_diff,th_first,th_have_filtered,th_first_id,th_last_id;
 		struct xxxid_stats *ms=cs->sor[i],*s;
@@ -372,7 +386,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			if (!config.f.processes) {
 				int fres=filter_view(s,(has_unicode&&unicode)?gr_width*2:gr_width);
 
-				if (fres==2)
+				if (fres==2) // exited process that is no longer visible; do not count as filtered
 					continue;
 				if (fres) {
 					th_have_filtered=1;
@@ -397,6 +411,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			// apply filters
 			if (filter_view(s,(has_unicode&&unicode)?gr_width*2:gr_width))
 				continue;
+			if (skip) {
+				skip--;
+				continue;
+			}
 
 			read_val=config.f.accumulated?s->read_val_acc:s->read_val;
 			write_val=config.f.accumulated?s->write_val_acc:s->write_val;
@@ -567,19 +585,20 @@ donedraw:
 		printw("right");
 		attroff(A_UNDERLINE);
 		printw(": %s ",COLUMN_R(config.f.sort_by));
-		attron(A_UNDERLINE);
-		printw("home");
-		attroff(A_UNDERLINE);
-		printw(": %s ",COLUMN_L(1));
-		attron(A_UNDERLINE);
-		printw("end");
-		attroff(A_UNDERLINE);
-		printw(": %s ",COLUMN_L(0));
 
 		attron(A_UNDERLINE);
 		printw("1-9");
 		attroff(A_UNDERLINE);
-		printw(": toggle column");
+		printw(": toggle column ");
+		attron(A_UNDERLINE);
+		printw("0");
+		attroff(A_UNDERLINE);
+		printw(": show all ");
+
+		attron(A_UNDERLINE);
+		printw("(pg)up/dn/home/end");
+		attroff(A_UNDERLINE);
+		printw(": scroll");
 
 		attroff(A_REVERSE);
 	}
@@ -749,14 +768,33 @@ static inline int curses_key(int ch) {
 		case KEY_HOME:
 			if (in_ionice)
 				ionice_cl=1;
-			else
-				config.f.sort_by=0;
+			if (!in_ionice&&!in_filter)
+				scrollpos=0;
 			break;
 		case KEY_END:
 			if (in_ionice)
 				ionice_cl=0;
-			else
-				config.f.sort_by=SORT_BY_MAX-1;
+			if (!in_ionice&&!in_filter) {
+				scrollpos=dispcount-viewsizey;
+				if (scrollpos<0)
+					scrollpos=0;
+			}
+			break;
+		case KEY_PPAGE:
+			if (!in_ionice&&!in_filter) {
+				scrollpos-=viewsizey;
+				if (scrollpos<0)
+					scrollpos=0;
+			}
+			break;
+		case KEY_NPAGE:
+			if (!in_ionice&&!in_filter) {
+				scrollpos+=viewsizey;
+				if (scrollpos>dispcount-viewsizey)
+					scrollpos=dispcount-viewsizey;
+				if (scrollpos<0)
+					scrollpos=0;
+			}
 			break;
 		case KEY_RIGHT:
 			if (in_ionice) {
@@ -815,6 +853,11 @@ static inline int curses_key(int ch) {
 					}
 				}
 			}
+			if (!in_ionice&&!in_filter) {
+				scrollpos--;
+				if (scrollpos<0)
+					scrollpos=0;
+			}
 			break;
 		case KEY_DOWN:
 			if (in_ionice) {
@@ -851,6 +894,13 @@ static inline int curses_key(int ch) {
 					}
 				}
 			}
+			if (!in_ionice&&!in_filter) {
+				scrollpos++;
+				if (scrollpos>dispcount-viewsizey)
+					scrollpos=dispcount-viewsizey;
+				if (scrollpos<0)
+					scrollpos=0;
+			}
 			break;
 		case 'o':
 		case 'O':
@@ -875,25 +925,29 @@ static inline int curses_key(int ch) {
 			break;
 		case 'i':
 		case 'I':
-			in_ionice=1;
-			ionice_id[0]=0;
-			ionice_cl=1;
-			ionice_id_changed=1;
-			ionice_pos=-1;
-			ionice_col=0;
+			if (!in_filter) {
+				in_ionice=1;
+				ionice_id[0]=0;
+				ionice_cl=1;
+				ionice_id_changed=1;
+				ionice_pos=-1;
+				ionice_col=0;
+			}
 			break;
 		case 'f':
 		case 'F':
-			in_filter=1;
-			if (params.user_id==-1)
-				strcpy(filter_uid,"none");
-			else
-				sprintf(filter_uid,"%d",params.user_id);
-			if (params.pid==-1)
-				strcpy(filter_pid,"none");
-			else
-				sprintf(filter_pid,"%d",params.pid);
-			filter_col=0;
+			if (!in_ionice) {
+				in_filter=1;
+				if (params.user_id==-1)
+					strcpy(filter_uid,"none");
+				else
+					sprintf(filter_uid,"%d",params.user_id);
+				if (params.pid==-1)
+					strcpy(filter_pid,"none");
+				else
+					sprintf(filter_pid,"%d",params.pid);
+				filter_col=0;
+			}
 			break;
 		case 'n':
 		case 'N':

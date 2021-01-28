@@ -64,9 +64,11 @@ inline int value2scale(double val,double mx) {
 	return 0;
 }
 
-inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s) {
+inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,filter_callback_w cb,int width,int *cnt) {
 	int n=0;
 
+	if (cnt)
+		*cnt=0;
 	for (n=0;cs->arr&&n<cs->length;n++) {
 		struct xxxid_stats *c;
 		struct xxxid_stats *p;
@@ -171,6 +173,9 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 				continue;
 			arr_add(p->threads,c);
 		}
+		if (cb&&!cb(c,width))
+			if (cnt)
+				(*cnt)++;
 	}
 
 	return cs->length;
