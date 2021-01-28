@@ -27,7 +27,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <sys/types.h>
 #include <stdint.h>
 
-#define VERSION "1.15.git1"
+#define VERSION "1.16"
 
 typedef union {
 	struct _flags {

@@ -1,5 +1,5 @@
 Name:           iotop-c
-Version:        1.15
+Version:        1.16
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
