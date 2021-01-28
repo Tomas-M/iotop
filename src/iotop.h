@@ -106,7 +106,7 @@ struct xxxid_stats {
 	struct xxxid_stats_arr *threads;
 };
 
-// arrays are used both for main process/thread list and for inner thread list beloging to a process
+// arrays are used both for main process/thread list and for inner thread list belonging to a process
 // always start small
 #define PROC_LIST_SZ_INI 16
 // afterwards grow big
