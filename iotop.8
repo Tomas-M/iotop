@@ -5,13 +5,13 @@ iotop \- simple top\-like I/O monitor
 .B iotop
 [\fIOPTIONS\fR]
 .SH DESCRIPTION
-iotop watches I/O usage information output by the Linux kernel (requires
+\fBiotop\fR watches I/O usage information available in the Linux kernel (requires
 2.6.20 or later) and displays a table of current I/O usage by processes
 or threads on the system. At least the CONFIG_TASK_DELAY_ACCT,
 CONFIG_TASK_IO_ACCOUNTING, CONFIG_TASKSTATS and CONFIG_VM_EVENT_COUNTERS
 options need to be enabled in your Linux kernel build configuration.
 .PP
-Running iotop as non-root user is possible by adding the NET_ADMIN capability.
+Running \fBiotop\fR as non-root user is possible by adding the NET_ADMIN capability.
 This can be done by e.g.:
 .RS
 .B
@@ -20,24 +20,54 @@ $ sudo setcap 'cap_net_admin+eip' <path-to>/iotop
 
 .RE
 Be warned that this will also allow other users to run it and get access to
-information that normally should no be available to them.
+information that normally should not be available to them.
 .PP
-iotop displays columns for the I/O bandwidth read and written by each
+\fBiotop\fR displays columns for the I/O bandwidth read and written by each
 process/thread during the sampling period. It also displays the percentage
 of time the thread/process spent while swapping in and while waiting on I/O. For each process, its I/O priority (class/level) is shown.
 .PP
 In addition, the total I/O bandwidth read and written during the sampling
-period is displayed at the top of the interface.
+period are displayed at the top of the interface.
 \fBTotal DISK READ\fR and \fBTotal DISK WRITE\fR values represent total read
-and write bandwidth between processes and kernel threads on the one side and
+and write bandwidth between processes and kernel threads on one side and
 kernel block device subsystem on the other. While \fBCurrent DISK READ\fR and
 \fBCurrent DISK WRITE\fR values represent corresponding bandwidths for current
-disk I/O between kernel block device subsystem and underlying hardware (HDD, SSD, etc.).
+disk I/O between the kernel block device subsystem and the underlying hardware (HDD, SSD, etc.).
 Thus \fBTotal\fR and \fBCurrent\fR values may not be equal at any given moment of time
-due to data caching and I/O operations reordering that take place inside Linux kernel.
+due to data caching and I/O operations reordering that take place inside the Linux kernel.
 .PP
-Use the left and right arrows to change the sorting, r to reverse the
-sorting order, o to toggle the \-\-only option, p to toggle the \-\-processes option, a to toggle the \-\-accumulated option, q to quit or i to change the priority of a thread or a process's thread(s). Any other key will force a refresh.
+Use the \fBleft\fR and \fBright\fR arrows to select the sort column, \fBr\fR or \fBspace\fR to reverse the
+sorting order, \fBo\fR to toggle the \fB\-\-only\fR option (this uses the visible values from the \fBGRAPH\fR column
+or the \fBIO\fR column in case the \fBGRAPH\fR column is hidden), \fBp\fR to toggle the \fB\-\-processes\fR option, \fBa\fR
+to toggle the \fB\-\-accumulated\fR option, \fBi\fR to change the priority of a thread or a
+process's thread, \fBf\fR to change filtering by \fBUID\fR/\fBPID\fR (\fB\-\-user\fR and \fB\-\-pid\fR options),
+\fB1-9\fR to toggle the visibility of the respective column, \fB0\fR to show all columns, \fBup\fR/\fBdown\fR arrows,
+\fBpage-up\fR/\fBpage-down\fR/\fBhome\fR/\fBend\fR keys to scroll and \fBq\fR to quit.
+Any unrecognized key will be ignored.
+.PP
+All processes or threads that have exited are displayed grayed for the same time as is visible in the \fBGRAPH\fR column or 3 seconds
+when it is hidden. The invalid data points in the \fBGRAPHS\fR column are displayed inverse or with letter \fBx\fR
+(see option \fB\-\-dead\-x\fR and \fBx\fR shortcut). When using unicode characters each position contains two datapoints
+and only the positions with two invalid data points are reversed.
+.PP
+It is possible for threads of a process to have different priority from their main process. This is shown with \fB!\fR in the
+\fBPRIO\fR column of the main process as e.g. \fB!be/4\fR.
+.PP
+Threads activity is always aggregated with and shown inside the main process.
+.PP
+When showing threads, they always appear below their main process and are sorted in the same way as the processes.
+.PP
+There are two ways to change the IO priority of a process or thread - press \fBi\fR and use arrows to select the
+process or thread from the visible ones on screen or press \fBi\fR and type its TID (PID and TID have the same value
+for the main process).
+Then use \fBtab\fR and arrows to change the priority value and confirm with \fBenter\fR.
+Shortcuts \fBesc\fR or \fBq\fR will cancel this mode.
+.PP
+To change the UID and PID filters, press \fBf\fR and use \fBtab\fR to select the
+UID or PID field, then type the numerical id or \fBn\fR to remove the filter and confirm with \fBenter\fR.
+Filtering is always done by \fBTID\fR because it is unique. Note that for the main process PID is the same
+as TID.
+Shortcuts \fBesc\fR or \fBq\fR will cancel this mode.
 .SH OPTIONS
 .TP
 \fB\-v\fR, \fB\-\-version\fR
@@ -47,40 +77,46 @@ Show the version number and exit
 Show usage information and exit
 .TP
 \fB\-o\fR, \fB\-\-only\fR
-Only show processes or threads actually doing I/O, instead of showing all processes or threads. This can be dynamically toggled by pressing o.
+Only show processes or threads actually doing I/O, instead of showing all processes or threads.
+This can be dynamically toggled by pressing \fBo\fR
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
 Turn on non\-interactive mode.
-Useful for logging I/O usage over time.
+Useful for logging I/O usage over time
 .TP
 \fB\-n\fR NUM, \fB\-\-iter\fR=\fINUM\fR
 Set the number of iterations before quitting (never quit by default).
-This is most useful in non\-interactive mode.
+This is most useful in non\-interactive mode
 .TP
 \fB\-d\fR SEC, \fB\-\-delay\fR=\fISEC\fR
 Set the delay between iterations in seconds (1 second by default).
-Accepts non-integer values such as 1.1 seconds.
+Accepts non-integer values such as 1.1 seconds
 .TP
 \fB\-p\fR PID, \fB\-\-pid\fR=\fIPID\fR
-A list of processes/threads to monitor (all by default).
+A process/thread id to monitor (all by default)
 .TP
 \fB\-u\fR USER, \fB\-\-user\fR=\fIUSER\fR
-A list of users to monitor (all by default)
+A user id to monitor (all by default).
+The value will always be resolved first unless it is prefixed by \fB+\fR in which case it is threated as numeric only.
+Values that do not resolve but appear to be numeric are used as numeric
 .TP
 \fB\-P\fR, \fB\-\-processes\fR
-Only show processes. Normally iotop shows all threads.
+Only show processes. Normally \fBiotop\fR shows processess and all threads
 .TP
 \fB\-a\fR, \fB\-\-accumulated\fR
-Show accumulated I/O instead of bandwidth. In this mode, iotop shows the amount of I/O processes have done since iotop started.
+Show accumulated I/O instead of bandwidth.
+In this mode, \fBiotop\fR shows the amount of I/O processes have done since \fBiotop\fR started
 .TP
 \fB\-k\fR, \fB\-\-kilobytes\fR
-Use kilobytes instead of a human friendly unit. This mode is useful when scripting the batch mode of iotop. Instead of choosing the most appropriate unit iotop will display all sizes in kilobytes.
+Use kilobytes instead of a human friendly unit.
+This mode is useful when scripting the batch mode of \fBiotop\fR.
+Instead of choosing the most appropriate unit \fBiotop\fR will display all sizes in kilobytes
 .TP
 \fB\-t\fR, \fB\-\-time\fR
-Add a timestamp on each line (implies \-\-batch). Each line will be prefixed by the current time.
+Add a timestamp on each line (implies \-\-batch). Each line will be prefixed by the current time
 .TP
 \fB\-c\fR, \fB\-\-fullcmdline\fR
-Show processes' full file path & parameters.
+Show processes' full file path and parameters
 .TP
 \fB\-1\fR, \fB\-\-hide-pid\fR
 Hide PID/TID column
@@ -110,7 +146,7 @@ Hide GRAPH column
 Hide COMMAND column
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
-Suppress some lines of header (implies \-\-batch). This option can be specified up to three times to remove header lines.
+Suppress some lines of header (implies \-\-batch). This option can be specified up to three times to remove header lines
 .RS
 .PD 0
 .TP
@@ -121,15 +157,15 @@ column names are only printed on the first iteration,
 column names are never printed,
 .TP
 .B \-qqq
-the I/O summary is never printed.
+the I/O summary is never printed
 .RE
 .PD 1
 .TP
 \fB\-H\fR, \fB\-\-no\-help\fR
-Suppress the keyboard shortcuts help display.
+Suppress the keyboard shortcuts help display
 .TP
 \fB\-x\fR, \fB\-\-dead\-x\fR
-Show dead processes/threads with letter x instead of inverse background.
+Show dead processes/threads with letter x instead of inverse background
 .PD 1
 .SH KEYBOARD SHORTCUTS
 .TP
@@ -140,10 +176,22 @@ Exit
 Toggle sort order
 .TP
 \fB<home>\fR
-Sort by column PID/TID
+Scroll to the top of the list
 .TP
 \fB<end>\fR
-Sort by column COMMAND
+Scroll to the bottom of the list
+.TP
+\fB<page-up>\fR
+Scroll one screen up
+.TP
+\fB<page-down>\fR
+Scroll one screen down
+.TP
+\fB<up>\fR
+Scroll one line up
+.TP
+\fB<down>\fR
+Scroll one line down
 .TP
 \fB<right>\fR
 Sort by next column
@@ -169,13 +217,20 @@ Toggle showing full command line
 \fB1\fR, \fB2\fR, \fB3\fR, \fB4\fR, \fB5\fR, \fB6\fR, \fB7\fR, \fB8\fR, \fB9\fR
 Toggle showing the column (column number corresponds to the shortcut)
 .TP
+\fB0\fR
+Show all columns
+.TP
 \fBi\fR, \fBI\fR
 IOnice a process/thread (depends on process/thread display mode)
 .TP
+\fBf\fR, \fBF\fR
+Change UID and PID filters
+.TP
 \fBu\fR, \fBU\fR
 Toggle using Unicode/ASCII characters for pseudo graph
+.TP
 \fBx\fR, \fBX\fR
-Toggle showing dead processes/threads with letter x or inverse background.
+Toggle the display mode of exited processes/threads between letter x and inverse background
 .SH SEE ALSO
 .BR ionice (1),
 .BR top (1),
@@ -183,8 +238,10 @@ Toggle showing dead processes/threads with letter x or inverse background.
 .BR atop (1),
 .BR htop (1)
 .SH AUTHOR
-The original Python iotop implementation was written by Guillaume Chazarain. This rewrite in C started in 2014 by Vyacheslav Trushkin and
-reworked to include all features from the original Python version in 2020 by Boian Bonev.
+The original Python iotop implementation was written by Guillaume Chazarain.
+This rewrite in C was started in 2014 by Vyacheslav Trushkin and
+reworked to include all missing features from the original Python code and
+several new ones in 2020 and 2021 by Boian Bonev.
 .PP
 This manual page was started by Paul Wise for the
 Debian project and is placed in the public domain.
