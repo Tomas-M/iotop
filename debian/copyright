@@ -5,11 +5,11 @@ Source: https://github.com/Tomas-M/iotop
 
 Files: *
 Copyright: 2014 Vyacheslav Trushkin
-           2020 Boian Bonev <bbonev@ipacct.com>
+           2020,2021 Boian Bonev <bbonev@ipacct.com>
 License: GPL-2.0+
 
 Files: debian/*
-Copyright: 2020 Boian Bonev <bbonev@ipacct.com>
+Copyright: 2020,2021 Boian Bonev <bbonev@ipacct.com>
 License: GPL-2.0+
 
 License: GPL-2.0+
