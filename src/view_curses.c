@@ -546,6 +546,10 @@ donedraw:
 		attroff(A_UNDERLINE);
 		printw(": ionice ");
 		attron(A_UNDERLINE);
+		printw("f");
+		attroff(A_UNDERLINE);
+		printw(": uid/pid ");
+		attron(A_UNDERLINE);
 		printw("o");
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.only?"all":"active");
