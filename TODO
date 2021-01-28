@@ -1,13 +1,7 @@
 - Freezed, scrollable view of procs/threads for ionice selection
 - Rework help to be like popup window
 - Add all missing keys to help window
-- Document exited threads/process display
-- Document the display of processes with different prio (e.g. !be/4)
-- Document the sorting order in thread view (threads always go after their main process)
-- Document pid/user filters interactive interface
-- Document 0 shows all columns
-- Document -u +123 command line
-- Document scrolling
+- Add scroll bar
 
 --- history of finished TODO items ---
 
@@ -18,3 +12,10 @@
 - Edit pid/user filters from interactive mode
 - Let 0 show all columns
 - Scrolling for the main view by UP/DOWN/PGUP/PGDN
+- Document exited threads/process display
+- Document the display of processes with different prio (e.g. !be/4)
+- Document the sorting order in thread view (threads always go after their main process)
+- Document pid/user filters interactive interface
+- Document 0 shows all columns
+- Document -u +123 command line
+- Document scrolling
