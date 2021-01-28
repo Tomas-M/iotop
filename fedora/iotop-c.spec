@@ -52,5 +52,11 @@ mv %{buildroot}%{_mandir}/man8/iotop.8 %{buildroot}%{_mandir}/man8/iotop-c.8
 %{_mandir}/man8/iotop-c.8*
 
 %changelog
+* Thu Jan 28 2021 Boian Bonev <bbonev@ipacct.com> - 1.16-1
+- Update to latest ver 1.16
+
+* Tue Jan 26 2021 Fedora Release Engineering <releng@fedoraproject.org> - 1.15-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_34_Mass_Rebuild
+
 * Sat Sep 26 2020 Boian Bonev <bbonev@ipacct.com> - 1.15-1
 - Initial packaging for Fedora
