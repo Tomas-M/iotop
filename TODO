@@ -1,4 +1,3 @@
-- Scrolling for the main view by UP/DOWN/PGUP/PGDN
 - Freezed, scrollable view of procs/threads for ionice selection
 - Rework help to be like popup window
 - Add all missing keys to help window
@@ -8,6 +7,7 @@
 - Document pid/user filters interactive interface
 - Document 0 shows all columns
 - Document -u +123 command line
+- Document scrolling
 
 --- history of finished TODO items ---
 
@@ -17,3 +17,4 @@
 - Aggregate thread data in process mode
 - Edit pid/user filters from interactive mode
 - Let 0 show all columns
+- Scrolling for the main view by UP/DOWN/PGUP/PGDN
