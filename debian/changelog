@@ -1,4 +1,4 @@
-iotop-c (1.16) unstable; urgency=medium
+iotop-c (1.16-1) unstable; urgency=medium
 
   * Update standards to 4.5.1
   * Update to new upstream release of 1.16
