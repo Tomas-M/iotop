@@ -144,11 +144,12 @@ static inline void _arr_free(struct xxxid_stats_arr *pa,int freeitem) {
 	if (!pa)
 		return;
 	if (pa->arr) {
-		int i;
+		if (freeitem) {
+			int i;
 
-		if (freeitem)
 			for (i=0;i<pa->length;i++)
 				free_stats(pa->arr[i]);
+		}
 		free(pa->arr);
 	}
 	if (pa->sor)

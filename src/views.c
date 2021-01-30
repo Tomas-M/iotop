@@ -276,12 +276,3 @@ inline int filter1(struct xxxid_stats *s) {
 
 	return 0;
 }
-
-inline int filterp(struct xxxid_stats *s) {
-	if (!s)
-		return 1;
-	if (s->pid!=s->tid)
-		return 1;
-	return 0;
-}
-

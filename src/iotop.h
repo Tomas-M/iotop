@@ -229,7 +229,6 @@ inline int iotop_sort_cb(const void *a,const void *b);
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,filter_callback_w cb,int width,int *cnt);
 inline int value2scale(double val,double mx);
 inline int filter1(struct xxxid_stats *s);
-inline int filterp(struct xxxid_stats *s);
 
 #ifndef KEY_CTRL_L
 #define KEY_CTRL_L 014

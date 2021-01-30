@@ -503,23 +503,23 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			} else
 				printw("%s",!config.f.hidegraph?iohist:"");
 			if (!config.f.hidecmd) {
-				const char *s=(has_unicode&&unicode)?th_lines_u[0]:th_lines_a[0];
+				const char *ss=(has_unicode&&unicode)?th_lines_u[0]:th_lines_a[0];
 
 				if (ms->threads) {
 					if (config.f.processes) {
 						if (k==-1&&ms->threads->length)
-							s=(has_unicode&&unicode)?th_lines_u[1]:th_lines_a[1];
+							ss=(has_unicode&&unicode)?th_lines_u[1]:th_lines_a[1];
 					} else
 						if (th_first_id!=th_last_id) {
 							if (k==th_first_id)
-								s=(has_unicode&&unicode)?th_lines_u[2+3*th_have_filtered]:th_lines_a[2+3*th_have_filtered];
+								ss=(has_unicode&&unicode)?th_lines_u[2+3*th_have_filtered]:th_lines_a[2+3*th_have_filtered];
 							if (k!=th_first_id&&k!=th_last_id)
-								s=(has_unicode&&unicode)?th_lines_u[3+3*th_have_filtered]:th_lines_a[3+3*th_have_filtered];
+								ss=(has_unicode&&unicode)?th_lines_u[3+3*th_have_filtered]:th_lines_a[3+3*th_have_filtered];
 							if (k==th_last_id)
-								s=(has_unicode&&unicode)?th_lines_u[4+3*th_have_filtered]:th_lines_a[4+3*th_have_filtered];
+								ss=(has_unicode&&unicode)?th_lines_u[4+3*th_have_filtered]:th_lines_a[4+3*th_have_filtered];
 						}
 				}
-				printw("%s%s",s,cmdline?cmdline:"(null)");
+				printw("%s%s",ss,cmdline?cmdline:"(null)");
 			}
 			if (in_ionice&&ionice_pos==line)
 				attroff(A_UNDERLINE);
