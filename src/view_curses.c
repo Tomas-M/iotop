@@ -143,8 +143,6 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 }
 
 static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
-	int i;
-
 	if (!items) // avoid div by 0
 		items++;
 	if (items>2)
@@ -156,6 +154,7 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 		mvprintw(from,xpos," ");
 		attroff(A_REVERSE);
 	} else {
+		int i;
 		int it=to-from+1-2;
 		int pb=(pos*it)/items+from+1;
 		int pe=((pos+(to-from+1))*it)/items+from+1;
