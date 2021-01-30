@@ -242,15 +242,20 @@ inline char *esc_low_ascii(char *p) {
 
 #define UBLEN 1024
 
-inline char *u8strpadt(const char *s,size_t len) {
+inline char *u8strpadt(const char *s,ssize_t rlen) {
 	char *d=malloc(UBLEN);
 	size_t dl=UBLEN;
 	size_t si=0;
 	size_t di=0;
 	size_t tl=0;
+	size_t len;
 	size_t sl;
 	wchar_t w;
 
+	if (rlen<0)
+		len=0;
+	else
+		len=rlen;
 	if (!d)
 		return NULL;
 	if (!s)

@@ -152,7 +152,7 @@ inline unsigned int curses_sleep(unsigned int seconds);
 inline char *read_cmdline(int pid,int isshort);
 
 inline int64_t monotime(void);
-inline char *u8strpadt(const char *s,size_t len);
+inline char *u8strpadt(const char *s,ssize_t len);
 inline char *esc_low_ascii(char *p);
 
 typedef void (*pg_cb)(pid_t pid,pid_t tid,void *hint1,void *hint2);
