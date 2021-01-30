@@ -284,6 +284,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		}
 	}
 
+	ionice_line=1;
 	if (head1row) {
 		ionice_line=0;
 		if (!in_ionice&&!in_filter) {
