@@ -82,11 +82,17 @@ static const char *br_graph[5][5]={
 // ASCII pseudo graph - 1x5 levels graph per character
 static const char *as_graph[5]={" ","_",".",":","|",};
 
+// process and threads grouping characters
 static const char *th_lines_u[8]={" ","►","┌","│","└","╭","┊","╰",};
 static const char *th_lines_a[8]={" ",">",",","|","`",",",":","`",};
 
+// sort order characters
 static const char *sort_dir_u[3]={" ","△","▽",};
 static const char *sort_dir_a[3]={" ","<",">",};
+
+// vertical scroller characters
+static const char *scroll_u[11]={" ","▲","▼","▁","▂","▃","▄","▅","▆","▇","█",};
+static const char *scroll_a[3]={" ","^","v",};
 
 static const int column_width[]={
 	0,  // PID/TID
@@ -136,6 +142,74 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	return 0;
 }
 
+static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
+	int i;
+
+	if (!items) // avoid div by 0
+		items++;
+	if (items>2)
+		items--;
+
+	attron(A_REVERSE);
+	if (from==to) {
+		attron(A_REVERSE);
+		mvprintw(from,xpos," ");
+		attroff(A_REVERSE);
+	} else {
+		int it=to-from+1-2;
+		int pb=(pos*it)/items+from+1;
+		int pe=((pos+(to-from+1))*it)/items+from+1;
+
+		for (i=from;i<=to;i++) {
+			if (i==from||i==to) {
+				int ind=i==from?1:2;
+
+				attron(A_REVERSE);
+				mvprintw(i,xpos,(unicode&&has_unicode)?scroll_u[ind]:scroll_a[ind]);
+				attroff(A_REVERSE);
+			}
+			if (i!=from&&i!=to) {
+				if (unicode&&has_unicode) {
+					if (items<=to-from+1)
+						mvprintw(i,xpos,scroll_u[10]);
+					else {
+						if (i<pb||pe<i)
+							mvprintw(i,xpos,scroll_u[0]);
+						if (i==pb&&i!=pe) {
+							int pbhp=((pos*it*8)/items)%8;
+
+							mvprintw(i,xpos,scroll_u[3+7-pbhp]);
+						}
+						if (i==pe&&i!=pb) {
+							int pehp=(((pos+(to-from+1))*it*8)/items)%8;
+
+							attron(A_REVERSE);
+							mvprintw(i,xpos,scroll_u[3+7-pehp]);
+							attroff(A_REVERSE);
+						}
+						if (pb<i&&i<pe)
+							mvprintw(i,xpos,scroll_u[10]);
+					}
+				} else {
+					if (items<=to-from+1) {
+						attron(A_REVERSE);
+						mvprintw(i,xpos,scroll_a[0]);
+						attroff(A_REVERSE);
+					} else {
+						if (i<pb||pe<i)
+							mvprintw(i,xpos,scroll_a[0]);
+						else {
+							attron(A_REVERSE);
+							mvprintw(i,xpos,scroll_a[0]);
+							attroff(A_REVERSE);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
 	double time_s=TIMEDIFF_IN_S(act->ts_o,act->ts_c);
 	double total_read,total_write;
@@ -159,6 +233,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	int gr_width_h;
 	int gr_width;
 	int diff_len;
+	int saveskip;
 	int i,j,k;
 	int maxy;
 	int maxx;
@@ -347,6 +422,11 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	}
 	attroff(A_REVERSE);
 
+	// easiest place to print debug info
+	//mvprintw(ionice_line+1,maxx-maxcmdline+strlen(COLUMN_L(0))+1," ... ",...);
+
+	maxcmdline--; // vertical scroller
+
 	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&unicode)?gr_width*2:gr_width));
 	arr_sort(cs,iotop_sort_cb);
 
@@ -362,6 +442,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		skip=dispcount-viewsizey;
 	if (skip<0)
 		skip=0;
+	saveskip=skip;
 	for (i=0;cs->sor&&i<diff_len;i++) {
 		int th_prio_diff,th_first,th_have_filtered,th_first_id,th_last_id;
 		struct xxxid_stats *ms=cs->sor[i],*s;
@@ -761,6 +842,7 @@ donedraw:
 	if (show)
 		move(promptx,prompty);
 	curs_set(show);
+	draw_vscroll(maxx-1,head1row?2:3,nohelp?maxy-1:maxy-3,dispcount,saveskip);
 	refresh();
 }
 
