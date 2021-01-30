@@ -165,10 +165,8 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 
 		for (i=from;i<=to;i++) {
 			if (i==from||i==to) {
-				int ind=i==from?1:2;
-
 				attron(A_REVERSE);
-				mvprintw(i,xpos,(unicode&&has_unicode)?scroll_u[ind]:scroll_a[ind]);
+				mvprintw(i,xpos,(unicode&&has_unicode)?scroll_u[i==from?1:2]:scroll_a[i==from?1:2]);
 				attroff(A_REVERSE);
 			}
 			if (i!=from&&i!=to) {
@@ -178,16 +176,11 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 					else {
 						if (i<pb/8||pe<i/8)
 							mvprintw(i,xpos,scroll_u[0]);
-						if (i==pb/8) {
-							int pbrem=pb%8;
-
-							mvprintw(i,xpos,scroll_u[4+7-pbrem]);
-						}
+						if (i==pb/8)
+							mvprintw(i,xpos,scroll_u[4+7-pb%8]);
 						if (i==pe/8&&i!=pb/8) {
-							int perem=pe%8;
-
 							attron(A_REVERSE);
-							mvprintw(i,xpos,scroll_u[4+7-perem]);
+							mvprintw(i,xpos,scroll_u[4+7-pe%8]);
 							attroff(A_REVERSE);
 						}
 						if (pb/8<i&&i<pe/8)
