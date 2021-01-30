@@ -123,6 +123,8 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 		if (config.f.hidegraph&&s->blkio_val<=0)
 			return 1;
 	}
+	if (config.f.processes&&s->tid!=s->pid)
+		return 1;
 	if (config.f.hidegraph) {
 		if (s->exited>=3)
 			return 2;
