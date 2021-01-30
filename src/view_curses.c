@@ -85,6 +85,9 @@ static const char *as_graph[5]={" ","_",".",":","|",};
 static const char *th_lines_u[8]={" ","►","┌","│","└","╭","┊","╰",};
 static const char *th_lines_a[8]={" ",">",",","|","`",",",":","`",};
 
+static const char *sort_dir_u[3]={" ","△","▽",};
+static const char *sort_dir_a[3]={" ","<",">",};
+
 static const int column_width[]={
 	0,  // PID/TID
 	6,  // PRIO
@@ -102,7 +105,8 @@ static const int column_width[]={
 #define COLUMN_NAME(i) __COLUMN_NAME(__SAFE_INDEX(i))
 #define COLUMN_L(i) COLUMN_NAME((i)-1)
 #define COLUMN_R(i) COLUMN_NAME((i)+1)
-#define SORT_CHAR(x) ((config.f.sort_by==x)?(config.f.sort_order==SORT_ASC?'<':'>'):' ')
+#define SORT_CHAR_IND(x) ((config.f.sort_by==x)?(config.f.sort_order==SORT_ASC?1:2):0)
+#define SORT_CHAR(x) (((has_unicode&&unicode)?sort_dir_u:sort_dir_a)[SORT_CHAR_IND(x)])
 
 #define TIMEDIFF_IN_S(sta,end) ((((sta)==(end))||(sta)==0)?0.0001:(((end)-(sta))/1000.0))
 
@@ -311,6 +315,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	for (i=0;i<SORT_BY_MAX;i++) {
 		int wt,wi=column_width[i];
 		char t[50];
+		char *ts;
 
 		if (i==SORT_BY_PID)
 			wi=maxpidlen+2;
@@ -327,8 +332,13 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			wt=wi-1;
 		if (config.f.sort_by==i)
 			attron(A_BOLD);
-		snprintf(t,sizeof t,"%-*.*s%c",wt,wt,COLUMN_NAME(i),SORT_CHAR(i));
-		printw("%-*.*s",wi,wi,t);
+		snprintf(t,sizeof t,"%-*.*s%s",wt,wt,COLUMN_NAME(i),SORT_CHAR(i));
+		ts=u8strpadt(t,wi);
+		if (ts) {
+			printw("%s",ts);
+			free(ts);
+		} else
+			printw("%-*.*s",wi,wi,t);
 		if (config.f.sort_by==i)
 			attroff(A_BOLD);
 	}
