@@ -91,8 +91,8 @@ static const char *sort_dir_u[3]={" ","△","▽",};
 static const char *sort_dir_a[3]={" ","<",">",};
 
 // vertical scroller characters
-static const char *scroll_u[11]={" ","▲","▼","▁","▂","▃","▄","▅","▆","▇","█",};
-static const char *scroll_a[3]={" ","^","v",};
+static const char *scroll_u[12]={" ","▲","▼","⬍","▁","▂","▃","▄","▅","▆","▇","█",};
+static const char *scroll_a[4]={" ","^","v",":",};
 
 static const int column_width[]={
 	0,  // PID/TID
@@ -145,19 +145,23 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 	if (!items) // avoid div by 0
 		items++;
-	if (items>2)
-		items--;
 
 	attron(A_REVERSE);
 	if (from==to) {
-		attron(A_REVERSE);
-		mvprintw(from,xpos," ");
-		attroff(A_REVERSE);
+		if (unicode&&has_unicode) {
+			mvprintw(from,xpos,scroll_u[3]);
+		} else {
+			attron(A_REVERSE);
+			mvprintw(from,xpos,scroll_a[3]);
+			attroff(A_REVERSE);
+		}
 	} else {
 		int i;
 		int it=to-from+1-2;
-		int pb=(pos*it)/items+from+1;
-		int pe=((pos+(to-from+1))*it)/items+from+1;
+		int sc=(unicode&&has_unicode)?8:1;
+		int pb=(pos*it*sc)/items+(from+1)*sc;
+		int ss=((to-from+1)*it*sc)/items;
+		int pe=pb+(ss<sc?sc:ss);
 
 		for (i=from;i<=to;i++) {
 			if (i==from||i==to) {
@@ -170,24 +174,24 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 			if (i!=from&&i!=to) {
 				if (unicode&&has_unicode) {
 					if (items<=to-from+1)
-						mvprintw(i,xpos,scroll_u[10]);
+						mvprintw(i,xpos,scroll_u[11]);
 					else {
-						if (i<pb||pe<i)
+						if (i<pb/8||pe<i/8)
 							mvprintw(i,xpos,scroll_u[0]);
-						if (i==pb&&i!=pe) {
-							int pbhp=((pos*it*8)/items)%8;
+						if (i==pb/8) {
+							int pbrem=pb%8;
 
-							mvprintw(i,xpos,scroll_u[3+7-pbhp]);
+							mvprintw(i,xpos,scroll_u[4+7-pbrem]);
 						}
-						if (i==pe&&i!=pb) {
-							int pehp=(((pos+(to-from+1))*it*8)/items)%8;
+						if (i==pe/8&&i!=pb/8) {
+							int perem=pe%8;
 
 							attron(A_REVERSE);
-							mvprintw(i,xpos,scroll_u[3+7-pehp]);
+							mvprintw(i,xpos,scroll_u[4+7-perem]);
 							attroff(A_REVERSE);
 						}
-						if (pb<i&&i<pe)
-							mvprintw(i,xpos,scroll_u[10]);
+						if (pb/8<i&&i<pe/8)
+							mvprintw(i,xpos,scroll_u[11]);
 					}
 				} else {
 					if (items<=to-from+1) {
