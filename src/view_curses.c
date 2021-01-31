@@ -149,10 +149,10 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 	attron(A_REVERSE);
 	if (from==to) {
 		if (unicode&&has_unicode) {
-			mvprintw(from,xpos,scroll_u[3]);
+			mvprintw(from,xpos,"%s",scroll_u[3]);
 		} else {
 			attron(A_REVERSE);
-			mvprintw(from,xpos,scroll_a[3]);
+			mvprintw(from,xpos,"%s",scroll_a[3]);
 			attroff(A_REVERSE);
 		}
 	} else {
@@ -166,37 +166,37 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 		for (i=from;i<=to;i++) {
 			if (i==from||i==to) {
 				attron(A_REVERSE);
-				mvprintw(i,xpos,(unicode&&has_unicode)?scroll_u[i==from?1:2]:scroll_a[i==from?1:2]);
+				mvprintw(i,xpos,"%s",(unicode&&has_unicode)?scroll_u[i==from?1:2]:scroll_a[i==from?1:2]);
 				attroff(A_REVERSE);
 			}
 			if (i!=from&&i!=to) {
 				if (unicode&&has_unicode) {
 					if (items<=to-from+1)
-						mvprintw(i,xpos,scroll_u[11]);
+						mvprintw(i,xpos,"%s",scroll_u[11]);
 					else {
 						if (i<pb/8||pe<i/8)
-							mvprintw(i,xpos,scroll_u[0]);
+							mvprintw(i,xpos,"%s",scroll_u[0]);
 						if (i==pb/8)
-							mvprintw(i,xpos,scroll_u[4+7-pb%8]);
+							mvprintw(i,xpos,"%s",scroll_u[4+7-pb%8]);
 						if (i==pe/8&&i!=pb/8) {
 							attron(A_REVERSE);
-							mvprintw(i,xpos,scroll_u[4+7-pe%8]);
+							mvprintw(i,xpos,"%s",scroll_u[4+7-pe%8]);
 							attroff(A_REVERSE);
 						}
 						if (pb/8<i&&i<pe/8)
-							mvprintw(i,xpos,scroll_u[11]);
+							mvprintw(i,xpos,"%s",scroll_u[11]);
 					}
 				} else {
 					if (items<=to-from+1) {
 						attron(A_REVERSE);
-						mvprintw(i,xpos,scroll_a[0]);
+						mvprintw(i,xpos,"%s",scroll_a[0]);
 						attroff(A_REVERSE);
 					} else {
 						if (i<pb||pe<i)
-							mvprintw(i,xpos,scroll_a[0]);
+							mvprintw(i,xpos,"%s",scroll_a[0]);
 						else {
 							attron(A_REVERSE);
-							mvprintw(i,xpos,scroll_a[0]);
+							mvprintw(i,xpos,"%s",scroll_a[0]);
 							attroff(A_REVERSE);
 						}
 					}
