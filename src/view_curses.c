@@ -864,35 +864,24 @@ static inline int curses_key(int ch) {
 			config.f.sort_order=(config.f.sort_order==SORT_ASC)?SORT_DESC:SORT_ASC;
 			break;
 		case KEY_HOME:
-			if (in_ionice)
-				ionice_cl=1;
-			if (!in_ionice&&!in_filter)
-				scrollpos=0;
+			scrollpos=0;
 			break;
 		case KEY_END:
-			if (in_ionice)
-				ionice_cl=0;
-			if (!in_ionice&&!in_filter) {
-				scrollpos=dispcount-viewsizey;
-				if (scrollpos<0)
-					scrollpos=0;
-			}
+			scrollpos=dispcount-viewsizey;
+			if (scrollpos<0)
+				scrollpos=0;
 			break;
 		case KEY_PPAGE:
-			if (!in_ionice&&!in_filter) {
-				scrollpos-=viewsizey;
-				if (scrollpos<0)
-					scrollpos=0;
-			}
+			scrollpos-=viewsizey;
+			if (scrollpos<0)
+				scrollpos=0;
 			break;
 		case KEY_NPAGE:
-			if (!in_ionice&&!in_filter) {
-				scrollpos+=viewsizey;
-				if (scrollpos>dispcount-viewsizey)
-					scrollpos=dispcount-viewsizey;
-				if (scrollpos<0)
-					scrollpos=0;
-			}
+			scrollpos+=viewsizey;
+			if (scrollpos>dispcount-viewsizey)
+				scrollpos=dispcount-viewsizey;
+			if (scrollpos<0)
+				scrollpos=0;
 			break;
 		case KEY_RIGHT:
 			if (in_ionice) {
