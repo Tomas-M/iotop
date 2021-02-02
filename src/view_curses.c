@@ -713,7 +713,7 @@ donedraw:
 			attroff(A_BOLD);
 			getyx(stdscr,promptx,prompty);
 			show=TRUE;
-			if (id&&(p=arr_find(cs,id))) {
+			if (id&&(p=arr_find(cs,id))&&!p->exited) {
 				printw(" Current: ");
 				attron(A_BOLD);
 				printw("%s",str_ioprio(p->io_prio));
@@ -746,7 +746,7 @@ donedraw:
 			printw("[use 0-9/bksp for %s, tab and arrows for prio]",COLUMN_NAME(0));
 			attroff(A_REVERSE);
 		} else {
-			if (ionice_pos==-1||ionice_pos_data==NULL)
+			if (ionice_pos==-1||ionice_pos_data==NULL||(ionice_pos_data&&ionice_pos_data->exited))
 				printw(" (select %s by arrows or enter by 0-9/bksp)",COLUMN_NAME(0));
 			else {
 				attron(A_BOLD);
@@ -1079,6 +1079,17 @@ static inline int curses_key(int ch) {
 				in_ionice=0;
 				set_ioprio(who,pgid,ionice_class,ionice_prio);
 			}
+			if (in_ionice&&ionice_pos_data&&!ionice_pos_data->exited) {
+				pid_t pgid=ionice_pos_data->tid;
+				int who=IOPRIO_WHO_PROCESS;
+
+				if (config.f.processes) {
+					pgid=getpgid(pgid);
+					who=IOPRIO_WHO_PGRP;
+				}
+				in_ionice=0;
+				set_ioprio(who,pgid,ionice_class,ionice_prio);
+			}
 			if (in_filter) {
 				if (!strcmp(filter_pid,"")||!strcmp(filter_pid,"none"))
 					params.pid=-1;
@@ -1089,17 +1100,6 @@ static inline int curses_key(int ch) {
 				else
 					params.user_id=atoi(filter_uid);
 				in_filter=0;
-			}
-			if (in_ionice&&ionice_pos_data) {
-				pid_t pgid=ionice_pos_data->tid;
-				int who=IOPRIO_WHO_PROCESS;
-
-				if (config.f.processes) {
-					pgid=getpgid(pgid);
-					who=IOPRIO_WHO_PGRP;
-				}
-				in_ionice=0;
-				set_ioprio(who,pgid,ionice_class,ionice_prio);
 			}
 			break;
 		case '\t': // TAB
