@@ -157,11 +157,14 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 		}
 	} else {
 		int i;
-		int it=to-from+1-2;
-		int sc=(unicode&&has_unicode)?8:1;
-		int pb=(pos*it*sc)/items+(from+1)*sc;
-		int ss=((to-from+1)*it*sc)/items;
-		int pe=pb+(ss<sc?sc:ss);
+		int visible=to-from+1; // count of visible items
+		int linecnt=visible-2; // count of lines usable by scroller
+		int drscale=(unicode&&has_unicode)?8:1; // draw scale
+		int poitems=(items>visible)?items-visible:1; // positionable items
+		int scrols0=(drscale*linecnt*visible)/poitems; // scroller size (may be smaller than scale, even 0)
+		int scrolsz=(scrols0<drscale)?drscale:scrols0; // scroller size, not less than scale
+		int begpos=(pos*(linecnt*drscale-scrolsz))/poitems+(from+1)*drscale;
+		int endpos=begpos+scrolsz;
 
 		for (i=from;i<=to;i++) {
 			if (i==from||i==to) {
@@ -174,16 +177,16 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 					if (items<=to-from+1)
 						mvprintw(i,xpos,"%s",scroll_u[11]);
 					else {
-						if (i<pb/8||pe<i/8)
+						if (i<begpos/8||endpos/8<i)
 							mvprintw(i,xpos,"%s",scroll_u[0]);
-						if (i==pb/8)
-							mvprintw(i,xpos,"%s",scroll_u[4+7-pb%8]);
-						if (i==pe/8&&i!=pb/8) {
+						if (i==begpos/8)
+							mvprintw(i,xpos,"%s",scroll_u[4+7-begpos%8]);
+						if (i==endpos/8&&i!=begpos/8) {
 							attron(A_REVERSE);
-							mvprintw(i,xpos,"%s",scroll_u[4+7-pe%8]);
+							mvprintw(i,xpos,"%s",scroll_u[4+7-endpos%8]);
 							attroff(A_REVERSE);
 						}
-						if (pb/8<i&&i<pe/8)
+						if (begpos/8<i&&i<endpos/8)
 							mvprintw(i,xpos,"%s",scroll_u[11]);
 					}
 				} else {
@@ -192,7 +195,7 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 						mvprintw(i,xpos,"%s",scroll_a[0]);
 						attroff(A_REVERSE);
 					} else {
-						if (i<pb||pe<i)
+						if (i<begpos||endpos<i)
 							mvprintw(i,xpos,"%s",scroll_a[0]);
 						else {
 							attron(A_REVERSE);
