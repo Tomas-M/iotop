@@ -57,6 +57,7 @@ static int nohelp=0; // hide help
 static int scrollpos=0; // scroll view start position
 static int viewsizey=0; // how many lines we can show on screen
 static int dispcount=0; // how many lines we have after filters
+static int lastvisible=0; // last visible screen line
 
 static const char *column_name[]={
 	"xID", // unused, value varies - PID or TID
@@ -442,6 +443,12 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	if (skip<0)
 		skip=0;
 	saveskip=skip;
+	if (ionice_pos!=-1) { // have some selected position
+		if (ionice_pos<ionice_line+2)
+			ionice_pos=ionice_line+2;
+		if (ionice_pos>=lastvisible&&lastvisible>ionice_line+2)
+			ionice_pos=lastvisible-1;
+	}
 	for (i=0;cs->sor&&i<diff_len;i++) {
 		int th_prio_diff,th_first,th_have_filtered,th_first_id,th_last_id;
 		struct xxxid_stats *ms=cs->sor[i],*s;
@@ -621,6 +628,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		}
 	}
 donedraw:
+	lastvisible=lastline; // last selectable screen line
 	for (line=lastline;line<=maxy-(nohelp?1:3);line++) // always draw empty lines
 		mvhline(line,0,' ',maxx);
 
@@ -746,7 +754,7 @@ donedraw:
 			printw("[use 0-9/bksp for %s, tab and arrows for prio]",COLUMN_NAME(0));
 			attroff(A_REVERSE);
 		} else {
-			if (ionice_pos==-1||ionice_pos_data==NULL||(ionice_pos_data&&ionice_pos_data->exited))
+			if (ionice_pos==-1||ionice_pos_data==NULL||ionice_pos_data->exited)
 				printw(" (select %s by arrows or enter by 0-9/bksp)",COLUMN_NAME(0));
 			else {
 				attron(A_BOLD);
@@ -920,6 +928,8 @@ static inline int curses_key(int ch) {
 							ionice_prio=0;
 					}
 				} else {
+					if (ionice_pos_data==NULL||ionice_pos_data->exited)
+						ionice_col=0;
 					switch (ionice_col) {
 						case 0:
 							if (ionice_pos>ionice_line+2) {
@@ -959,13 +969,15 @@ static inline int curses_key(int ch) {
 							ionice_prio=7;
 					}
 				} else {
+					if (ionice_pos_data==NULL||ionice_pos_data->exited)
+						ionice_col=0;
 					switch (ionice_col) {
 						case 0:
 							ionice_id_changed=1;
 							if (ionice_pos==-1)
 								ionice_pos=ionice_line+2;
 							else
-								if (ionice_pos<getmaxy(stdscr)-(nohelp?1:3))
+								if (ionice_pos+1<lastvisible)
 									ionice_pos++;
 							break;
 						case 1:
