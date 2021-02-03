@@ -1,6 +1,3 @@
-- Freezed, scrollable view of procs/threads for ionice selection
-- Rework help to be like popup window
-- Add all missing keys to help window
 
 --- history of finished TODO items ---
 
@@ -19,3 +16,6 @@
 - Document -u +123 command line
 - Document scrolling
 - Add scroll bar
+- Rework help to be like popup window
+- Add all missing keys to help window
+- Freezed, scrollable view of procs/threads for ionice selection (abandoned idea - exited processes should be kept track of)

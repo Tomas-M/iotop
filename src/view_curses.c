@@ -57,9 +57,53 @@ static int scrollpos=0; // scroll view start position
 static int viewsizey=0; // how many lines we can show on screen
 static int dispcount=0; // how many lines we have after filters
 static int lastvisible=0; // last visible screen line
+static int showhelp=0; // flag if help window is shown
+static WINDOW *whelp; // pop-up help window
+static int hx=1,hy=1,hw=2+2+3,hh=2; // help window size and position
+static size_t c1w=0,c2w=0,c3w=0,cdw=0; // help window column widths
+
+typedef struct {
+	const char *descr;
+	const char *k1;
+	const char *k2;
+	const char *k3;
+} s_helpitem;
+
+const s_helpitem thelp[]={
+	{descr:"Exit",k2:"q",k3:"Q"},
+	{descr:"Toggle sort order",k1:"<space>",k2:"r",k3:"R"},
+	{descr:"Scroll to the top of the list",k1:"<home>"},
+	{descr:"Scroll to the bottom of the list",k1:"<end>"},
+	{descr:"Scroll one screen up",k1:"<page-up>"},
+	{descr:"Scroll one screen down",k1:"<page-down>"},
+	{descr:"Scroll one line up",k1:"<up>"},
+	{descr:"Scroll one line down",k1:"<down>"},
+	{descr:"Sort by next column",k1:"<right>"},
+	{descr:"Sort by previous column",k1:"<left>"},
+	{descr:"Toggle showing only processes with IO activity",k2:"o",k3:"O"},
+	{descr:"Toggle showing processes/threads",k2:"p",k3:"P"},
+	{descr:"Toggle showing accumulated/current values",k2:"a",k3:"A"},
+	{descr:"Toggle showing this help",k1:"          ?",k2:"h",k3:"H"}, // padded to match <page-down>
+	{descr:"Toggle showing full command line",k2:"c",k3:"C"},
+	{descr:"Toggle showing TID",k2:"1"},
+	{descr:"Toggle showing PRIO",k2:"2"},
+	{descr:"Toggle showing USER",k2:"3"},
+	{descr:"Toggle showing DISK READ",k2:"4"},
+	{descr:"Toggle showing DISK WRITE",k2:"5"},
+	{descr:"Toggle showing SWAPIN",k2:"6"},
+	{descr:"Toggle showing IO",k2:"7"},
+	{descr:"Toggle showing GRAPH",k2:"8"},
+	{descr:"Toggle showing COMMAND",k2:"9"},
+	{descr:"Show all columns",k2:"0"},
+	{descr:"IOnice a process/thread",k2:"i",k3:"I"},
+	{descr:"Change UID and PID filters",k2:"f",k3:"F"},
+	{descr:"Toggle using Unicode/ASCII characters",k2:"u",k3:"U"},
+	{descr:"Toggle exited processes x/inverse",k2:"x",k3:"X"},
+	{NULL},
+};
 
 static const char *column_name[]={
-	"xID", // unused, value varies - PID or TID
+	"TID",
 	" PRIO",
 	"USER",
 	"DISK READ",
@@ -95,7 +139,7 @@ static const char *scroll_u[12]={" ","▲","▼","⬍","▁","▂","▃","▄","
 static const char *scroll_a[4]={" ","^","v",":",};
 
 static const int column_width[]={
-	0,  // PID/TID
+	0,  // TID
 	6,  // PRIO
 	10, // USER
 	12, // READ
@@ -106,7 +150,7 @@ static const int column_width[]={
 	0,  // COMMAND
 };
 
-#define __COLUMN_NAME(i) ((i)==0?(config.f.processes?"PID":"TID"):column_name[(i)])
+#define __COLUMN_NAME(i) (column_name[(i)])
 #define __SAFE_INDEX(i) ((((i)%SORT_BY_MAX)+SORT_BY_MAX)%SORT_BY_MAX)
 #define COLUMN_NAME(i) __COLUMN_NAME(__SAFE_INDEX(i))
 #define COLUMN_L(i) COLUMN_NAME((i)-1)
@@ -207,6 +251,23 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 			}
 		}
 	}
+}
+
+static inline void view_help(void) {
+	int i,a=c1w,b=c2w,c=c3w,d=cdw;
+	const s_helpitem *p;
+
+	mvwprintw(whelp,0,0,"%s",(has_unicode&&unicode)?"─":"_");
+	wattron(whelp,A_REVERSE);
+	wprintw(whelp," help ");
+	wattroff(whelp,A_REVERSE);
+	for (i=1+strlen(" help ");i<hw;i++)
+		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
+	for (p=thelp,i=1;i<hh-1;i++,p++)
+		mvwprintw(whelp,i,0," %-*.*s %-*.*s %-*.*s - %-*.*s ",a,a,p->k1?p->k1:"",b,b,p->k2?p->k2:"",c,c,p->k3?p->k3:"",d,d,p->descr);
+	mvwprintw(whelp,hh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
+	for (i=1;i<hw;i++)
+		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
 }
 
 static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
@@ -745,7 +806,7 @@ donedraw:
 		}
 		attroff(A_BOLD);
 
-		printw(" PID: ");
+		printw(" TID: ");
 		attron(A_BOLD);
 		if (params.pid<0)
 			printw("none");
@@ -763,7 +824,7 @@ donedraw:
 
 		printw("  ");
 		attron(A_REVERSE);
-		printw("[use 0-9/n/bksp for UID/PID, tab to switch UID/PID]");
+		printw("[use 0-9/n/bksp for UID/TID, tab to switch UID/TID]");
 		attroff(A_REVERSE);
 	}
 	if (show)
@@ -771,6 +832,40 @@ donedraw:
 	curs_set(show);
 	draw_vscroll(maxx-1,head1row?2:3,maxy-1,dispcount,saveskip);
 	refresh();
+	if (showhelp) {
+		int rhh,rhw;
+
+		if (hw+2>=maxx)
+			hx=1;
+		else
+			hx=1+(maxx-2-hw)/2;
+		if (hh+2>=maxy)
+			hy=1;
+		else
+			hy=1+(maxy-2-hh)/2;
+
+		// all this madness is to keep all parts of the window inside screen
+		if (hx+hw>maxx)
+			rhw=maxx-hx;
+		else
+			rhw=hw;
+		if (hy+hh>maxy)
+			rhh=maxy-hy;
+		else
+			rhh=hh;
+		if (rhw<=0) {
+			rhw=1;
+			hx=0;
+		}
+		if (rhh<=0) {
+			rhh=1;
+			hy=0;
+		}
+		wresize(whelp,rhh,rhw);
+		mvwin(whelp,hy,hx);
+		view_help();
+		wrefresh(whelp);
+	}
 }
 
 static inline int curses_key(int ch) {
@@ -936,7 +1031,7 @@ static inline int curses_key(int ch) {
 		case '?':
 		case 'h':
 		case 'H':
-			// TODO: !!! toggle help window
+			showhelp=!showhelp;
 			break;
 		case 'c':
 		case 'C':
@@ -1106,6 +1201,8 @@ static inline int curses_key(int ch) {
 }
 
 inline void view_curses_init(void) {
+	const s_helpitem *p;
+
 	if (strcmp(getenv("TERM"),"linux")) {
 		if (setlocale(LC_CTYPE,"C.UTF-8"))
 			has_unicode=1;
@@ -1122,9 +1219,31 @@ inline void view_curses_init(void) {
 	noecho();
 	curs_set(FALSE);
 	nodelay(stdscr,TRUE);
+
+	for (p=thelp;p->descr;p++) {
+		if (p->k1&&strlen(p->k1)>c1w)
+			c1w=strlen(p->k1);
+		if (p->k2&&strlen(p->k2)>c2w)
+			c2w=strlen(p->k2);
+		if (p->k3&&strlen(p->k3)>c3w)
+			c3w=strlen(p->k3);
+		if (strlen(p->descr)>cdw)
+			cdw=strlen(p->descr);
+		hh++;
+	}
+	hw+=c1w+c2w+c3w+cdw;
+	whelp=newwin(hh,hw,hx,hy);
+	if (!whelp) {
+		view_curses_fini();
+		nl_fini();
+		fprintf(stderr,"Error: can not allocate help window\n");
+		exit(1);
+	}
 }
 
 inline void view_curses_fini(void) {
+	if (whelp)
+		delwin(whelp);
 	endwin();
 }
 
