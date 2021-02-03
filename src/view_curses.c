@@ -53,7 +53,6 @@ static double hist_t_r[HISTORY_CNT]={0};
 static double hist_t_w[HISTORY_CNT]={0};
 static double hist_a_r[HISTORY_CNT]={0};
 static double hist_a_w[HISTORY_CNT]={0};
-static int nohelp=0; // hide help
 static int scrollpos=0; // scroll view start position
 static int viewsizey=0; // how many lines we can show on screen
 static int dispcount=0; // how many lines we have after filters
@@ -240,7 +239,6 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	int skip;
 
 	ionice_pos_data=NULL;
-	nohelp=config.f.nohelp;
 
 	maxy=getmaxy(stdscr);
 	maxx=getmaxx(stdscr);
@@ -430,11 +428,9 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&unicode)?gr_width*2:gr_width));
 	arr_sort(cs,iotop_sort_cb);
 
-	if (maxy<10)
-		nohelp=1;
 	line=ionice_line+2;
 	lastline=line;
-	viewsizey=maxy-1-ionice_line-(nohelp?0:2);
+	viewsizey=maxy-1-ionice_line;
 	if (viewsizey<0)
 		viewsizey=0;
 	skip=scrollpos;
@@ -623,90 +619,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 			line++;
 			lastline=line;
-			if (line>maxy-(nohelp?1:3)) // do not draw out of screen, keep 2 lines for help
+			if (line>maxy-1) // do not draw out of screen
 				goto donedraw;
 		}
 	}
 donedraw:
 	lastvisible=lastline; // last selectable screen line
-	for (line=lastline;line<=maxy-(nohelp?1:3);line++) // always draw empty lines
+	for (line=lastline;line<=maxy-1;line++) // always draw empty lines
 		mvhline(line,0,' ',maxx);
-
-	if (!nohelp) {
-		attron(A_REVERSE);
-
-		mvhline(maxy-2,0,' ',maxx);
-		mvhline(maxy-1,0,' ',maxx);
-		mvprintw(maxy-2,0,"%s","keys: ^L: refresh ");
-		attron(A_UNDERLINE);
-		printw("q");
-		attroff(A_UNDERLINE);
-		printw(": quit ");
-		attron(A_UNDERLINE);
-		printw("i");
-		attroff(A_UNDERLINE);
-		printw(": ionice ");
-		attron(A_UNDERLINE);
-		printw("f");
-		attroff(A_UNDERLINE);
-		printw(": uid/pid ");
-		attron(A_UNDERLINE);
-		printw("o");
-		attroff(A_UNDERLINE);
-		printw(": %s ",config.f.only?"all":"active");
-		attron(A_UNDERLINE);
-		printw("p");
-		attroff(A_UNDERLINE);
-		printw(": %s ",config.f.processes?"threads":"procs");
-		attron(A_UNDERLINE);
-		printw("a");
-		attroff(A_UNDERLINE);
-		printw(": %s ",config.f.accumulated?"bandwidth":"accum");
-		if (has_unicode) {
-			attron(A_UNDERLINE);
-			printw("u");
-			attroff(A_UNDERLINE);
-			printw(": %s ",unicode?"ASCII":"UTF");
-		}
-		attron(A_UNDERLINE);
-		printw("x");
-		attroff(A_UNDERLINE);
-		printw(": %s ",config.f.deadx?"bkg":"xxx");
-		attron(A_UNDERLINE);
-		printw("h");
-		attroff(A_UNDERLINE);
-		printw(": help");
-
-		mvprintw(maxy-1,0,"sort: ");
-		attron(A_UNDERLINE);
-		printw("r");
-		attroff(A_UNDERLINE);
-		printw(": %s ",config.f.sort_order==SORT_ASC?"desc":"asc");
-		attron(A_UNDERLINE);
-		printw("left");
-		attroff(A_UNDERLINE);
-		printw(": %s ",COLUMN_L(config.f.sort_by));
-		attron(A_UNDERLINE);
-		printw("right");
-		attroff(A_UNDERLINE);
-		printw(": %s ",COLUMN_R(config.f.sort_by));
-
-		attron(A_UNDERLINE);
-		printw("1-9");
-		attroff(A_UNDERLINE);
-		printw(": toggle column ");
-		attron(A_UNDERLINE);
-		printw("0");
-		attroff(A_UNDERLINE);
-		printw(": show all ");
-
-		attron(A_UNDERLINE);
-		printw("(pg)up/dn/home/end");
-		attroff(A_UNDERLINE);
-		printw(": scroll");
-
-		attroff(A_REVERSE);
-	}
 
 	if (in_ionice) {
 		mvhline(ionice_line,0,' ',maxx);
@@ -849,7 +769,7 @@ donedraw:
 	if (show)
 		move(promptx,prompty);
 	curs_set(show);
-	draw_vscroll(maxx-1,head1row?2:3,nohelp?maxy-1:maxy-3,dispcount,saveskip);
+	draw_vscroll(maxx-1,head1row?2:3,maxy-1,dispcount,saveskip);
 	refresh();
 }
 
@@ -1016,7 +936,7 @@ static inline int curses_key(int ch) {
 		case '?':
 		case 'h':
 		case 'H':
-			config.f.nohelp=!config.f.nohelp;
+			// TODO: !!! toggle help window
 			break;
 		case 'c':
 		case 'C':

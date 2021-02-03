@@ -38,7 +38,6 @@ typedef union {
 		int kilobytes;
 		int timestamp;
 		int quiet;
-		int nohelp;
 		int fullcmdline;
 		int hidepid;
 		int hideprio;
