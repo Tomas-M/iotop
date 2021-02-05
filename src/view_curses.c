@@ -61,6 +61,7 @@ static int showhelp=0; // flag if help window is shown
 static WINDOW *whelp; // pop-up help window
 static int hx=1,hy=1,hw=2+2+3,hh=2; // help window size and position
 static size_t c1w=0,c2w=0,c3w=0,cdw=0; // help window column widths
+static int dontrefresh=0; // flag to inhibit refresh of data
 
 typedef struct {
 	const char *descr;
@@ -99,6 +100,7 @@ const s_helpitem thelp[]={
 	{descr:"Change UID and PID filters",k2:"f",k3:"F"},
 	{descr:"Toggle using Unicode/ASCII characters",k2:"u",k3:"U"},
 	{descr:"Toggle exited processes x/inverse",k2:"x",k3:"X"},
+	{descr:"Toggle data freeze",k2:"s",k3:"S"},
 	{NULL},
 };
 
@@ -481,6 +483,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	}
 	attroff(A_REVERSE);
 
+	if (dontrefresh&&(maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1)<(size_t)maxx)) {
+		size_t xpos=maxx-strlen("[freezed]");
+
+		// don't step on column descriptions
+		if (xpos<maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1))
+			xpos=maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1);
+		mvprintw(ionice_line+1,xpos,"[freezed]");
+	}
 	// easiest place to print debug info
 	//mvprintw(ionice_line+1,maxx-maxcmdline+strlen(COLUMN_L(0))+1," ... ",...);
 
@@ -870,6 +880,10 @@ donedraw:
 
 static inline int curses_key(int ch) {
 	switch (ch) {
+		case 's':
+		case 'S':
+			dontrefresh^=1;
+			break;
 		case 'q':
 		case 'Q':
 			if (in_ionice) {
@@ -1258,7 +1272,7 @@ inline void view_curses_loop(void) {
 	for (;;) {
 		uint64_t now=monotime();
 
-		if (bef+1000*params.delay<now) {
+		if (bef+1000*params.delay<now&&!dontrefresh) {
 			bef=now;
 			if (ps)
 				arr_free(ps);
