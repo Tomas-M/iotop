@@ -2,7 +2,7 @@ iotop-c (1.17-1) unstable; urgency=medium
 
   * Update to new upstream release of 1.17
 
- -- Boian Bonev <bbonev@ipacct2>  Sat, 06 Feb 2021 01:02:03 +0000
+ -- Boian Bonev <bbonev@ipacct.com>  Sat, 06 Feb 2021 01:02:03 +0000
 
 iotop-c (1.16-1) unstable; urgency=medium
 
