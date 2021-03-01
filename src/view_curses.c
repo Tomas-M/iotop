@@ -1392,4 +1392,6 @@ inline void view_curses_loop(void)
             break;
         k = getch();
     }
+    arr_free(cs);
+    arr_free(ps);
 }
