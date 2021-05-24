@@ -42,9 +42,15 @@ NCCC:=
 NCLD:=-lncursesw
 endif
 
+# for glibc < 2.17, -lrt is required for clock_gettime
+NEEDLRT:=$(shell if $(CC) -E glibcvertest.h -o -|grep IOTOP_NEED_LRT|grep -q yes;then echo need; fi)
+
 MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -std=gnu90 -Wall -Wextra -fPIE
 MYLIBS=$(LIBS) $(NCLD)
 MYLDFLAGS=$(LDFLAGS) -fPIE -pie
+ifeq ("$(NEEDLRT)","need")
+MYLDFLAGS+=-lrt
+endif
 STRIP?=strip
 
 PREFIX?=$(DESTDIR)/usr
