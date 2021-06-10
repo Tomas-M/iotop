@@ -1,4 +1,3 @@
-- ESC key close the help dialog
 - restore some form of visible help on the bottom
 
 --- history of finished TODO items ---
@@ -21,3 +20,4 @@
 - Rework help to be like popup window
 - Add all missing keys to help window
 - Freezed, scrollable view of procs/threads for ionice selection (abandoned idea - exited processes should be kept track of)
+- ESC key close the help dialog
