@@ -1092,6 +1092,8 @@ static inline int curses_key(int ch) {
 			config.f.deadx=!config.f.deadx;
 			break;
 		case 27: // ESC
+			if (showhelp)
+				showhelp=0;
 			if (in_ionice)
 				in_ionice=0;
 			if (in_filter)
