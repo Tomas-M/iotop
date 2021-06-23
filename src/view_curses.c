@@ -81,6 +81,7 @@ const s_helpitem thelp[]={
 	{.descr="Scroll one line down",.k1="<down>"},
 	{.descr="Sort by next column",.k1="<right>"},
 	{.descr="Sort by previous column",.k1="<left>"},
+	{.descr="Cancel ionice/filter or close help window",.k1="<esc>"},
 	{.descr="Toggle showing only processes with IO activity",.k2="o",.k3="O"},
 	{.descr="Toggle showing processes/threads",.k2="p",.k3="P"},
 	{.descr="Toggle showing accumulated/current values",.k2="a",.k3="A"},
@@ -1092,8 +1093,9 @@ static inline int curses_key(int ch) {
 			config.f.deadx=!config.f.deadx;
 			break;
 		case 27: // ESC
-			if (showhelp)
+			if (showhelp&&!in_ionice&&!in_filter)
 				showhelp=0;
+			// unlike help window these cannot happen at the same time
 			if (in_ionice)
 				in_ionice=0;
 			if (in_filter)
