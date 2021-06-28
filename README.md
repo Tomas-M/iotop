@@ -27,7 +27,7 @@ iotop is licensed GPL-2.0+
 How to make
 ===========
 
-    # apt-install build-essential ncurses-dev
+    # apt install build-essential ncurses-dev -y
     git clone https://github.com/Tomas-M/iotop
     cd iotop
     make
