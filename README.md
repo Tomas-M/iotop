@@ -58,6 +58,7 @@ Require root access, be noticed in case prompt errors.
     git clone https://github.com/Tomas-M/iotop
     cd iotop
     make -f Makearm64
+</detail>
 
 ## Make it work as a command
 sudo mv iotop /usr/sbin
