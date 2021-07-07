@@ -31,7 +31,7 @@ iotop is licensed GPL-2.0+
 
 Many Linux distributions already include this program under the name iotop-c.
 
-If you distribution is relatively new, chances are that it already have iotop packaged. Follow these instructions.
+If your distribution is relatively new, chances are that it already has iotop packaged. Follow these instructions.
 
 In case it is not available, follow the [How to build from source](#how-to-build-from-source) instructions.
 
