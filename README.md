@@ -81,11 +81,22 @@ Use the following commands (note that `-y` disables confirmation prompts):
 </details>
 
 <details>
-<summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+<summary>Fedora</summary>
 &nbsp;  
 
 Use the following commands (note that `-y` disables confirmation prompts):
 
+    dnf install git gcc make ncurses-devel pkgconfig -y
+    git clone https://github.com/Thomas-M/iotop
+    cd iotop
+    make -j
+</details>
+
+<details>
+<summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+&nbsp;  
+
+Use the following commands (note that `-y` disables confirmation prompts):
 
     yum install git gcc make ncurses-devel pkgconfig -y
     git clone https://github.com/Thomas-M/iotop
@@ -94,12 +105,12 @@ Use the following commands (note that `-y` disables confirmation prompts):
 </details>
 
 
-## How to install as a system command
+### How to install as a system command
 
 sudo make install
 
 
-## How to update to latest version
+### How to update to latest version
 
 cd iotop && git checkout master && git pull && make clean && make -j
 
