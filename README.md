@@ -5,7 +5,7 @@ Is your Linux server too slow or load is too high? One of the possible
 causes of such symptoms may be high IO (input/output) waiting time,
 which basically means that some of your processes need to read or write
 to a hard drive while it is too slow and not ready yet, serving data for
-some other processes. 
+some other processes.
 
 Common practice is to use iostat -x in order to find out which block
 device (hard drive) is slow, but this information is not always helpful.
@@ -24,39 +24,64 @@ iotop is licensed GPL-2.0+
 
 [![Packaging status](https://repology.org/badge/tiny-repos/iotop-c.svg)](https://repology.org/project/iotop-c/versions)
 
-## Sample
+## Sample screenshot
 
-![Sample Image](https://github.com/EinProfispieler/iotop/blob/master/.sample/demo.png)
+![iotop screenshot](blob/master/.sample/demo.png)
 
-## How to make
-Require root access, be noticed in case prompt errors.
+## How to install from binary package
+
+Many Linux distributions already include this program under the name iotop-c.
+
+If you distribution is relatively new, chances are that it already have iotop packaged. Follow these instructions.
+
+In case it is not available, follow the [How to build from source](#howtobuild) instructions.
 
 <details>
-  <summary>Ubuntu</summary>
+  <summary>Debian/Devuan/Ubuntu/other derivatives</summary>
+    sudo apt install iotop-c -y
+</details>
+
+<details>
+  <summary>Fedora</summary>
+    sudo dnf install iotop-c -y
+</details>
+
+<details>
+  <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
     
-    apt install build-essential ncurses-dev -y
+    sudo yum install epel-release -y
+    sudo yum install iotop-c -y
+</details>
+
+
+## How to build from source<a name="#howtobuild"></a>
+Please note that the installation and the usage of this program require root access.
+
+<details>
+  <summary>Debian/Devuan/Ubuntu/other derivatives</summary>
+    apt install git build-essential libncurses-dev pkg-config -y
     git clone https://github.com/Tomas-M/iotop
     cd iotop
-    make
+    make -j
 </details>
 
 <details>
-  <summary>CentOS 7</summary>
-    CentOS did not pre-install git, manually install might be needed. also install 'epel-release' Package is recommended.
-    
-    yum install ncurses-devel pkgconfig -y
+  <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+    yum install git gcc make ncurses-devel pkgconfig -y
     git clone https://github.com/Thomas-M/iotop
     cd iotop
-    make
+    make -j
 </details>
 
 
-## Make it work as a command
-sudo mv iotop /usr/sbin
+## How to install as a system command
+
+sudo make install
+
 
 ## How to update to latest version
 
-cd iotop && git checkout master && git pull && make
+cd iotop && git checkout master && git pull && make clean && make -j
 
 
 ## Options
@@ -89,6 +114,7 @@ cd iotop && git checkout master && git pull && make
 -H, --no-help         suppress listing of shortcuts
 ```
 
+
 Contribute
 ==========
 
@@ -105,6 +131,7 @@ Contacts of current maintainers are:
 
 Notable contributions (ordered by time of last contribution):
 
+- EinProfiSpieler - README.md, build system improvements
 - Paul Wise <pabs@debian.org> - Debian packaging, man page, multiple reviews and ideas
 - Rumen Jekov <rvjekov@gmail.com> - Arch Linux packaging and testing
 - Arthur Zamarin <arthurzam+gentoo@gmail.com> - Gentoo packaging and testing
