@@ -34,7 +34,7 @@ Many Linux distributions already include this program under the name iotop-c.
 
 If you distribution is relatively new, chances are that it already have iotop packaged. Follow these instructions.
 
-In case it is not available, follow the [How to build from source](#howtobuild) instructions.
+In case it is not available, follow the [How to build from source](#how-to-build-from-source) instructions.
 
 <details>
   <summary>Debian/Devuan/Ubuntu/other derivatives</summary>
@@ -65,7 +65,7 @@ Use the following command (note that `-y` disables confirmation prompts):
 </details>
 
 
-## How to build from source<a name="#howtobuild"></a>
+## How to build from source
 Please note that the installation and the usage of this program require root access.
 
 <details>
