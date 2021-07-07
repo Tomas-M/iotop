@@ -24,17 +24,45 @@ iotop is licensed GPL-2.0+
 
 [![Packaging status](https://repology.org/badge/tiny-repos/iotop-c.svg)](https://repology.org/project/iotop-c/versions)
 
-How to make
-===========
+## Sample
 
-    # apt install build-essential ncurses-dev -y
+![Sample Image](https://github.com/EinProfispieler/iotop/blob/master/.sample/demo.png)
+
+## How to make
+Require root access, be noticed in case prompt errors.
+
+<details>
+  <summary>Ubuntu</summary>
+    
+    apt install build-essential ncurses-dev -y
     git clone https://github.com/Tomas-M/iotop
     cd iotop
     make
+</details>
+
+<details>
+    <summary>CentOS 7</summary>
+    "CentOS did not pre-install git, manually install might be needed. also 'epel-release' Package."
+    
+    yum install ncurses-devel pkgconfig -y
+    git clone https://github.com/Thomas-M/iotop
+    cd iotop
+    make
+</details>
+
+## Make it work as a command
+sudo mv iotop /usr/sbin
+
+## How to update to latest version
+
+cd iotop
+git checkout master
+git pull
+make
 
 
-Options
-=======
+## Options
+
 
 ```
 -v, --version         show program's version number and exit
