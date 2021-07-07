@@ -50,6 +50,15 @@ Require root access, be noticed in case prompt errors.
     make
 </details>
 
+<details>
+  <summary>Arm64 Linux</summary>
+  For Arm64 Linux System, eg. Raspberry PI 4. <b>Tested on Ubuntu 20.04 Arm64</b>.
+ 
+    apt install build-essential ncurses-dev -y
+    git clone https://github.com/Tomas-M/iotop
+    cd iotop
+    make -f Makearm64
+
 ## Make it work as a command
 sudo mv iotop /usr/sbin
 
