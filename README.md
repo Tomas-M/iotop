@@ -1,5 +1,4 @@
-iotop
-=====
+# iotop
 
 Is your Linux server too slow or load is too high? One of the possible
 causes of such symptoms may be high IO (input/output) waiting time,
@@ -146,8 +145,7 @@ cd iotop && git checkout master && git pull && make clean && make -j
 ```
 
 
-Contribute
-==========
+## Contribute
 
 iotop was originally written by Vyacheslav Trushkin in 2014, distributed by Tomas Matejicek and later improved by Boian Bonev.
 
