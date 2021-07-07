@@ -56,10 +56,7 @@ sudo mv iotop /usr/sbin
 
 ## How to update to latest version
 
-cd iotop
-git checkout master
-git pull
-make
+cd iotop && git checkout master && git pull && make
 
 
 ## Options
