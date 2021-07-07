@@ -5,7 +5,7 @@ Is your Linux server too slow or load is too high? One of the possible
 causes of such symptoms may be high IO (input/output) waiting time,
 which basically means that some of your processes need to read or write
 to a hard drive while it is too slow and not ready yet, serving data for
-some other processes.
+some other processes. 
 
 Common practice is to use iostat -x in order to find out which block
 device (hard drive) is slow, but this information is not always helpful.
@@ -24,17 +24,43 @@ iotop is licensed GPL-2.0+
 
 [![Packaging status](https://repology.org/badge/tiny-repos/iotop-c.svg)](https://repology.org/project/iotop-c/versions)
 
-How to make
-===========
+## Sample
 
-    # apt install build-essential ncurses-dev -y
+![Sample Image](https://github.com/EinProfispieler/iotop/blob/master/.sample/demo.png)
+
+## How to make
+Require root access, be noticed in case prompt errors.
+
+<details>
+  <summary>Ubuntu</summary>
+    
+    apt install build-essential ncurses-dev -y
     git clone https://github.com/Tomas-M/iotop
     cd iotop
     make
+</details>
+
+<details>
+  <summary>CentOS 7</summary>
+    CentOS did not pre-install git, manually install might be needed. also install 'epel-release' Package is recommended.
+    
+    yum install ncurses-devel pkgconfig -y
+    git clone https://github.com/Thomas-M/iotop
+    cd iotop
+    make
+</details>
 
 
-Options
-=======
+## Make it work as a command
+sudo mv iotop /usr/sbin
+
+## How to update to latest version
+
+cd iotop && git checkout master && git pull && make
+
+
+## Options
+
 
 ```
 -v, --version         show program's version number and exit
