@@ -41,8 +41,8 @@ Require root access, be noticed in case prompt errors.
 </details>
 
 <details>
-    <summary>CentOS 7</summary>
-    "CentOS did not pre-install git, manually install might be needed. also 'epel-release' Package."
+  <summary>CentOS 7</summary>
+    CentOS did not pre-install git, manually install might be needed. also install 'epel-release' Package is recommended.
     
     yum install ncurses-devel pkgconfig -y
     git clone https://github.com/Thomas-M/iotop
