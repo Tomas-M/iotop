@@ -38,16 +38,19 @@ In case it is not available, follow the [How to build from source](#howtobuild) 
 
 <details>
   <summary>Debian/Devuan/Ubuntu/other derivatives</summary>
+  Use the following command (note that `-y` disables confirmation prompts):
     sudo apt install iotop-c -y
 </details>
 
 <details>
   <summary>Fedora</summary>
+  Use the following command (note that `-y` disables confirmation prompts):
     sudo dnf install iotop-c -y
 </details>
 
 <details>
   <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+  Use the following command (note that `-y` disables confirmation prompts):
     
     sudo yum install epel-release -y
     sudo yum install iotop-c -y
@@ -59,6 +62,7 @@ Please note that the installation and the usage of this program require root acc
 
 <details>
   <summary>Debian/Devuan/Ubuntu/other derivatives</summary>
+  Use the following commands (note that `-y` disables confirmation prompts):
     apt install git build-essential libncurses-dev pkg-config -y
     git clone https://github.com/Tomas-M/iotop
     cd iotop
@@ -67,6 +71,7 @@ Please note that the installation and the usage of this program require root acc
 
 <details>
   <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+  Use the following commands (note that `-y` disables confirmation prompts):
     yum install git gcc make ncurses-devel pkgconfig -y
     git clone https://github.com/Thomas-M/iotop
     cd iotop
