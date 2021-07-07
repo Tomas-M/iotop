@@ -5,7 +5,7 @@ Is your Linux server too slow or load is too high? One of the possible
 causes of such symptoms may be high IO (input/output) waiting time,
 which basically means that some of your processes need to read or write
 to a hard drive while it is too slow and not ready yet, serving data for
-some other processes.
+some other processes. 
 
 Common practice is to use iostat -x in order to find out which block
 device (hard drive) is slow, but this information is not always helpful.
