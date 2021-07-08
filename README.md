@@ -63,7 +63,6 @@ Use the following command (note that `-y` disables confirmation prompts):
     sudo yum install iotop-c -y
 </details>
 
-
 ## How to build from source
 Please note that the installation and the usage of this program require root access.
 
@@ -103,46 +102,40 @@ Use the following commands (note that `-y` disables confirmation prompts):
     make -j
 </details>
 
-
 ### How to install as a system command
 
 sudo make install
-
 
 ### How to update to latest version
 
 cd iotop && git checkout master && git pull && make clean && make -j
 
-
 ## Options
 
-
-```
--v, --version         show program's version number and exit
--h, --help            show this help message and exit
--o, --only            only show processes or threads actually doing I/O
--b, --batch           non-interactive mode
--n NUM, --iter=NUM    number of iterations before ending [infinite]
--d SEC, --delay=SEC   delay between iterations [1 second]
--p PID, --pid=PID     processes/threads to monitor [all]
--u USER, --user=USER  users to monitor [all]
--P, --processes       only show processes, not all threads
--a, --accumulated     show accumulated I/O instead of bandwidth
--k, --kilobytes       use kilobytes instead of a human friendly unit
--t, --time            add a timestamp on each line (implies --batch)
--c, --fullcmdline     show full command line
--1, --hide-pid        hide PID/TID column
--2, --hide-prio       hide PRIO column
--3, --hide-user       hide USER column
--4, --hide-read       hide DISK READ column
--5, --hide-write      hide DISK WRITE column
--6, --hide-swapin     hide SWAPIN column
--7, --hide-io         hide IO column
--8, --hide-graph      hide GRAPH column
--9, --hide-command    hide COMMAND column
--q, --quiet           suppress some lines of header (implies --batch)
--H, --no-help         suppress listing of shortcuts
-```
+    -v, --version         show program's version number and exit
+    -h, --help            show this help message and exit
+    -o, --only            only show processes or threads actually doing I/O
+    -b, --batch           non-interactive mode
+    -n NUM, --iter=NUM    number of iterations before ending [infinite]
+    -d SEC, --delay=SEC   delay between iterations [1 second]
+    -p PID, --pid=PID     processes/threads to monitor [all]
+    -u USER, --user=USER  users to monitor [all]
+    -P, --processes       only show processes, not all threads
+    -a, --accumulated     show accumulated I/O instead of bandwidth
+    -k, --kilobytes       use kilobytes instead of a human friendly unit
+    -t, --time            add a timestamp on each line (implies --batch)
+    -c, --fullcmdline     show full command line
+    -1, --hide-pid        hide PID/TID column
+    -2, --hide-prio       hide PRIO column
+    -3, --hide-user       hide USER column
+    -4, --hide-read       hide DISK READ column
+    -5, --hide-write      hide DISK WRITE column
+    -6, --hide-swapin     hide SWAPIN column
+    -7, --hide-io         hide IO column
+    -8, --hide-graph      hide GRAPH column
+    -9, --hide-command    hide COMMAND column
+    -q, --quiet           suppress some lines of header (implies --batch)
+    -H, --no-help         suppress listing of shortcuts
 
 ## Contribute
 
