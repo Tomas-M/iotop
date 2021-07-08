@@ -144,7 +144,6 @@ cd iotop && git checkout master && git pull && make clean && make -j
 -H, --no-help         suppress listing of shortcuts
 ```
 
-
 ## Contribute
 
 iotop was originally written by Vyacheslav Trushkin in 2014, distributed by Tomas Matejicek and later improved by Boian Bonev.
