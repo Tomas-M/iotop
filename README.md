@@ -154,19 +154,19 @@ The preferred way to contribute to the project is to file a pull request at GitH
 
 Contacts of current maintainers are:
 
-- Tomas Matejicek <tomas@slax.org>
-- Boian Bonev <bbonev@ipacct.com>
+  - Tomas Matejicek &lt;[tomas@slax.org](mailto:tomas@slax.org)&gt;
+  - Boian Bonev &lt;[bbonev@ipacct.com](mailto:bbonev@ipacct.com)&gt;
 
 Notable contributions (ordered by time of last contribution):
 
-- EinProfiSpieler - README.md, build system improvements
-- Paul Wise <pabs@debian.org> - Debian packaging, man page, multiple reviews and ideas
-- Rumen Jekov <rvjekov@gmail.com> - Arch Linux packaging and testing
-- Arthur Zamarin <arthurzam+gentoo@gmail.com> - Gentoo packaging and testing
-- Yuriy M. Kaminskiy <yumkam@gmail.com> - code fixes and improvements
-- alicektx <alicekot13@gmail.com> - documentation imrpovements
-- Filip Kofron <filip.kofron.cz@gmail.com> - build system imrpovements
+  - EinProfiSpieler - README.md, build system improvements
+  - Paul Wise &lt;[pabs@debian.org](mailto:pabs@debian.org)&gt; - Debian packaging, man page, multiple reviews and ideas
+  - Rumen Jekov &lt;[rvjekov@gmail.com](mailto:rvjekov@gmail.com)&gt; - Arch Linux packaging and testing
+  - Arthur Zamarin &lt;[arthurzam+gentoo@gmail.com](mailto:arthurzam+gentoo@gmail.com)&gt; - Gentoo packaging and testing
+  - Yuriy M. Kaminskiy &lt;[yumkam@gmail.com](mailto:yumkam@gmail.com)&gt; - code fixes and improvements
+  - alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - documentation imrpovements
+  - Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - build system imrpovements
 
-**Thanks! This project is what it is now because the steam you have put into it**
+**Thanks!** This project is what it is now because the steam you have put into it
 
 *NB. In case you have contributed to the project and do not see your name in the list, please note that the above list is updated manually and it is an omission - notify the maintainers to fix it.*
