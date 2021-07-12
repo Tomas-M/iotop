@@ -25,7 +25,7 @@ iotop is licensed GPL-2.0+
 
 ## Sample screenshot
 
-![iotop screenshot](.sample/demo.png)
+![iotop screenshot](.sample/screenshot.png)
 
 ## How to install from binary package
 
