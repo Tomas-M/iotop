@@ -72,7 +72,7 @@ Please note that the installation and the usage of this program require root acc
 
 Use the following commands (note that `-y` disables confirmation prompts):
   
-    apt install git build-essential libncurses-dev pkg-config -y
+    apt install git build-essential libncurses-dev libncursesw5-dev pkg-config -y
     git clone https://github.com/Tomas-M/iotop
     cd iotop
     make -j
