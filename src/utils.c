@@ -171,7 +171,7 @@ inline const char *esc_low_ascii1(char c) {
 	static char ehex[0x20][6];
 	static int initialized=0;
 
-	if (c>=0x20) // no escaping needed
+	if (c<0||c>=0x20) // no escaping needed
 		return NULL;
 	if (!initialized) {
 		int i;
