@@ -168,10 +168,14 @@ inline int64_t monotime(void) {
 }
 
 inline const char *esc_low_ascii1(char c) {
+	// some architectures have char type unsigned by default
+	// while others have a signed char; make the check for
+	// printing range universal
+	unsigned char uc=*(unsigned char *)(void *)&c;
 	static char ehex[0x20][6];
 	static int initialized=0;
 
-	if (c<0||c>=0x20) // no escaping needed
+	if (uc>=0x20) // no escaping needed
 		return NULL;
 	if (!initialized) {
 		int i;
