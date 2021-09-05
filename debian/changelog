@@ -2,6 +2,7 @@ iotop-c (1.18-1~bpo10+1) buster-backports; urgency=medium
 
   * Rebuild for buster-backports.
   * Convert alternatives back to shell scripts
+  * Use debhelper-compat(=12) for buster
 
  -- Boian Bonev <bbonev@ipacct.com>  Sun, 05 Sep 2021 20:42:30 +0000
 
