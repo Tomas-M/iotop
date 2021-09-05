@@ -1,4 +1,10 @@
-iotop-c (1.17-1+deb11u1~bpo10+1) buster-backports; urgency=medium
+iotop-c (1.18-1+deb11u1) bullseye; urgency=medium
+
+  * Rebuild for bullseye-proposed-updates
+
+ -- Boian Bonev <bbonev@ipacct.com>  Mon, 06 Sep 2021 00:35:52 +0300
+
+iotop-c (1.18-1) unstable; urgency=medium
 
   * Rebuild for buster-backports.
   * Convert alternatives back to shell scripts
