@@ -1,17 +1,20 @@
-iotop-c (1.18-1~bpo10+1) buster-backports; urgency=medium
+iotop-c (1.17-1+deb11u1~bpo10+1) buster-backports; urgency=medium
 
   * Rebuild for buster-backports.
   * Convert alternatives back to shell scripts
   * Use debhelper-compat(=12) for buster
+  * Backport improvements from 1.18
+    - fix screen flicker during refresh with visible help
+    - allow ESC to close the help window
 
- -- Boian Bonev <bbonev@ipacct.com>  Sun, 05 Sep 2021 20:42:30 +0000
+ -- Boian Bonev <bbonev@ipacct.com>  Mon, 06 Sep 2021 01:54:40 +0000
 
-iotop-c (1.18-1) unstable; urgency=medium
+iotop-c (1.17-1+deb11u1) bullseye; urgency=medium
 
-  * Update to new upstream release of 1.18
-  * Update standards to 4.6.0
+  * Backport bugfix from 1.18
+    - fix OOB access caused by UTF8 process names
 
- -- Boian Bonev <bbonev@ipacct.com>  Tue, 24 Aug 2021 02:45:57 +0000
+ -- Boian Bonev <bbonev@ipacct.com>  Mon, 06 Sep 2021 01:54:40 +0000
 
 iotop-c (1.17-1) unstable; urgency=medium
 
