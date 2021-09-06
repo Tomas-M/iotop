@@ -3,7 +3,6 @@ Description: Document that ESC key closing the help window
 
 ---
 Origin: upstream, https://github.com/Tomas-M/iotop/commit/383443d650bb29bfb7187cae98e21faa40cbf977
-Forwarded: not-needed
 Last-Update: 2021-09-06
 
 --- iotop-c-1.17.orig/iotop.8
