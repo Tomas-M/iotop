@@ -1,3 +1,12 @@
+iotop-c (1.17-1+deb11u1) bullseye; urgency=medium
+
+  * Backport bugfixes from 1.18
+    - fix OOB access caused by UTF8 process names
+    - fix screen flicker during refresh with visible help
+    - allow ESC to close the help window
+
+ -- Boian Bonev <bbonev@ipacct.com>  Mon, 06 Sep 2021 01:54:40 +0000
+
 iotop-c (1.17-1) unstable; urgency=medium
 
   * Update to new upstream release of 1.17
