@@ -1,4 +1,1 @@
-document-esc-key.patch
 fix-OOB-on-utf.patch
-fix-flicker-with-help-shown.patch
-esc-closes-help.patch
