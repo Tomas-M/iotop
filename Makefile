@@ -25,7 +25,6 @@ DEPS:=$(OBJS:.o=.d)
 ifndef NO_FLTO
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 CFLAGS+=-flto
-LDFLAGS+=$(CFLAGS)
 else
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
@@ -50,9 +49,9 @@ endif
 # for glibc < 2.17, -lrt is required for clock_gettime
 NEEDLRT:=$(shell if $(CC) -E glibcvertest.h -o -|grep IOTOP_NEED_LRT|grep -q yes;then echo need; fi)
 
-MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -std=gnu90 -Wall -Wextra -fPIE
-MYLIBS=$(LIBS) $(NCLD)
-MYLDFLAGS=$(LDFLAGS) -fPIE -pie
+MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -Wall -Wextra -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 --std=gnu90 -fPIE
+MYLIBS:=$(NCLD) $(LIBS)
+MYLDFLAGS:=$(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -fPIE -pie
 ifeq ("$(NEEDLRT)","need")
 MYLDFLAGS+=-lrt
 endif
