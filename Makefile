@@ -30,11 +30,6 @@ else
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
 
-HAVESREA:=$(shell if $(CC) -mno-stackrealign -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
-ifeq ("$(HAVESREA)","no")
-CFLAGS:=$(filter-out -mno-stackrealign,$(CFLAGS))
-endif
-
 PKG_CONFIG?=pkg-config
 NCCC?=$(shell $(PKG_CONFIG) --cflags ncursesw)
 NCLD?=$(shell $(PKG_CONFIG) --libs ncursesw)
@@ -47,15 +42,9 @@ NCCC:=
 NCLD:=-lncursesw
 endif
 
-# for glibc < 2.17, -lrt is required for clock_gettime
-NEEDLRT:=$(shell if $(CC) -E glibcvertest.h -o -|grep IOTOP_NEED_LRT|grep -q yes;then echo need; fi)
-
 MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -std=gnu90 -Wall -Wextra -fPIE
 MYLIBS=$(LIBS) $(NCLD)
 MYLDFLAGS=$(LDFLAGS) -fPIE -pie
-ifeq ("$(NEEDLRT)","need")
-MYLDFLAGS+=-lrt
-endif
 STRIP?=strip
 
 PREFIX?=$(DESTDIR)/usr
@@ -108,6 +97,7 @@ mkotar:
 		--exclude ./.git \
 		--exclude ./.gitignore \
 		--exclude ./debian \
+		--exclude ./fedora \
 		-Jcvf ../iotop-c_$(VER).orig.tar.xz .
 	-rm -f ../iotop-c_$(VER).orig.tar.xz.asc
 	gpg -a --detach-sign ../iotop-c_$(VER).orig.tar.xz
