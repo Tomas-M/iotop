@@ -1220,9 +1220,10 @@ static inline int curses_key(int ch) {
 }
 
 inline void view_curses_init(void) {
+	char *term=getenv("TERM");
 	const s_helpitem *p;
 
-	if (strcmp(getenv("TERM"),"linux")) {
+	if (term&&strcmp(term,"linux")) {
 		if (setlocale(LC_CTYPE,"C.UTF-8"))
 			has_unicode=1;
 		else
