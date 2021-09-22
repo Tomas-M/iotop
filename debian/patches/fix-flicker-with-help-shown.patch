@@ -5,8 +5,8 @@ Origin: upstream, https://github.com/Tomas-M/iotop/commit/1b36b51c72088f9e346dc5
 Forwarded: not-needed
 Last-Update: 2021-09-06
 
---- iotop-c-1.17.orig/src/view_curses.c
-+++ iotop-c-1.17/src/view_curses.c
+--- a/src/view_curses.c
++++ b/src/view_curses.c
 @@ -841,7 +841,7 @@ donedraw:
  		move(promptx,prompty);
  	curs_set(show);
