@@ -1,10 +1,4 @@
-iotop-c (1.18-1~bpo11+1) bullseye-backports; urgency=medium
-
-  * Rebuild for bullseye-backports.
-
- -- Boian Bonev <bbonev@ipacct.com>  Mon, 20 Sep 2021 22:47:41 +0000
-
-iotop-c (1.18-1) unstable; urgency=medium
+iotop-c (1.17-1~bpo10+1) buster-backports; urgency=medium
 
   * Rebuild for buster-backports.
   * Convert alternatives back to shell scripts
@@ -12,6 +6,8 @@ iotop-c (1.18-1) unstable; urgency=medium
   * Backport improvements from 1.18
     - fix screen flicker during refresh with visible help
     - allow ESC to close the help window
+  * Backport bugfix from 1.19
+    - Do not crash if TERM is not set
 
  -- Boian Bonev <bbonev@ipacct.com>  Mon, 20 Sep 2021 23:50:05 +0000
 
