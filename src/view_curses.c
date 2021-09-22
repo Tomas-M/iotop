@@ -841,7 +841,7 @@ donedraw:
 		move(promptx,prompty);
 	curs_set(show);
 	draw_vscroll(maxx-1,head1row?2:3,maxy-1,dispcount,saveskip);
-	refresh();
+	wnoutrefresh(stdscr);
 	if (showhelp) {
 		int rhh,rhw;
 
@@ -874,8 +874,9 @@ donedraw:
 		wresize(whelp,rhh,rhw);
 		mvwin(whelp,hy,hx);
 		view_help();
-		wrefresh(whelp);
+		wnoutrefresh(whelp);
 	}
+	doupdate();
 }
 
 static inline int curses_key(int ch) {
@@ -1091,9 +1092,6 @@ static inline int curses_key(int ch) {
 			config.f.deadx=!config.f.deadx;
 			break;
 		case 27: // ESC
-			if (showhelp&&!in_ionice&&!in_filter)
-				showhelp=0;
-			// unlike help window these cannot happen at the same time
 			if (in_ionice)
 				in_ionice=0;
 			if (in_filter)
