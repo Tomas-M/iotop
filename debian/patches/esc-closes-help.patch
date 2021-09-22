@@ -20,9 +20,9 @@ Last-Update: 2021-09-06
  			if (in_filter)
 --- a/iotop.8
 +++ b/iotop.8
-@@ -199,6 +199,9 @@ Sort by previous column
- \fB<esc>\fR
- Cancel ionice or filter selection. In case only the help window is open then close it
+@@ -196,6 +196,9 @@ Sort by next column
+ \fB<left>\fR
+ Sort by previous column
  .TP
 +\fB<esc>\fR
 +Cancel ionice or filter selection. In case only the help window is open then close it
