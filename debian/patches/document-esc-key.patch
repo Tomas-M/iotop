@@ -6,11 +6,11 @@ Origin: upstream, https://github.com/Tomas-M/iotop/commit/383443d650bb29bfb7187c
 Forwarded: not-needed
 Last-Update: 2021-09-06
 
---- iotop-c-1.17.orig/iotop.8
-+++ iotop-c-1.17/iotop.8
-@@ -196,6 +196,9 @@ Sort by next column
- \fB<left>\fR
- Sort by previous column
+--- a/iotop.8
++++ b/iotop.8
+@@ -199,6 +199,9 @@ Sort by previous column
+ \fB<esc>\fR
+ Cancel ionice or filter selection. In case only the help window is open then close it
  .TP
 +\fB<esc>\fR
 +Cancel ionice or filter selection. In case only the help window is open then close it

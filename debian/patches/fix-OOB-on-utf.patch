@@ -8,8 +8,8 @@ Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/iotop/+bug/1932523
 Forwarded: not-needed
 Last-Update: 2021-09-06
 
---- iotop-c-1.17.orig/src/utils.c
-+++ iotop-c-1.17/src/utils.c
+--- a/src/utils.c
++++ b/src/utils.c
 @@ -171,7 +171,7 @@ inline const char *esc_low_ascii1(char c
  	static char ehex[0x20][6];
  	static int initialized=0;
