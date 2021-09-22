@@ -1,6 +1,5 @@
 Description: Fix flicker with help shown
  Change the refresh sequence to avoid flicker
----
 Origin: upstream, https://github.com/Tomas-M/iotop/commit/1b36b51c72088f9e346dc5dc473653487d97cfed
 Forwarded: not-needed
 Last-Update: 2021-09-06

@@ -1,7 +1,6 @@
 Description: Let ESC close the help
  It was suggested by users that it is desired for ESC to close the help
  window.
----
 Origin: upstream, https://github.com/Tomas-M/iotop/commit/8ea414c53ca3b5986191d06a8f99f96282975e02 https://github.com/Tomas-M/iotop/commit/0d48498cc593d3b72d56fb5a5519b2b8612fbc31
 Forwarded: not-needed
 Last-Update: 2021-09-06
