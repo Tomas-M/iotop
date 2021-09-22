@@ -841,7 +841,7 @@ donedraw:
 		move(promptx,prompty);
 	curs_set(show);
 	draw_vscroll(maxx-1,head1row?2:3,maxy-1,dispcount,saveskip);
-	wnoutrefresh(stdscr);
+	refresh();
 	if (showhelp) {
 		int rhh,rhw;
 
@@ -874,9 +874,8 @@ donedraw:
 		wresize(whelp,rhh,rhw);
 		mvwin(whelp,hy,hx);
 		view_help();
-		wnoutrefresh(whelp);
+		wrefresh(whelp);
 	}
-	doupdate();
 }
 
 static inline int curses_key(int ch) {
