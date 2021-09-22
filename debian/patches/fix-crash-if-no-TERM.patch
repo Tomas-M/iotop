@@ -1,3 +1,10 @@
+Description: Fix crash if TERM is not set
+ There is no check for getenv("TERM") returning NULL
+Origin: upstream, https://github.com/Tomas-M/iotop/commit/8aaa4fce743cf14a5a727c6cb24c63450d317a28
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/iotop/+bug/1932523
+Forwarded: not-needed
+Last-Update: 2021-09-06
+
 --- a/src/view_curses.c
 +++ b/src/view_curses.c
 @@ -1220,9 +1220,10 @@ static inline int curses_key(int ch) {
