@@ -1,6 +1,6 @@
 --- a/src/view_curses.c
 +++ b/src/view_curses.c
-@@ -1219,9 +1219,10 @@ static inline int curses_key(int ch) {
+@@ -1220,9 +1220,10 @@ static inline int curses_key(int ch) {
  }
  
  inline void view_curses_init(void) {
