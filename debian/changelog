@@ -1,3 +1,11 @@
+iotop-c (1.18-1~bpo11+2) bullseye-backports; urgency=medium
+
+  * Rebuild for bullseye-backports.
+  * Backport fix from 1.19
+    - Do not crash if TERM is not set
+
+ -- Boian Bonev <bbonev@ipacct.com>  Wed, 22 Sep 2021 21:08:16 +0000
+
 iotop-c (1.18-1~bpo11+1) bullseye-backports; urgency=medium
 
   * Rebuild for bullseye-backports.
