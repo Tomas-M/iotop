@@ -13,7 +13,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 /*
 
-iotop can only run on linux
+iotop can only run on Linux
 libc may vary, check if old glibc
 require -lrt for clock_gettime
 
