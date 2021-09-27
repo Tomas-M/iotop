@@ -29,6 +29,10 @@ else
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
 
+ifdef GCCFANALIZER
+CFLAGS+=-fanalyzer
+endif
+
 HAVESREA:=$(shell if $(CC) -mno-stackrealign -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 ifeq ("$(HAVESREA)","no")
 CFLAGS:=$(filter-out -mno-stackrealign,$(CFLAGS))
