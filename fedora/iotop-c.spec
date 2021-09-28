@@ -1,5 +1,5 @@
 Name:           iotop-c
-Version:        1.18
+Version:        1.19
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
@@ -52,8 +52,14 @@ mv %{buildroot}%{_mandir}/man8/iotop.8 %{buildroot}%{_mandir}/man8/iotop-c.8
 %{_mandir}/man8/iotop-c.8*
 
 %changelog
+* Tue Sep 21 2021 Boian Bonev <bbonev@ipacct.com> - 1.19-1
+- Update to latest ver 1.19
+
 * Tue Aug 24 2021 Boian Bonev <bbonev@ipacct.com> - 1.18-1
 - Update to latest ver 1.18
+
+* Thu Jul 22 2021 Fedora Release Engineering <releng@fedoraproject.org> - 1.17-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
 
 * Sat Feb 6 2021 Boian Bonev <bbonev@ipacct.com> - 1.17-1
 - Update to latest ver 1.17

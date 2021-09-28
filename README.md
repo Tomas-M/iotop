@@ -57,7 +57,7 @@ Use the following command (note that `-y` disables confirmation prompts):
   <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
 &nbsp;  
 
-Use the following command (note that `-y` disables confirmation prompts):
+Use the following commands (note that `-y` disables confirmation prompts):
     
     sudo yum install epel-release -y
     sudo yum install iotop-c -y
