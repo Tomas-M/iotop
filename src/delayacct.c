@@ -52,7 +52,7 @@ static inline int _read_task_delayacct(int *da) {
 }
 
 inline int read_task_delayacct(void) {
-	int da,r;
+	int da=0,r;
 
 	r=_read_task_delayacct(&da);
 	if (!r)
