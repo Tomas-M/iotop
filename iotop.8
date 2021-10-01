@@ -11,8 +11,8 @@ or threads on the system. At least the CONFIG_TASK_DELAY_ACCT,
 CONFIG_TASK_IO_ACCOUNTING, CONFIG_TASKSTATS and CONFIG_VM_EVENT_COUNTERS
 options need to be enabled in your Linux kernel build configuration.
 .PP
-Running \fBiotop\fR as non-root user is possible by adding the NET_ADMIN capability.
-This can be done by e.g.:
+Running \fBiotop\fR as non-root user is possible by adding the NET_ADMIN
+capability. This can be done by e.g.:
 .RS
 
 .B
@@ -24,7 +24,8 @@ information that normally should not be available to them.
 .PP
 \fBiotop\fR displays columns for the I/O bandwidth read and written by each
 process/thread during the sampling period. It also displays the percentage
-of time the thread/process spent while swapping in and while waiting on I/O. For each process, its I/O priority (class/level) is shown.
+of time the thread/process spent while swapping in and while waiting on I/O.
+For each process, its I/O priority (class/level) is shown.
 .PP
 In addition, the total I/O bandwidth read and written during the sampling
 period are displayed at the top of the interface.
@@ -32,42 +33,81 @@ period are displayed at the top of the interface.
 and write bandwidth between processes and kernel threads on one side and
 kernel block device subsystem on the other. While \fBCurrent DISK READ\fR and
 \fBCurrent DISK WRITE\fR values represent corresponding bandwidths for current
-disk I/O between the kernel block device subsystem and the underlying hardware (HDD, SSD, etc.).
-Thus \fBTotal\fR and \fBCurrent\fR values may not be equal at any given moment of time
-due to data caching and I/O operations reordering that take place inside the Linux kernel.
+disk I/O between the kernel block device subsystem and the underlying hardware
+(HDD, SSD, etc.). Thus \fBTotal\fR and \fBCurrent\fR values may not be equal at
+any given moment of time due to data caching and I/O operations reordering that
+take place inside the Linux kernel.
 .PP
-Use the \fBleft\fR and \fBright\fR arrows to select the sort column, \fBr\fR or \fBspace\fR to reverse the
-sorting order, \fBo\fR to toggle the \fB\-\-only\fR option (this uses the visible values from the \fBGRAPH\fR column
-or the \fBIO\fR column in case the \fBGRAPH\fR column is hidden), \fBp\fR to toggle the \fB\-\-processes\fR option, \fBa\fR
-to toggle the \fB\-\-accumulated\fR option, \fBi\fR to change the priority of a thread or a
-process's thread, \fBf\fR to change filtering by \fBUID\fR/\fBPID\fR (\fB\-\-user\fR and \fB\-\-pid\fR options),
-\fB1-9\fR to toggle the visibility of the respective column, \fB0\fR to show all columns, \fBup\fR/\fBdown\fR arrows,
-\fBpage-up\fR/\fBpage-down\fR/\fBhome\fR/\fBend\fR keys to scroll and \fBq\fR to quit.
-Any unrecognized key will be ignored.
+Use the \fBleft\fR and \fBright\fR arrows to select the sort column, \fBr\fR or
+\fBspace\fR to reverse the sorting order, \fBo\fR to toggle the \fB\-\-only\fR option (this uses the visible values
+from the \fBGRAPH\fR column or the \fBIO\fR column in case the \fBGRAPH\fR
+column is hidden), \fBp\fR to toggle the \fB\-\-processes\fR option, \fBa\fR to
+toggle the \fB\-\-accumulated\fR option, \fBi\fR to change the priority of a
+thread or a process's thread, \fBf\fR to change filtering by
+\fBUID\fR/\fBPID\fR (\fB\-\-user\fR and \fB\-\-pid\fR options), \fB1-9\fR to
+toggle the visibility of the respective column, \fB0\fR to show all columns,
+\fBup\fR/\fBdown\fR arrows, \fBpage-up\fR/\fBpage-down\fR/\fBhome\fR/\fBend\fR
+keys to scroll and \fBq\fR to quit. Any unrecognized key will be ignored.
 .PP
-All processes or threads that have exited are displayed grayed for the same time as is visible in the \fBGRAPH\fR column or 3 seconds
-when it is hidden. The invalid data points in the \fBGRAPHS\fR column are displayed inverse or with letter \fBx\fR
-(see option \fB\-\-dead\-x\fR and \fBx\fR shortcut). When using unicode characters each position contains two datapoints
-and only the positions with two invalid data points are reversed.
+All processes or threads that have exited are displayed grayed for the same time
+as is visible in the \fBGRAPH\fR column or 3 seconds when it is hidden. The
+invalid data points in the \fBGRAPHS\fR column are displayed inverse or with
+letter \fBx\fR (see option \fB\-\-dead\-x\fR and \fBx\fR shortcut). When using
+unicode characters each position contains two datapoints and only the positions
+with two invalid data points are reversed.
 .PP
-It is possible for threads of a process to have different priority from their main process. This is shown with \fB!\fR in the
-\fBPRIO\fR column of the main process as e.g. \fB!be/4\fR.
+It is possible for threads of a process to have different priority from their
+main process. This is shown with \fB!\fR in the \fBPRIO\fR column of the main
+process as e.g. \fB!be/4\fR.
 .PP
 Threads activity is always aggregated with and shown inside the main process.
 .PP
-When showing threads, they always appear below their main process and are sorted in the same way as the processes.
+When showing threads, they always appear below their main process and are sorted
+in the same way as the processes.
 .PP
-There are two ways to change the IO priority of a process or thread - press \fBi\fR and use arrows to select the
-process or thread from the visible ones on screen or press \fBi\fR and type its TID (PID and TID have the same value
-for the main process).
-Then use \fBtab\fR and arrows to change the priority value and confirm with \fBenter\fR.
-Shortcuts \fBesc\fR or \fBq\fR will cancel this mode.
+There are two ways to change the IO priority of a process or thread - press
+\fBi\fR and use arrows to select the process or thread from the visible ones on
+screen or press \fBi\fR and type its TID (PID and TID have the same value for
+the main process). Then use \fBtab\fR and arrows to change the priority value
+and confirm with \fBenter\fR. Shortcuts \fBesc\fR or \fBq\fR will cancel this
+mode.
 .PP
 To change the UID and PID filters, press \fBf\fR and use \fBtab\fR to select the
-UID or PID field, then type the numerical id or \fBn\fR to remove the filter and confirm with \fBenter\fR.
-Filtering is always done by \fBTID\fR because it is unique. Note that for the main process PID is the same
-as TID.
-Shortcuts \fBesc\fR or \fBq\fR will cancel this mode.
+UID or PID field, then type the numerical id or \fBn\fR to remove the filter and
+confirm with \fBenter\fR. Filtering is always done by \fBTID\fR because it is
+unique. Note that for the main process PID is the same as TID. Shortcuts
+\fBesc\fR or \fBq\fR will cancel this mode.
+.PP
+Starting with Linux kernel 5.14.x task_delayacct is configurable at runtime and
+set to off by default. This setting can be changed in interactive mode by the
+\fBCtrl-T\fR shortcut. In batch mode a warning is printed when the setting is
+OFF. From the command line this can be enabled by:
+.RS
+
+.B
+# echo 1 > /proc/sys/kernel/task_delayacct
+
+   or alternatively
+
+.B
+# sysctl kernel.task_delayacct=1
+
+.RE
+and disabled again by:
+.RS
+
+.B
+# echo 0 > /proc/sys/kernel/task_delayacct
+
+   or alternatively
+
+.B
+# sysctl kernel.task_delayacct=0
+
+.RE
+It is advisable to keep this option off when not using this or another
+monitoring program because when enabled it has some effect on system
+performance.
 .SH OPTIONS
 .TP
 \fB\-v\fR, \fB\-\-version\fR
@@ -77,8 +117,8 @@ Show the version number and exit
 Show usage information and exit
 .TP
 \fB\-o\fR, \fB\-\-only\fR
-Only show processes or threads actually doing I/O, instead of showing all processes or threads.
-This can be dynamically toggled by pressing \fBo\fR
+Only show processes or threads actually doing I/O, instead of showing all
+processes or threads. This can be dynamically toggled by pressing \fBo\fR
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
 Turn on non\-interactive mode.
@@ -97,23 +137,26 @@ A process/thread id to monitor (all by default)
 .TP
 \fB\-u\fR USER, \fB\-\-user\fR=\fIUSER\fR
 A user id to monitor (all by default).
-The value will always be resolved first unless it is prefixed by \fB+\fR in which case it is threated as numeric only.
-Values that do not resolve but appear to be numeric are used as numeric
+The value will always be resolved first unless it is prefixed by \fB+\fR in
+which case it is threated as numeric only. Values that do not resolve but appear
+to be numeric are used as numeric
 .TP
 \fB\-P\fR, \fB\-\-processes\fR
 Only show processes. Normally \fBiotop\fR shows processes and all threads
 .TP
 \fB\-a\fR, \fB\-\-accumulated\fR
-Show accumulated I/O instead of bandwidth.
-In this mode, \fBiotop\fR shows the amount of I/O processes have done since \fBiotop\fR started
+Show accumulated I/O instead of bandwidth. In this mode, \fBiotop\fR shows the
+amount of I/O processes have done since \fBiotop\fR started
 .TP
 \fB\-k\fR, \fB\-\-kilobytes\fR
 Use kilobytes instead of a human friendly unit.
-This mode is useful when scripting the batch mode of \fBiotop\fR.
-Instead of choosing the most appropriate unit \fBiotop\fR will display all sizes in kilobytes
+This mode is useful when scripting the batch mode of \fBiotop\fR. Instead of
+choosing the most appropriate unit \fBiotop\fR will display all sizes in
+kilobytes
 .TP
 \fB\-t\fR, \fB\-\-time\fR
-Add a timestamp on each line (implies \-\-batch). Each line will be prefixed by the current time
+Add a timestamp on each line (implies \-\-batch). Each line will be prefixed by
+the current time
 .TP
 \fB\-c\fR, \fB\-\-fullcmdline\fR
 Show processes' full file path and parameters
@@ -146,7 +189,8 @@ Hide GRAPH column
 Hide COMMAND column
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
-Suppress some lines of header (implies \-\-batch). This option can be specified up to three times to remove header lines
+Suppress some lines of header (implies \-\-batch). This option can be specified
+up to three times to remove header lines
 .RS
 .PD 0
 .TP
@@ -197,7 +241,8 @@ Sort by next column
 Sort by previous column
 .TP
 \fB<esc>\fR
-Cancel ionice or filter selection. In case only the help window is open then close it
+Cancel ionice or filter selection. In case only the help window is open then
+close it
 .TP
 \fBo\fR, \fBO\fR
 Toggle showing only processes with IO activity
@@ -230,10 +275,14 @@ Change UID and PID filters
 Toggle using Unicode/ASCII characters for pseudo graph
 .TP
 \fBx\fR, \fBX\fR
-Toggle the display mode of exited processes/threads between letter x and inverse background
+Toggle the display mode of exited processes/threads between letter x and inverse
+background
 .TP
 \fBs\fR, \fBS\fR
 Toggle freeze of data collection
+.TP
+\fBCtrl-T\fR
+Toggle task_delayacct kernel sysctl
 .SH SEE ALSO
 .BR ionice (1),
 .BR top (1),
