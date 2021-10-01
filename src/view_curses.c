@@ -107,6 +107,7 @@ const s_helpitem thelp[]={
 	{.descr="Toggle using Unicode/ASCII characters",.k2="u",.k3="U"},
 	{.descr="Toggle exited processes x/inverse",.k2="x",.k3="X"},
 	{.descr="Toggle data freeze",.k2="s",.k3="S"},
+	{.descr="Toggle task_delayacct (if available)",.k1="<ctrl-t>",.k2="",.k3=""},
 	{.descr=NULL},
 };
 
