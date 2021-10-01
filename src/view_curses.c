@@ -33,6 +33,8 @@ You should have received a copy of the GNU General Public License along with thi
 #define HEADER_L_FORMAT "Total Read:%7.2f %s%s Write:%7.2f %s%s|Current Read:%7.2f %s%s Write:%7.2f %s%s"
 #define HEADER_XL_FORMAT "Total Read: %7.2f %s%s Write: %7.2f %s%s | Current Read: %7.2f %s%s Write: %7.2f %s%s"
 
+#define RED_PAIR 1
+
 static int in_ionice=0; // ionice interface flag and state vars
 static char ionice_id[50];
 static int ionice_pos=-1;
@@ -58,9 +60,12 @@ static int viewsizey=0; // how many lines we can show on screen
 static int dispcount=0; // how many lines we have after filters
 static int lastvisible=0; // last visible screen line
 static int showhelp=0; // flag if help window is shown
+static int showtda=0; // flag if delayacct warning window is shown
 static WINDOW *whelp; // pop-up help window
 static int hx=1,hy=1,hw=2+2+3,hh=2; // help window size and position
 static size_t c1w=0,c2w=0,c3w=0,cdw=0; // help window column widths
+static WINDOW *wtda; // pop-up warning window
+static int whx=1,why=1,whw=2+2+20,whh=6; // warning window size and position
 static int dontrefresh=0; // flag to inhibit refresh of data
 
 typedef struct {
@@ -271,6 +276,26 @@ static inline void view_help(void) {
 	mvwprintw(whelp,hh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
 	for (i=1;i<hw;i++)
 		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
+}
+
+static inline void view_warning(void) {
+	int i;
+
+	mvwprintw(wtda,0,0,"%s",(has_unicode&&unicode)?"─":"_");
+	wattron(wtda,A_REVERSE);
+	wattron(wtda,COLOR_PAIR(RED_PAIR));
+	wprintw(wtda," warning ");
+	wattroff(wtda,COLOR_PAIR(RED_PAIR));
+	wattroff(wtda,A_REVERSE);
+	for (i=1+strlen(" warning ");i<whw;i++)
+		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
+	mvwprintw(wtda,1,0,"%*.*s",whw,whw,"");
+	mvwprintw(wtda,2,0," task_delayacct is %s ",read_task_delayacct()?"ON ":"OFF");
+	mvwprintw(wtda,3,0," press Ctrl-T to toggle ");
+	mvwprintw(wtda,4,0,"%*.*s",whw,whw,"");
+	mvwprintw(wtda,whh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
+	for (i=1;i<whw;i++)
+		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
 }
 
 static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
@@ -877,6 +902,40 @@ donedraw:
 		view_help();
 		wnoutrefresh(whelp);
 	}
+	if (showtda) {
+		int rhh,rhw;
+
+		if (whw+2>=maxx)
+			whx=1;
+		else
+			whx=1+(maxx-2-whw)/2;
+		if (whh+2>=maxy)
+			why=1;
+		else
+			why=1+(maxy-2-whh)/2;
+
+		// all this madness is to keep all parts of the window inside screen
+		if (whx+whw>maxx)
+			rhw=maxx-whx;
+		else
+			rhw=whw;
+		if (why+whh>maxy)
+			rhh=maxy-why;
+		else
+			rhh=whh;
+		if (rhw<=0) {
+			rhw=1;
+			whx=0;
+		}
+		if (rhh<=0) {
+			rhh=1;
+			why=0;
+		}
+		wresize(wtda,rhh,rhw);
+		mvwin(wtda,why,whx);
+		view_warning();
+		wnoutrefresh(wtda);
+	}
 	doupdate();
 }
 
@@ -1208,6 +1267,9 @@ static inline int curses_key(int ch) {
 				}
 			}
 			break;
+		case KEY_CTRL_T:
+			write_task_delayacct(!read_task_delayacct());
+			break;
 		case KEY_CTRL_L:
 			redrawwin(stdscr);
 		case KEY_REFRESH:
@@ -1239,6 +1301,8 @@ inline void view_curses_init(void) {
 	noecho();
 	curs_set(FALSE);
 	nodelay(stdscr,TRUE);
+	start_color();
+	init_pair(RED_PAIR,COLOR_RED,COLOR_BLACK);
 
 	for (p=thelp;p->descr;p++) {
 		if (p->k1&&strlen(p->k1)>c1w)
@@ -1257,6 +1321,13 @@ inline void view_curses_init(void) {
 		view_curses_fini();
 		nl_fini();
 		fprintf(stderr,"Error: can not allocate help window\n");
+		exit(1);
+	}
+	wtda=newwin(whh,whw,whx,why);
+	if (!whelp) {
+		view_curses_fini();
+		nl_fini();
+		fprintf(stderr,"Error: can not allocate warning window\n");
 		exit(1);
 	}
 }
@@ -1278,6 +1349,10 @@ inline void view_curses_loop(void) {
 	for (;;) {
 		uint64_t now=monotime();
 
+		if (!read_task_delayacct())
+			showtda=1;
+		else
+			showtda=0;
 		if (bef+1000*params.delay<now&&!dontrefresh) {
 			bef=now;
 			if (ps)
