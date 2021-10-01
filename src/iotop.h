@@ -230,8 +230,16 @@ inline int value2scale(double val,double mx);
 inline int filter1(struct xxxid_stats *s);
 
 #ifndef KEY_CTRL_L
-#define KEY_CTRL_L 014
+#define KEY_CTRL_L 0x0c
 #endif
+#ifndef KEY_CTRL_T
+#define KEY_CTRL_T 0x14
+#endif
+
+/* delayacct.c */
+
+inline int read_task_delayacct(void);
+inline int write_task_delayacct(int da);
 
 #endif // __IOTOP_H__
 
