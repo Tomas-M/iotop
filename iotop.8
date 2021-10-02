@@ -85,24 +85,14 @@ OFF. From the command line this can be enabled by:
 .RS
 
 .B
-# echo 1 > /proc/sys/kernel/task_delayacct
-
-   or alternatively
-
-.B
-# sysctl kernel.task_delayacct=1
+$ sudo sysctl kernel.task_delayacct=1
 
 .RE
 and disabled again by:
 .RS
 
 .B
-# echo 0 > /proc/sys/kernel/task_delayacct
-
-   or alternatively
-
-.B
-# sysctl kernel.task_delayacct=0
+$ sudo sysctl kernel.task_delayacct=0
 
 .RE
 It is advisable to keep this option off when not using this or another
