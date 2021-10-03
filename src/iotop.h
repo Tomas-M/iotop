@@ -238,6 +238,7 @@ inline int filter1(struct xxxid_stats *s);
 
 /* delayacct.c */
 
+inline int has_task_delayacct(void);
 inline int read_task_delayacct(void);
 inline int write_task_delayacct(int da);
 

@@ -51,6 +51,14 @@ static inline int _read_task_delayacct(int *da) {
 	return 0;
 }
 
+inline int has_task_delayacct(void) {
+	int da=0;
+
+	if (_read_task_delayacct(&da))
+		return 0;
+	return 1;
+}
+
 inline int read_task_delayacct(void) {
 	int da=0,r;
 

@@ -67,6 +67,7 @@ static size_t c1w=0,c2w=0,c3w=0,cdw=0; // help window column widths
 static WINDOW *wtda; // pop-up warning window
 static int whx=1,why=1,whw=2+2+20,whh=6; // warning window size and position
 static int dontrefresh=0; // flag to inhibit refresh of data
+static int initial_delayacct=0; // initial state of task_delayacct
 
 typedef struct {
 	const char *descr;
@@ -1286,6 +1287,10 @@ inline void view_curses_init(void) {
 	char *term=getenv("TERM");
 	const s_helpitem *p;
 
+	// keep the state of the toggle at startup
+	// warn at exit, if it is left enabled but initially was not
+	initial_delayacct=read_task_delayacct();
+
 	if (term&&strcmp(term,"linux")) {
 		if (setlocale(LC_CTYPE,"C.UTF-8"))
 			has_unicode=1;
@@ -1337,6 +1342,17 @@ inline void view_curses_fini(void) {
 	if (whelp)
 		delwin(whelp);
 	endwin();
+
+	if (has_task_delayacct())
+		if (!initial_delayacct&&read_task_delayacct()) {
+			printf(
+				"WARNING:\n"
+				"\tThis kernel supports controlling task_delayacct at runtime.\n"
+				"\tAt program startup it was OFF and now it is ON; use:\n"
+				"\t\tsysctl kernel.task_delayacct=0\n"
+				"\tto restore it to its previous value and save some CPU cycles.\n"
+			);
+		}
 }
 
 inline void view_curses_loop(void) {
