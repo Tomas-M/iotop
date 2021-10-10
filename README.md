@@ -150,6 +150,11 @@ Contacts of current maintainers are:
 -   Tomas Matejicek &lt;[tomas@slax.org](mailto:tomas@slax.org)&gt;
 -   Boian Bonev &lt;[bbonev@ipacct.com](mailto:bbonev@ipacct.com)&gt;
 
+The iotop community gathers in #iotop on libera.chat:
+
+-   ircs://irc.libera.chat:6697/#iotop  
+-   https://web.libera.chat/#iotop
+
 Notable contributions (ordered by time of last contribution):
 
 -   EinProfiSpieler - README.md, build system improvements

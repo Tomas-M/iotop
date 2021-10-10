@@ -29,6 +29,12 @@ else
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
 
+ifdef GCCFANALIZER
+CFLAGS+=-fanalyzer
+endif
+
+INSTALL?=install
+
 HAVESREA:=$(shell if $(CC) -mno-stackrealign -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 ifeq ("$(HAVESREA)","no")
 CFLAGS:=$(filter-out -mno-stackrealign,$(CFLAGS))
@@ -87,12 +93,13 @@ install: $(TARGET)
 	$(E) STRIP $(TARGET)
 	$(Q)$(STRIP) $(TARGET)
 	$(E) INSTALL $(TARGET)
-	$(Q)install -TD -m 0755 $(TARGET) $(PREFIX)/sbin/$(TARGET)
-	$(Q)install -TD -m 0644 iotop.8 $(PREFIX)/share/man/man8/iotop.8
+	$(Q)$(INSTALL) -D -m 0755 $(TARGET) $(PREFIX)/sbin/$(TARGET)
+	$(Q)$(INSTALL) -D -m 0644 iotop.8 $(PREFIX)/share/man/man8/iotop.8
 
 uninstall:
 	$(E) UNINSTALL $(TARGET)
-	$(Q)rm $(PREFIX)/sbin/$(TARGET)
+	$(Q)rm -f $(PREFIX)/sbin/$(TARGET)
+	$(Q)rm -f $(PREFIX)/share/man/man8/iotop.8
 
 bld/.mkdir:
 	$(Q)mkdir -p bld

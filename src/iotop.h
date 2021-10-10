@@ -27,7 +27,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <sys/types.h>
 #include <stdint.h>
 
-#define VERSION "1.19"
+#define VERSION "1.20"
 
 typedef union {
 	struct _flags {
@@ -230,8 +230,17 @@ inline int value2scale(double val,double mx);
 inline int filter1(struct xxxid_stats *s);
 
 #ifndef KEY_CTRL_L
-#define KEY_CTRL_L 014
+#define KEY_CTRL_L 0x0c
 #endif
+#ifndef KEY_CTRL_T
+#define KEY_CTRL_T 0x14
+#endif
+
+/* delayacct.c */
+
+inline int has_task_delayacct(void);
+inline int read_task_delayacct(void);
+inline int write_task_delayacct(int da);
 
 #endif // __IOTOP_H__
 

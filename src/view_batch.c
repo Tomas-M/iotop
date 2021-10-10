@@ -82,6 +82,8 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 }
 
 inline void view_batch_init(void) {
+	if (!read_task_delayacct())
+		printf("Warning: task_delayacct is 0, enable by: echo 1 > /proc/sys/kernel/task_delayacct\n");
 }
 
 inline void view_batch_fini(void) {
