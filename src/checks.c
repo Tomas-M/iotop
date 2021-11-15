@@ -52,7 +52,7 @@ inline int system_checks(void) {
 			"\t$ sudo setcap 'cap_net_admin+eip' <path-to>/iotop\n"
 			"\n"
 			"Be warned that this will also allow other users to run it and get access to\n"
-			"information that normally should no be available to them.\n"
+			"information that normally should not be available to them.\n"
 			"\n"
 			"Please do not file bugs on iotop about this.\n");
 
