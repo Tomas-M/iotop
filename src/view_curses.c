@@ -61,6 +61,7 @@ static int dispcount=0; // how many lines we have after filters
 static int lastvisible=0; // last visible screen line
 static int showhelp=0; // flag if help window is shown
 static int showtda=0; // flag if delayacct warning window is shown
+static int has_tda=1; // flag if delayacct kernel support is enabled
 static WINDOW *whelp; // pop-up help window
 static int hx=1,hy=1,hw=2+2+3,hh=2; // help window size and position
 static size_t c1w=0,c2w=0,c3w=0,cdw=0; // help window column widths
@@ -298,6 +299,9 @@ static inline void view_warning(void) {
 	mvwprintw(wtda,whh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
 	for (i=1;i<whw;i++)
 		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
+	wattron(wtda,A_REVERSE);
+	mvwprintw(wtda,whh-1,1," press a key to hide ");
+	wattroff(wtda,A_REVERSE);
 }
 
 static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
@@ -511,13 +515,26 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	}
 	attroff(A_REVERSE);
 
-	if (dontrefresh&&(maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1)<(size_t)maxx)) {
-		size_t xpos=maxx-strlen("[freezed]");
+	if ((dontrefresh||!has_tda)&&(maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1)<(size_t)maxx)) {
+		size_t xpos=maxx;
+
+		if (!has_tda)
+			xpos-=strlen("[T]");
+		if (dontrefresh)
+			xpos-=strlen("[freezed]");
 
 		// don't step on column descriptions
 		if (xpos<maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1))
 			xpos=maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1);
-		mvprintw(ionice_line+1,xpos,"[freezed]");
+		if (!has_tda) {
+			attron(A_REVERSE);
+			attron(COLOR_PAIR(RED_PAIR));
+			mvprintw(ionice_line+1,xpos,"[T]");
+			attroff(COLOR_PAIR(RED_PAIR));
+			attroff(A_REVERSE);
+		}
+		if (dontrefresh)
+			mvprintw(ionice_line+1,xpos+(has_tda?0:strlen("[T]")),"[freezed]");
 	}
 	// easiest place to print debug info
 	//mvprintw(ionice_line+1,maxx-maxcmdline+strlen(COLUMN_L(0))+1," ... ",...);
@@ -1280,6 +1297,8 @@ static inline int curses_key(int ch) {
 		default:
 			return -1;
 	}
+	if (ch!=KEY_REFRESH&&ch!=KEY_RESIZE&&showtda)
+		showtda=0;
 	return 0;
 }
 
@@ -1366,10 +1385,14 @@ inline void view_curses_loop(void) {
 	for (;;) {
 		uint64_t now=monotime();
 
-		if (!read_task_delayacct())
-			showtda=1;
-		else
+		if (!read_task_delayacct()) {
+			if (has_tda)
+				showtda=1;
+			has_tda=0;
+		} else {
 			showtda=0;
+			has_tda=1;
+		}
 		if (bef+1000*params.delay<now&&!dontrefresh) {
 			bef=now;
 			if (ps)

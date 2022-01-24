@@ -4,6 +4,7 @@
 - mask swapin/io columns and io graph data source if kernel support is disabled
 - do not sort on masked columns but continue to sort on hidden ones
 - add a small red indicator for missing kernel support for swapin/io
+- let the warning window about missing task_delayacct be closed by enter/esc and reappear on state change
 
 --- history of finished TODO items ---
 
