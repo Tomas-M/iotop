@@ -349,9 +349,9 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		maxcmdline-=column_width[SORT_BY_READ];
 	if (!config.f.hidewrite)
 		maxcmdline-=column_width[SORT_BY_WRITE];
-	if (!config.f.hideswapin)
+	if (!config.f.hideswapin&&has_tda)
 		maxcmdline-=column_width[SORT_BY_SWAPIN];
-	if (!config.f.hideio)
+	if (!config.f.hideio&&has_tda)
 		maxcmdline-=column_width[SORT_BY_IO];
 	gr_width=maxcmdline/4;
 	if (gr_width<5)
@@ -496,6 +496,11 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			wi=maxcmdline;
 
 		if (config.opts[&config.f.hidepid-config.opts+i])
+			continue;
+		// mask swapin and io columns if there is no task_delayacct
+		if ((&config.f.hidepid-config.opts+i==&config.f.hideswapin-config.opts)&&!has_tda)
+			continue;
+		if ((&config.f.hidepid-config.opts+i==&config.f.hideio-config.opts)&&!has_tda)
 			continue;
 
 		wt=strlen(COLUMN_NAME(i));
@@ -693,9 +698,9 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				printw("%7.2f %-3.3s ",read_val,read_str);
 			if (!config.f.hidewrite)
 				printw("%7.2f %-3.3s ",write_val,write_str);
-			if (!config.f.hideswapin)
+			if (!config.f.hideswapin&&has_tda)
 				printw("%6.2f %% ",s->swapin_val);
-			if (!config.f.hideio)
+			if (!config.f.hideio&&has_tda)
 				printw("%6.2f %% ",s->blkio_val);
 			if (!config.f.hidegraph&&hrevpos>0) {
 				attron(A_REVERSE);
@@ -1008,9 +1013,13 @@ static inline int curses_key(int ch) {
 					if (ionice_pos!=-1)
 						ionice_col=(ionice_col+1)%3;
 			}
-			if (!in_ionice&&!in_filter)
+			if (!in_ionice&&!in_filter) {
 				if (++config.f.sort_by==SORT_BY_MAX)
 					config.f.sort_by=SORT_BY_PID;
+				while ((config.f.sort_by==SORT_BY_IO||config.f.sort_by==SORT_BY_SWAPIN)&&!has_tda)
+					if (++config.f.sort_by==SORT_BY_MAX)
+						config.f.sort_by=SORT_BY_PID;
+			}
 			break;
 		case KEY_LEFT:
 			if (in_ionice) {
@@ -1020,9 +1029,13 @@ static inline int curses_key(int ch) {
 					if (ionice_pos!=-1)
 						ionice_col=(ionice_col+3-1)%3;
 			}
-			if (!in_ionice&&!in_filter)
+			if (!in_ionice&&!in_filter) {
 				if (--config.f.sort_by==-1)
 					config.f.sort_by=SORT_BY_MAX-1;
+				while ((config.f.sort_by==SORT_BY_IO||config.f.sort_by==SORT_BY_SWAPIN)&&!has_tda)
+					if (--config.f.sort_by==-1)
+						config.f.sort_by=SORT_BY_MAX-1;
+			}
 			break;
 		case KEY_UP:
 			if (in_ionice) {
@@ -1389,6 +1402,8 @@ inline void view_curses_loop(void) {
 			if (has_tda)
 				showtda=1;
 			has_tda=0;
+			if (config.f.sort_by==SORT_BY_IO||config.f.sort_by==SORT_BY_SWAPIN)
+				config.f.sort_by=SORT_BY_GRAPH;
 		} else {
 			showtda=0;
 			has_tda=1;
