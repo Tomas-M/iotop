@@ -784,7 +784,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			if (!config.f.hidegraph) {
 				*graphstr=0;
 				for (j=0;j<gr_width;j++) {
-					uint8_t v1,v2;
+					uint8_t v1=0,v2=0;
 
 					switch (masked_grtype(0)) {
 						case E_GR_IO:
