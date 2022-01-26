@@ -114,21 +114,21 @@ processes or threads. This can be dynamically toggled by pressing \fBo\fR
 Turn on non\-interactive mode.
 Useful for logging I/O usage over time
 .TP
-\fB\-n\fR NUM, \fB\-\-iter\fR=\fINUM\fR
+\fB\-n\fR \fINUM\fR, \fB\-\-iter\fR=\fINUM\fR
 Set the number of iterations before quitting (never quit by default).
 This is most useful in non\-interactive mode
 .TP
-\fB\-d\fR SEC, \fB\-\-delay\fR=\fISEC\fR
+\fB\-d\fR \fISEC\fR, \fB\-\-delay\fR=\fISEC\fR
 Set the delay between iterations in seconds (1 second by default).
 Accepts non-integer values such as 1.1 seconds
 .TP
-\fB\-p\fR PID, \fB\-\-pid\fR=\fIPID\fR
+\fB\-p\fR \fIPID\fR, \fB\-\-pid\fR=\fIPID\fR
 A process/thread id to monitor (all by default)
 .TP
-\fB\-u\fR USER, \fB\-\-user\fR=\fIUSER\fR
+\fB\-u\fR \fIUSER\fR, \fB\-\-user\fR=\fIUSER\fR
 A user id to monitor (all by default).
 The value will always be resolved first unless it is prefixed by \fB+\fR in
-which case it is threated as numeric only. Values that do not resolve but appear
+which case it is treated as numeric only. Values that do not resolve but appear
 to be numeric are used as numeric
 .TP
 \fB\-P\fR, \fB\-\-processes\fR
@@ -177,6 +177,9 @@ Hide GRAPH column
 .TP
 \fB\-9\fR, \fB\-\-hide-command\fR
 Hide COMMAND column
+.TP
+\fB\-g\fR \fITYPE\fR, \fB\-\-grtype\fR=\fITYPE\fR
+Set GRAPH column data source. Accepted values for \fITYPE\fR are \fBio\fR, \fBr\fR, \fBw\fR and \fBrw\fR.
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress some lines of header (implies \-\-batch). This option can be specified
