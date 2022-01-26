@@ -172,15 +172,29 @@ static const int column_width[]={
 	0,  // COMMAND
 };
 
-#define __COLUMN_NAME(i) (((i)==SORT_BY_GRAPH)?grtype_text[config.f.grtype]:column_name[(i)])
+#define __COLUMN_NAME(i) (((i)==SORT_BY_GRAPH)?grtype_text[masked_grtype(0)]:column_name[(i)])
 #define __SAFE_INDEX(i) ((((i)%SORT_BY_MAX)+SORT_BY_MAX)%SORT_BY_MAX)
 #define COLUMN_NAME(i) __COLUMN_NAME(__SAFE_INDEX(i))
 #define COLUMN_L(i) COLUMN_NAME((i)-1)
 #define COLUMN_R(i) COLUMN_NAME((i)+1)
-#define SORT_CHAR_IND(x) ((config.f.sort_by==x)?(config.f.sort_order==SORT_ASC?1:2):0)
+#define SORT_CHAR_IND(x) ((masked_sort_by(0)==x)?(config.f.sort_order==SORT_ASC?1:2):0)
 #define SORT_CHAR(x) (((has_unicode&&unicode)?sort_dir_u:sort_dir_a)[SORT_CHAR_IND(x)])
 
 #define TIMEDIFF_IN_S(sta,end) ((((sta)==(end))||(sta)==0)?0.0001:(((end)-(sta))/1000.0))
+
+inline e_grtype masked_grtype(int isforward) {
+	if (!has_tda)
+		if (config.f.grtype==E_GR_IO||config.f.grtype==E_GR_SW)
+			return isforward?E_GR_R:E_GR_RW;
+	return config.f.grtype;
+}
+
+inline int masked_sort_by(int isforward) {
+	if (!has_tda)
+		if (config.f.sort_by==SORT_BY_IO||config.f.sort_by==SORT_BY_SWAPIN)
+			return isforward?SORT_BY_GRAPH:SORT_BY_WRITE;
+	return config.f.sort_by;
+}
 
 static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	static const uint8_t iohist_z[HISTORY_CNT]={0};
@@ -202,7 +216,7 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 			double su=0;
 			int i;
 
-			switch (config.f.grtype) {
+			switch (masked_grtype(0)) {
 				case E_GR_IO:
 					if (!memcmp(s->iohist,iohist_z,gr_width))
 						return 1;
@@ -559,7 +573,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		wt=strlen(COLUMN_NAME(i));
 		if (wt>wi-1)
 			wt=wi-1;
-		if (config.f.sort_by==i)
+		if (masked_sort_by(0)==i)
 			attron(A_BOLD);
 		snprintf(t,sizeof t,"%-*.*s%s",wt,wt,COLUMN_NAME(i),SORT_CHAR(i));
 		ts=u8strpadt(t,wi);
@@ -568,7 +582,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			free(ts);
 		} else
 			printw("%-*.*s",wi,wi,t);
-		if (config.f.sort_by==i)
+		if (masked_sort_by(0)==i)
 			attroff(A_BOLD);
 	}
 	attroff(A_REVERSE);
@@ -619,7 +633,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (ionice_pos>=lastvisible&&lastvisible>ionice_line+2)
 			ionice_pos=lastvisible-1;
 	}
-	if (config.f.grtype!=E_GR_IO&&!config.f.hidegraph) { // get the maximum visible value, normalize all graphs according to that
+	// get the maximum visible value, normalize all graphs according to that (R, W and R+W only)
+	if (masked_grtype(0)!=E_GR_IO&&masked_grtype(0)!=E_GR_SW&&!config.f.hidegraph) {
 		int saveline=line;
 
 		for (i=0;cs->sor&&i<diff_len;i++) {
@@ -647,21 +662,21 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				}
 
 				for (j=0;j<gr_width;j++) {
-					if (config.f.grtype==E_GR_R) {
+					if (masked_grtype(0)==E_GR_R) {
 						if (has_unicode&&unicode) {
 							maxvisible=mymax(maxvisible,s->readhist[j*2]);
 							maxvisible=mymax(maxvisible,s->readhist[j*2+1]);
 						} else
 							maxvisible=mymax(maxvisible,s->readhist[j]);
 					}
-					if (config.f.grtype==E_GR_W) {
+					if (masked_grtype(0)==E_GR_W) {
 						if (has_unicode&&unicode) {
 							maxvisible=mymax(maxvisible,s->writehist[j*2]);
 							maxvisible=mymax(maxvisible,s->writehist[j*2+1]);
 						} else
 							maxvisible=mymax(maxvisible,s->writehist[j]);
 					}
-					if (config.f.grtype==E_GR_RW) {
+					if (masked_grtype(0)==E_GR_RW) {
 						if (has_unicode&&unicode) {
 							maxvisible=mymax(maxvisible,s->readhist[j*2]+s->writehist[j*2]);
 							maxvisible=mymax(maxvisible,s->readhist[j*2+1]+s->writehist[j*2+1]);
@@ -766,7 +781,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				for (j=0;j<gr_width;j++) {
 					uint8_t v1,v2;
 
-					switch (config.f.grtype) {
+					switch (masked_grtype(0)) {
 						case E_GR_IO:
 							if (has_unicode&&unicode) {
 								v1=s->iohist[j*2];
@@ -1167,9 +1182,7 @@ static inline int curses_key(int ch) {
 			if (!in_ionice&&!in_filter) {
 				if (++config.f.sort_by==SORT_BY_MAX)
 					config.f.sort_by=SORT_BY_TID;
-				while ((config.f.sort_by==SORT_BY_IO||config.f.sort_by==SORT_BY_SWAPIN)&&!has_tda)
-					if (++config.f.sort_by==SORT_BY_MAX)
-						config.f.sort_by=SORT_BY_TID;
+				config.f.sort_by=masked_sort_by(1);
 			}
 			break;
 		case KEY_LEFT:
@@ -1183,9 +1196,7 @@ static inline int curses_key(int ch) {
 			if (!in_ionice&&!in_filter) {
 				if (--config.f.sort_by==-1)
 					config.f.sort_by=SORT_BY_MAX-1;
-				while ((config.f.sort_by==SORT_BY_IO||config.f.sort_by==SORT_BY_SWAPIN)&&!has_tda)
-					if (--config.f.sort_by==-1)
-						config.f.sort_by=SORT_BY_MAX-1;
+				config.f.sort_by=masked_sort_by(0);
 			}
 			break;
 		case KEY_UP:
@@ -1299,15 +1310,14 @@ static inline int curses_key(int ch) {
 			config.f.grtype++;
 			if (config.f.grtype>E_GR_MAX)
 				config.f.grtype=E_GR_MIN;
-			if (!has_tda&&(config.f.grtype==E_GR_IO||config.f.grtype==E_GR_SW))
-				config.f.grtype=E_GR_R;
+			config.f.grtype=masked_grtype(1);
 			break;
 		case 'G': // roll grtype backward
-			config.f.grtype--;
-			if (config.f.grtype<E_GR_MIN)
+			if (config.f.grtype>E_GR_MIN)
+				config.f.grtype--;
+			else
 				config.f.grtype=E_GR_MAX;
-			if (!has_tda&&(config.f.grtype==E_GR_IO||config.f.grtype==E_GR_SW))
-				config.f.grtype=E_GR_RW;
+			config.f.grtype=masked_grtype(0);
 			break;
 		case 'i':
 		case 'I':
@@ -1567,10 +1577,6 @@ inline void view_curses_loop(void) {
 			if (has_tda)
 				showtda=1;
 			has_tda=0;
-			if (config.f.sort_by==SORT_BY_IO||config.f.sort_by==SORT_BY_SWAPIN)
-				config.f.sort_by=SORT_BY_GRAPH;
-			if (config.f.grtype==E_GR_IO)
-				config.f.grtype=E_GR_RW;
 		} else {
 			showtda=0;
 			has_tda=1;

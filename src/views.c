@@ -218,7 +218,6 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 	struct xxxid_stats **ppa=(struct xxxid_stats **)a;
 	struct xxxid_stats **ppb=(struct xxxid_stats **)b;
 	struct xxxid_stats *pa,*pb;
-	int type=config.f.sort_by;
 	static int grlen=0;
 	int res=0;
 
@@ -230,13 +229,13 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 	pa=*ppa;
 	pb=*ppb;
 
-	switch (type) {
+	switch (masked_sort_by(0)) {
 		case SORT_BY_GRAPH: {
 			double da=0,db=0;
 			int aa=0,ab=0;
 			int i;
 
-			switch (config.f.grtype) {
+			switch (masked_grtype(0)) {
 				case E_GR_IO:
 					if (grlen==0)
 						grlen=HISTORY_CNT;

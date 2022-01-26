@@ -161,6 +161,9 @@ inline void view_curses_fini(void);
 
 inline unsigned int curses_sleep(unsigned int seconds);
 
+inline e_grtype masked_grtype(int isforward);
+inline int masked_sort_by(int isforward);
+
 /* utils.c */
 
 inline char *read_cmdline(int pid,int isshort);
