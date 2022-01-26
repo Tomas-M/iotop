@@ -55,10 +55,10 @@ typedef union {
 		int hideio;
 		int hidegraph;
 		int hidecmd;
-		int sort_by;
-		int sort_order;
 		int deadx;
 		e_grtype grtype;
+		int sort_by;
+		int sort_order;
 	} f;
 	int opts[20];
 } config_t;
