@@ -180,7 +180,7 @@ Hide COMMAND column
 .TP
 \fB\-g\fR \fITYPE\fR, \fB\-\-grtype\fR=\fITYPE\fR
 Set GRAPH column data source. Accepted values for \fITYPE\fR are \fBio\fR,
-\fBr\fR, \fBw\fR and \fBrw\fR.
+\fBr\fR, \fBw\fR, \fBrw\fR and \fBsw\fR.
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress some lines of header (implies \-\-batch). This option can be specified
@@ -260,7 +260,8 @@ Toggle showing the column (column number corresponds to the shortcut)
 Show all columns
 .TP
 \fBg\fR, \fBG\fR
-Cycle GRAPH source (IO, R, W, R+W)
+Cycle GRAPH source (\fBIO\fR=IO, \fBR\fR=DISK READ , \fBW\fR=DISK WRITE, \fBR+W\fR=DISK READ+DISK WRITE,
+\fBSW\fR=SWAPIN). Using \fBg\fR will cycle forward and \fBG\fR will cycle backward.
 .TP
 \fBi\fR, \fBI\fR
 IOnice a process/thread (depends on process/thread display mode)
