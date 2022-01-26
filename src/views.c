@@ -111,6 +111,8 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 
 		memcpy(c->iohist+1,p->iohist,sizeof c->iohist-sizeof *c->iohist);
 		c->iohist[0]=value2scale(c->blkio_val,100.0);
+		memcpy(c->sihist+1,p->sihist,sizeof c->sihist-sizeof *c->sihist);
+		c->sihist[0]=value2scale(c->swapin_val,100.0);
 		memcpy(c->readhist+1,p->readhist,sizeof c->readhist-sizeof *c->readhist);
 		c->readhist[0]=rv;
 		memcpy(c->writehist+1,p->writehist,sizeof c->writehist-sizeof *c->writehist);
@@ -148,6 +150,8 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 				// shift history one step
 				memmove(p->iohist+1,p->iohist,sizeof p->iohist-sizeof *p->iohist);
 				p->iohist[0]=0;
+				memmove(p->sihist+1,p->sihist,sizeof p->sihist-sizeof *p->sihist);
+				p->sihist[0]=0;
 				memmove(p->readhist+1,p->readhist,sizeof p->readhist-sizeof *p->readhist);
 				p->readhist[0]=0.0;
 				memmove(p->writehist+1,p->writehist,sizeof p->writehist-sizeof *p->writehist);
@@ -285,6 +289,15 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 						res=-1;
 					else
 						res=0;
+					break;
+				case E_GR_SW:
+					if (grlen==0)
+						grlen=HISTORY_CNT;
+					for (i=0;i<grlen;i++) {
+						aa+=pa->sihist[i];
+						ab+=pb->sihist[i];
+					}
+					res=aa-ab;
 					break;
 			}
 			break;

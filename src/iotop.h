@@ -34,6 +34,9 @@ typedef enum {
 	E_GR_R,
 	E_GR_W,
 	E_GR_RW,
+	E_GR_SW,
+	E_GR_MIN=E_GR_IO,
+	E_GR_MAX=E_GR_SW,
 } e_grtype;
 
 typedef union {
@@ -108,6 +111,7 @@ struct xxxid_stats {
 	char *pw_name;
 
 	uint8_t iohist[HISTORY_CNT]; // io history data
+	uint8_t sihist[HISTORY_CNT]; // swapin history data
 	double readhist[HISTORY_CNT]; // read history data
 	double writehist[HISTORY_CNT]; // write history data
 

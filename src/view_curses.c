@@ -121,6 +121,7 @@ static const char *grtype_text[]={
 	"GRAPH[R]",
 	"GRAPH[W]",
 	"GRAPH[R+W]",
+	"GRAPH[SW]",
 };
 
 static const char *column_name[]={
@@ -222,6 +223,10 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 					for (i=0;i<gr_width;i++)
 						su+=s->readhist[i]+s->writehist[i];
 					if (su<=0)
+						return 1;
+					break;
+				case E_GR_SW:
+					if (!memcmp(s->sihist,iohist_z,gr_width))
 						return 1;
 					break;
 			}
@@ -677,7 +682,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		int th_prio_diff,th_first,th_have_filtered,th_first_id,th_last_id;
 		struct xxxid_stats *ms=cs->sor[i],*s;
 		char read_str[4],write_str[4];
-		char iohist[HISTORY_POS*5];
+		char graphstr[HISTORY_POS*5];
 		double read_val,write_val;
 		char *pw_name,*cmdline;
 		char *pwt,*cmdt;
@@ -757,7 +762,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 			hrevpos=-1;
 			if (!config.f.hidegraph) {
-				*iohist=0;
+				*graphstr=0;
 				for (j=0;j<gr_width;j++) {
 					uint8_t v1,v2;
 
@@ -790,28 +795,35 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 							} else
 								v1=value2scale(s->readhist[j*2]+s->writehist[j*2],maxvisible);
 							break;
+						case E_GR_SW:
+							if (has_unicode&&unicode) {
+								v1=s->sihist[j*2];
+								v2=s->sihist[j*2+1];
+							} else
+								v1=s->sihist[j];
+							break;
 					}
 					if (config.f.deadx) {
 						// +1 avoids stepping on a char with one valid and one invalid value
 						if (((has_unicode&&unicode)?j*2+1:j)<s->exited)
-							strcat(iohist,"x");
+							strcat(graphstr,"x");
 						else {
 							if (has_unicode&&unicode)
-								strcat(iohist,br_graph[v1][v2]);
+								strcat(graphstr,br_graph[v1][v2]);
 							else
-								strcat(iohist,as_graph[v1]);
+								strcat(graphstr,as_graph[v1]);
 						}
 					} else {
 						// stepping on a char with one valid and one invalid value is not a problem with background
 						if (has_unicode&&unicode)
-							strcat(iohist,br_graph[v1][v2]);
+							strcat(graphstr,br_graph[v1][v2]);
 						else
-							strcat(iohist,as_graph[v1]);
+							strcat(graphstr,as_graph[v1]);
 						if (((has_unicode&&unicode)?j*2:j)<s->exited)
-							hrevpos=strlen(iohist);
+							hrevpos=strlen(graphstr);
 					}
 				}
-				strcat(iohist," ");
+				strcat(graphstr," ");
 			}
 
 			if (in_ionice&&ionice_pos==line) {
@@ -843,11 +855,11 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				printw("%6.2f %% ",s->blkio_val);
 			if (!config.f.hidegraph&&hrevpos>0) {
 				attron(A_REVERSE);
-				printw("%*.*s",hrevpos,hrevpos,iohist);
+				printw("%*.*s",hrevpos,hrevpos,graphstr);
 				attroff(A_REVERSE);
-				printw("%s",iohist+hrevpos);
+				printw("%s",graphstr+hrevpos);
 			} else
-				printw("%s",!config.f.hidegraph?iohist:"");
+				printw("%s",!config.f.hidegraph?graphstr:"");
 			if (!config.f.hidecmd) {
 				const char *ss=(has_unicode&&unicode)?th_lines_u[0]:th_lines_a[0];
 
@@ -1283,11 +1295,19 @@ static inline int curses_key(int ch) {
 		case 'C':
 			config.f.fullcmdline=!config.f.fullcmdline;
 			break;
-		case 'g':
-		case 'G':
+		case 'g': // roll grtype forward
 			config.f.grtype++;
-			if (config.f.grtype>E_GR_RW)
-				config.f.grtype=has_tda?E_GR_IO:E_GR_R;
+			if (config.f.grtype>E_GR_MAX)
+				config.f.grtype=E_GR_MIN;
+			if (!has_tda&&(config.f.grtype==E_GR_IO||config.f.grtype==E_GR_SW))
+				config.f.grtype=E_GR_R;
+			break;
+		case 'G': // roll grtype backward
+			config.f.grtype--;
+			if (config.f.grtype<E_GR_MIN)
+				config.f.grtype=E_GR_MAX;
+			if (!has_tda&&(config.f.grtype==E_GR_IO||config.f.grtype==E_GR_SW))
+				config.f.grtype=E_GR_RW;
 			break;
 		case 'i':
 		case 'I':
