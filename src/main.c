@@ -76,7 +76,7 @@ static inline void print_help(void) {
 		"  -7, --hide-io          hide IO column\n"
 		"  -8, --hide-graph       hide GRAPH column\n"
 		"  -9, --hide-command     hide COMMAND column\n"
-		"  -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw)\n"
+		"  -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)\n"
 		"  -q, --quiet            suppress some lines of header (implies --batch)\n"
 		"  -x, --dead-x           show dead processes/threads with letter x\n",
 		progname
@@ -169,6 +169,8 @@ static inline void parse_args(int argc,char *argv[]) {
 					config.f.grtype=E_GR_W;
 				else if (!strcmp(optarg,"rw"))
 					config.f.grtype=E_GR_RW;
+				else if (!strcmp(optarg,"sw"))
+					config.f.grtype=E_GR_SW;
 				else {
 					fprintf(stderr,"%s: invalid value %s for graph type\n",progname,optarg);
 					exit(EXIT_FAILURE);
