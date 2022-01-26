@@ -320,7 +320,11 @@ static inline void view_help(void) {
 	for (p=thelp,i=1;i<hh-1;i++,p++)
 		mvwprintw(whelp,i,0," %-*.*s %-*.*s %-*.*s - %-*.*s ",a,a,p->k1?p->k1:"",b,b,p->k2?p->k2:"",c,c,p->k3?p->k3:"",d,d,p->descr);
 	mvwprintw(whelp,hh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
-	for (i=1;i<hw;i++)
+	wattron(whelp,A_REVERSE);
+	for (i=1;i<hw&&i<(int)strlen(" iotop "VERSION" ");i++)
+		mvwprintw(whelp,hh-1,i,"%c",(" iotop "VERSION" ")[i]);
+	wattroff(whelp,A_REVERSE);
+	for (i=1+strlen(" iotop "VERSION" ");i<hw;i++)
 		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
 }
 
