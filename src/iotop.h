@@ -60,6 +60,7 @@ typedef union {
 		int hidecmd;
 		int deadx;
 		e_grtype grtype;
+		int helptype;
 		int sort_by;
 		int sort_order;
 	} f;

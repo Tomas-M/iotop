@@ -34,6 +34,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define HEADER_XL_FORMAT "Total Read: %7.2f %s%s Write: %7.2f %s%s | Current Read: %7.2f %s%s Write: %7.2f %s%s"
 
 #define RED_PAIR 1
+#define CYAN_PAIR 2
 
 #define mymax(a,b) (((a)>(b))?(a):(b))
 
@@ -61,7 +62,7 @@ static int scrollpos=0; // scroll view start position
 static int viewsizey=0; // how many lines we can show on screen
 static int dispcount=0; // how many lines we have after filters
 static int lastvisible=0; // last visible screen line
-static int showhelp=0; // flag if help window is shown
+static int noinlinehelp=0; // should inline help be allowed
 static int showtda=0; // flag if delayacct warning window is shown
 static int has_tda=1; // flag if delayacct kernel support is enabled
 static WINDOW *whelp; // pop-up help window
@@ -94,7 +95,6 @@ const s_helpitem thelp[]={
 	{.descr="Toggle showing only processes with IO activity",.k2="o",.k3="O"},
 	{.descr="Toggle showing processes/threads",.k2="p",.k3="P"},
 	{.descr="Toggle showing accumulated/current values",.k2="a",.k3="A"},
-	{.descr="Toggle showing this help",.k1="          ?",.k2="h",.k3="H"}, // padded to match <page-down>
 	{.descr="Toggle showing full command line",.k2="c",.k3="C"},
 	{.descr="Toggle showing TID",.k2="1"},
 	{.descr="Toggle showing PRIO",.k2="2"},
@@ -106,13 +106,15 @@ const s_helpitem thelp[]={
 	{.descr="Toggle showing GRAPH",.k2="8"},
 	{.descr="Toggle showing COMMAND",.k2="9"},
 	{.descr="Show all columns",.k2="0"},
-	{.descr="Cycle GRAPH source (IO, R, W, R+W)",.k2="g",.k3="G"},
+	{.descr="Cycle GRAPH source (IO, R, W, R+W, SW)",.k2="g",.k3="G"},
+	{.descr="Cycle showing this, inline or no help",.k1="          ?",.k2="h",.k3="H"}, // padded to match <page-down>
 	{.descr="IOnice a process/thread",.k2="i",.k3="I"},
 	{.descr="Change UID and PID filters",.k2="f",.k3="F"},
 	{.descr="Toggle using Unicode/ASCII characters",.k2="u",.k3="U"},
-	{.descr="Toggle exited processes x/inverse",.k2="x",.k3="X"},
+	{.descr="Toggle exited processes xxx/inverse",.k2="x",.k3="X"},
 	{.descr="Toggle data freeze",.k2="s",.k3="S"},
-	{.descr="Toggle task_delayacct (if available)",.k1="<ctrl-t>",.k2="",.k3=""},
+	{.descr="Toggle task_delayacct (if available)",.k1="<Ctrl-T>",.k2="",.k3=""},
+	{.descr="Redraw screen",.k1="<Ctrl-L>",.k2="",.k3=""},
 	{.descr=NULL},
 };
 
@@ -616,9 +618,11 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&unicode)?gr_width*2:gr_width));
 	arr_sort(cs,iotop_sort_cb);
 
+	if (maxy<10)
+		noinlinehelp=1;
 	line=ionice_line+2;
 	lastline=line;
-	viewsizey=maxy-1-ionice_line;
+	viewsizey=maxy-1-ionice_line-(noinlinehelp==0&&config.f.helptype==2?2:0);
 	if (viewsizey<0)
 		viewsizey=0;
 	skip=scrollpos;
@@ -685,7 +689,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					}
 				}
 
-				if (line>maxy-1) // do not draw out of screen
+				if (line>maxy-1-(noinlinehelp==0&&config.f.helptype==2?2:0)) // do not draw out of screen
 					goto donemax;
 			}
 		}
@@ -907,13 +911,13 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 			line++;
 			lastline=line;
-			if (line>maxy-1) // do not draw out of screen
+			if (line>maxy-1-(noinlinehelp==0&&config.f.helptype==2?2:0)) // do not draw out of screen
 				goto donedraw;
 		}
 	}
 donedraw:
 	lastvisible=lastline; // last selectable screen line
-	for (line=lastline;line<=maxy-1;line++) // always draw empty lines
+	for (line=lastline;line<=maxy-1-(noinlinehelp==0&&config.f.helptype==2?2:0);line++) // always draw empty lines
 		mvhline(line,0,' ',maxx);
 
 	if (in_ionice) {
@@ -1057,9 +1061,150 @@ donedraw:
 	if (show)
 		move(promptx,prompty);
 	curs_set(show);
-	draw_vscroll(maxx-1,head1row?2:3,maxy-1,dispcount,saveskip);
+	draw_vscroll(maxx-1,head1row?2:3,maxy-1-(noinlinehelp==0&&config.f.helptype==2?2:0),dispcount,saveskip);
+	if (config.f.helptype==2) {
+		attron(A_REVERSE);
+
+		mvhline(maxy-2,0,' ',maxx);
+		mvhline(maxy-1,0,' ',maxx);
+
+		attron(A_BOLD);
+		mvprintw(maxy-2,0,"keys: ");
+		attroff(A_BOLD);
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("^L");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": redraw ");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("q");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": quit ");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("i");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": ionice ");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("f");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": uid/pid ");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("o");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": %s ",config.f.only?"all":"active");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("p");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": %s ",config.f.processes?"threads":"procs");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("a");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": %s ",config.f.accumulated?"bandwidth":"accum");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("g");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": graph src ");
+
+		if (has_unicode) {
+			attron(A_UNDERLINE);
+			attron(COLOR_PAIR(CYAN_PAIR));
+			printw("u");
+			attroff(COLOR_PAIR(CYAN_PAIR));
+			attroff(A_UNDERLINE);
+			printw(": %s ",unicode?"ASCII":"UTF");
+		}
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("h/?");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": help");
+
+		attron(A_BOLD);
+		mvprintw(maxy-1,0,"sort: ");
+		attroff(A_BOLD);
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("r");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": %s ",config.f.sort_order==SORT_ASC?"desc":"asc");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("left/right");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": select ");
+
+		attron(A_BOLD);
+		printw("column: ");
+		attroff(A_BOLD);
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("1-9");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": toggle ");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("0");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": show all ");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("(pg)up/dn/home/end");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": scroll ");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("x");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": %s ",config.f.deadx?"bkg":"xxx");
+
+		attron(A_UNDERLINE);
+		attron(COLOR_PAIR(CYAN_PAIR));
+		printw("s");
+		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(A_UNDERLINE);
+		printw(": %s ",dontrefresh?"unfreeze":"freeze");
+
+		attroff(A_REVERSE);
+	}
 	wnoutrefresh(stdscr);
-	if (showhelp) {
+	if (config.f.helptype==1) {
 		int rhh,rhw;
 
 		if (hw+2>=maxx)
@@ -1300,8 +1445,19 @@ static inline int curses_key(int ch) {
 			break;
 		case '?':
 		case 'h':
+			config.f.helptype++;
+			if (config.f.helptype>2)
+				config.f.helptype=0;
+			if (noinlinehelp&&config.f.helptype==2)
+				config.f.helptype=0;
+			break;
 		case 'H':
-			showhelp=!showhelp;
+			if (config.f.helptype)
+				config.f.helptype--;
+			else
+				config.f.helptype=2;
+			if (noinlinehelp&&config.f.helptype==2)
+				config.f.helptype=1;
 			break;
 		case 'c':
 		case 'C':
@@ -1360,8 +1516,8 @@ static inline int curses_key(int ch) {
 			config.f.deadx=!config.f.deadx;
 			break;
 		case 27: // ESC
-			if (showhelp&&!in_ionice&&!in_filter)
-				showhelp=0;
+			if (config.f.helptype==1&&!in_ionice&&!in_filter)
+				config.f.helptype=0;
 			// unlike help window these cannot happen at the same time
 			if (in_ionice)
 				in_ionice=0;
@@ -1478,7 +1634,7 @@ static inline int curses_key(int ch) {
 		case KEY_CTRL_T:
 			write_task_delayacct(!read_task_delayacct());
 			break;
-		case KEY_CTRL_L:
+		case KEY_CTRL_L: // Ctrl-L
 			redrawwin(stdscr);
 		case KEY_REFRESH:
 		case KEY_RESIZE:
@@ -1517,6 +1673,7 @@ inline void view_curses_init(void) {
 	nodelay(stdscr,TRUE);
 	start_color();
 	init_pair(RED_PAIR,COLOR_RED,COLOR_BLACK);
+	init_pair(CYAN_PAIR,COLOR_CYAN,COLOR_BLACK);
 
 	for (p=thelp;p->descr;p++) {
 		if (p->k1&&strlen(p->k1)>c1w)
