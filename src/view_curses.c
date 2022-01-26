@@ -35,6 +35,8 @@ You should have received a copy of the GNU General Public License along with thi
 
 #define RED_PAIR 1
 
+#define mymax(a,b) (((a)>(b))?(a):(b))
+
 static int in_ionice=0; // ionice interface flag and state vars
 static char ionice_id[50];
 static int ionice_pos=-1;
@@ -104,6 +106,7 @@ const s_helpitem thelp[]={
 	{.descr="Toggle showing GRAPH",.k2="8"},
 	{.descr="Toggle showing COMMAND",.k2="9"},
 	{.descr="Show all columns",.k2="0"},
+	{.descr="Cycle GRAPH source (IO, R, W, R+W)",.k2="g",.k3="G"},
 	{.descr="IOnice a process/thread",.k2="i",.k3="I"},
 	{.descr="Change UID and PID filters",.k2="f",.k3="F"},
 	{.descr="Toggle using Unicode/ASCII characters",.k2="u",.k3="U"},
@@ -111,6 +114,13 @@ const s_helpitem thelp[]={
 	{.descr="Toggle data freeze",.k2="s",.k3="S"},
 	{.descr="Toggle task_delayacct (if available)",.k1="<ctrl-t>",.k2="",.k3=""},
 	{.descr=NULL},
+};
+
+static const char *grtype_text[]={
+	"GRAPH[IO]",
+	"GRAPH[R]",
+	"GRAPH[W]",
+	"GRAPH[R+W]",
 };
 
 static const char *column_name[]={
@@ -121,7 +131,7 @@ static const char *column_name[]={
 	"DISK WRITE",
 	"SWAPIN",
 	"IO",
-	"GRAPH",
+	"xxxxx[xxx]",
 	"COMMAND",
 };
 
@@ -161,7 +171,7 @@ static const int column_width[]={
 	0,  // COMMAND
 };
 
-#define __COLUMN_NAME(i) (column_name[(i)])
+#define __COLUMN_NAME(i) (((i)==SORT_BY_GRAPH)?grtype_text[config.f.grtype]:column_name[(i)])
 #define __SAFE_INDEX(i) ((((i)%SORT_BY_MAX)+SORT_BY_MAX)%SORT_BY_MAX)
 #define COLUMN_NAME(i) __COLUMN_NAME(__SAFE_INDEX(i))
 #define COLUMN_L(i) COLUMN_NAME((i)-1)
@@ -179,10 +189,43 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 		return 1;
 	// visible history is non-zero
 	if (config.f.only) {
-		if (!config.f.hidegraph&&!memcmp(s->iohist,iohist_z,gr_width))
-			return 1;
-		if (config.f.hidegraph&&s->blkio_val<=0)
-			return 1;
+		if (config.f.hidegraph) {
+			if (has_tda) {
+				if (s->blkio_val<=0)
+					return 1;
+			} else {
+				if (s->read_val+s->write_val<=0)
+					return 1;
+			}
+		} else {
+			double su=0;
+			int i;
+
+			switch (config.f.grtype) {
+				case E_GR_IO:
+					if (!memcmp(s->iohist,iohist_z,gr_width))
+						return 1;
+					break;
+				case E_GR_R:
+					for (i=0;i<gr_width;i++)
+						su+=s->readhist[i];
+					if (su<=0)
+						return 1;
+					break;
+				case E_GR_W:
+					for (i=0;i<gr_width;i++)
+						su+=s->writehist[i];
+					if (su<=0)
+						return 1;
+					break;
+				case E_GR_RW:
+					for (i=0;i<gr_width;i++)
+						su+=s->readhist[i]+s->writehist[i];
+					if (su<=0)
+						return 1;
+					break;
+			}
+		}
 	}
 	if (config.f.processes&&s->tid!=s->pid)
 		return 1;
@@ -316,6 +359,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	char str_a_read[4],str_a_write[4];
 	char *head1row_format="";
 	int promptx=0,prompty=0,show;
+	double maxvisible=0.0;
 	double mx_t_r=1000.0;
 	double mx_t_w=1000.0;
 	double mx_a_r=1000.0;
@@ -488,7 +532,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		char t[50];
 		char *ts;
 
-		if (i==SORT_BY_PID)
+		if (i==SORT_BY_TID)
 			wi=maxpidlen+2;
 		if (i==SORT_BY_GRAPH)
 			wi=gr_width+1;
@@ -565,6 +609,65 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			ionice_pos=ionice_line+2;
 		if (ionice_pos>=lastvisible&&lastvisible>ionice_line+2)
 			ionice_pos=lastvisible-1;
+	}
+	if (config.f.grtype!=E_GR_IO&&!config.f.hidegraph) { // get the maximum visible value, normalize all graphs according to that
+		int saveline=line;
+
+		for (i=0;cs->sor&&i<diff_len;i++) {
+			struct xxxid_stats *ms=cs->sor[i],*s;
+
+			if (ms->pid!=ms->tid)
+				continue;
+			if (ms->threads) // TODO: redundant call below
+				arr_sort(ms->threads,iotop_sort_cb);
+			// show only processes, if configured
+			for (k=-1;k<(config.f.processes?0:(ms->threads?ms->threads->length:0));k++) {
+				if (k<0)
+					s=ms;
+				else {
+					if (!ms->threads||!ms->threads->sor)
+						break;
+					s=ms->threads->sor[k];
+				}
+				// apply filters
+				if (filter_view(s,(has_unicode&&unicode)?gr_width*2:gr_width))
+					continue;
+				if (skip) {
+					skip--;
+					continue;
+				}
+
+				for (j=0;j<gr_width;j++) {
+					if (config.f.grtype==E_GR_R) {
+						if (has_unicode&&unicode) {
+							maxvisible=mymax(maxvisible,s->readhist[j*2]);
+							maxvisible=mymax(maxvisible,s->readhist[j*2+1]);
+						} else
+							maxvisible=mymax(maxvisible,s->readhist[j]);
+					}
+					if (config.f.grtype==E_GR_W) {
+						if (has_unicode&&unicode) {
+							maxvisible=mymax(maxvisible,s->writehist[j*2]);
+							maxvisible=mymax(maxvisible,s->writehist[j*2+1]);
+						} else
+							maxvisible=mymax(maxvisible,s->writehist[j]);
+					}
+					if (config.f.grtype==E_GR_RW) {
+						if (has_unicode&&unicode) {
+							maxvisible=mymax(maxvisible,s->readhist[j*2]+s->writehist[j*2]);
+							maxvisible=mymax(maxvisible,s->readhist[j*2+1]+s->writehist[j*2+1]);
+						} else
+							maxvisible=mymax(maxvisible,s->readhist[j]+s->writehist[j]);
+					}
+				}
+
+				if (line>maxy-1) // do not draw out of screen
+					goto donemax;
+			}
+		}
+	donemax:
+		line=saveline;
+		skip=saveskip;
 	}
 	for (i=0;cs->sor&&i<diff_len;i++) {
 		int th_prio_diff,th_first,th_have_filtered,th_first_id,th_last_id;
@@ -652,22 +755,54 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			if (!config.f.hidegraph) {
 				*iohist=0;
 				for (j=0;j<gr_width;j++) {
+					uint8_t v1,v2;
+
+					switch (config.f.grtype) {
+						case E_GR_IO:
+							if (has_unicode&&unicode) {
+								v1=s->iohist[j*2];
+								v2=s->iohist[j*2+1];
+							} else
+								v1=s->iohist[j];
+							break;
+						case E_GR_R:
+							if (has_unicode&&unicode) {
+								v1=value2scale(s->readhist[j*2],maxvisible);
+								v2=value2scale(s->readhist[j*2+1],maxvisible);
+							} else
+								v1=value2scale(s->readhist[j*2],maxvisible);
+							break;
+						case E_GR_W:
+							if (has_unicode&&unicode) {
+								v1=value2scale(s->writehist[j*2],maxvisible);
+								v2=value2scale(s->writehist[j*2+1],maxvisible);
+							} else
+								v1=value2scale(s->writehist[j*2],maxvisible);
+							break;
+						case E_GR_RW:
+							if (has_unicode&&unicode) {
+								v1=value2scale(s->readhist[j*2]+s->writehist[j*2],maxvisible);
+								v2=value2scale(s->readhist[j*2+1]+s->writehist[j*2+1],maxvisible);
+							} else
+								v1=value2scale(s->readhist[j*2]+s->writehist[j*2],maxvisible);
+							break;
+					}
 					if (config.f.deadx) {
 						// +1 avoids stepping on a char with one valid and one invalid value
 						if (((has_unicode&&unicode)?j*2+1:j)<s->exited)
 							strcat(iohist,"x");
 						else {
 							if (has_unicode&&unicode)
-								strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
+								strcat(iohist,br_graph[v1][v2]);
 							else
-								strcat(iohist,as_graph[s->iohist[j]]);
+								strcat(iohist,as_graph[v1]);
 						}
 					} else {
 						// stepping on a char with one valid and one invalid value is not a problem with background
 						if (has_unicode&&unicode)
-							strcat(iohist,br_graph[s->iohist[j*2]][s->iohist[j*2+1]]);
+							strcat(iohist,br_graph[v1][v2]);
 						else
-							strcat(iohist,as_graph[s->iohist[j]]);
+							strcat(iohist,as_graph[v1]);
 						if (((has_unicode&&unicode)?j*2:j)<s->exited)
 							hrevpos=strlen(iohist);
 					}
@@ -1015,10 +1150,10 @@ static inline int curses_key(int ch) {
 			}
 			if (!in_ionice&&!in_filter) {
 				if (++config.f.sort_by==SORT_BY_MAX)
-					config.f.sort_by=SORT_BY_PID;
+					config.f.sort_by=SORT_BY_TID;
 				while ((config.f.sort_by==SORT_BY_IO||config.f.sort_by==SORT_BY_SWAPIN)&&!has_tda)
 					if (++config.f.sort_by==SORT_BY_MAX)
-						config.f.sort_by=SORT_BY_PID;
+						config.f.sort_by=SORT_BY_TID;
 			}
 			break;
 		case KEY_LEFT:
@@ -1143,6 +1278,12 @@ static inline int curses_key(int ch) {
 		case 'c':
 		case 'C':
 			config.f.fullcmdline=!config.f.fullcmdline;
+			break;
+		case 'g':
+		case 'G':
+			config.f.grtype++;
+			if (config.f.grtype>E_GR_RW)
+				config.f.grtype=has_tda?E_GR_IO:E_GR_R;
 			break;
 		case 'i':
 		case 'I':
@@ -1404,6 +1545,8 @@ inline void view_curses_loop(void) {
 			has_tda=0;
 			if (config.f.sort_by==SORT_BY_IO||config.f.sort_by==SORT_BY_SWAPIN)
 				config.f.sort_by=SORT_BY_GRAPH;
+			if (config.f.grtype==E_GR_IO)
+				config.f.grtype=E_GR_RW;
 		} else {
 			showtda=0;
 			has_tda=1;

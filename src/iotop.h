@@ -29,6 +29,13 @@ You should have received a copy of the GNU General Public License along with thi
 
 #define VERSION "1.20"
 
+typedef enum {
+	E_GR_IO,
+	E_GR_R,
+	E_GR_W,
+	E_GR_RW,
+} e_grtype;
+
 typedef union {
 	struct _flags {
 		int batch_mode;
@@ -51,8 +58,9 @@ typedef union {
 		int sort_by;
 		int sort_order;
 		int deadx;
+		e_grtype grtype;
 	} f;
-	int opts[19];
+	int opts[20];
 } config_t;
 
 typedef struct {
@@ -99,7 +107,10 @@ struct xxxid_stats {
 	char *cmdline2;
 	char *pw_name;
 
-	uint8_t iohist[HISTORY_CNT];
+	uint8_t iohist[HISTORY_CNT]; // io history data
+	double readhist[HISTORY_CNT]; // read history data
+	double writehist[HISTORY_CNT]; // write history data
+
 	int exited; // exited>0 shows for how many refresh cycles the process is gone
 	// there is no point to keep in memory data for processes exited before HISTORY_CNT cycles
 	struct xxxid_stats_arr *threads;
@@ -175,7 +186,7 @@ enum {
 };
 
 enum {
-	SORT_BY_PID,
+	SORT_BY_TID,
 	SORT_BY_PRIO,
 	SORT_BY_USER,
 	SORT_BY_READ,

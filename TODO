@@ -1,7 +1,4 @@
 - restore some form of visible help on the bottom
-- add read/write/read+write data sources for the graph
-- add a toggle to select graph data source (as a side effect option 'only' will use the same)
-- mask swapin/io columns and io graph data source if kernel support is disabled
 
 --- history of finished TODO items ---
 
@@ -26,4 +23,7 @@
 - ESC key close the help dialog
 - let the warning window about missing task_delayacct be closed by any key press and reappear on state change
 - add a small red indicator for missing kernel support for swapin/io
+- mask swapin/io columns and io graph data source if kernel support is disabled
 - do not sort on masked columns but continue to sort on hidden ones
+- add read/write/read+write data sources for the graph
+- add a toggle to select graph data source (as a side effect option 'only' will use the same)
