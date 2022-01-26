@@ -642,7 +642,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 			if (ms->pid!=ms->tid)
 				continue;
-			if (ms->threads) // TODO: redundant call below
+			if (ms->threads)
 				arr_sort(ms->threads,iotop_sort_cb);
 			// show only processes, if configured
 			for (k=-1;k<(config.f.processes?0:(ms->threads?ms->threads->length:0));k++) {
@@ -707,7 +707,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (ms->pid!=ms->tid)
 			continue;
 		if (ms->threads)
-			arr_sort(ms->threads,iotop_sort_cb);
+			if (!(masked_grtype(0)!=E_GR_IO&&masked_grtype(0)!=E_GR_SW&&!config.f.hidegraph))
+				arr_sort(ms->threads,iotop_sort_cb);
 		// check if threads use the same prio as the main process
 		// scan for hidden threads
 		th_first=1;
