@@ -1,7 +1,7 @@
 /* SPDX-License-Identifer: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020,2021  Boian Bonev
+Copyright (C) 2020-2022  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -52,7 +52,7 @@ inline int system_checks(void) {
 			"\t$ sudo setcap 'cap_net_admin+eip' <path-to>/iotop\n"
 			"\n"
 			"Be warned that this will also allow other users to run it and get access to\n"
-			"information that normally should no be available to them.\n"
+			"information that normally should not be available to them.\n"
 			"\n"
 			"Please do not file bugs on iotop about this.\n");
 

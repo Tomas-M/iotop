@@ -1,7 +1,7 @@
 /* SPDX-License-Identifer: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020,2021  Boian Bonev
+Copyright (C) 2020-2022  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -111,6 +111,12 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 
 		memcpy(c->iohist+1,p->iohist,sizeof c->iohist-sizeof *c->iohist);
 		c->iohist[0]=value2scale(c->blkio_val,100.0);
+		memcpy(c->sihist+1,p->sihist,sizeof c->sihist-sizeof *c->sihist);
+		c->sihist[0]=value2scale(c->swapin_val,100.0);
+		memcpy(c->readhist+1,p->readhist,sizeof c->readhist-sizeof *c->readhist);
+		c->readhist[0]=rv;
+		memcpy(c->writehist+1,p->writehist,sizeof c->writehist-sizeof *c->writehist);
+		c->writehist[0]=wv;
 
 		snprintf(temp,sizeof temp,"%i",c->tid);
 		maxpidlen=maxpidlen<(int)strlen(temp)?(int)strlen(temp):maxpidlen;
@@ -144,6 +150,12 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 				// shift history one step
 				memmove(p->iohist+1,p->iohist,sizeof p->iohist-sizeof *p->iohist);
 				p->iohist[0]=0;
+				memmove(p->sihist+1,p->sihist,sizeof p->sihist-sizeof *p->sihist);
+				p->sihist[0]=0;
+				memmove(p->readhist+1,p->readhist,sizeof p->readhist-sizeof *p->readhist);
+				p->readhist[0]=0.0;
+				memmove(p->writehist+1,p->writehist,sizeof p->writehist-sizeof *p->writehist);
+				p->writehist[0]=0.0;
 				if (arr_add(cs,p)) { // free the data in case add fails
 					if (p->cmdline1)
 						free(p->cmdline1);
@@ -206,7 +218,6 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 	struct xxxid_stats **ppa=(struct xxxid_stats **)a;
 	struct xxxid_stats **ppb=(struct xxxid_stats **)b;
 	struct xxxid_stats *pa,*pb;
-	int type=config.f.sort_by;
 	static int grlen=0;
 	int res=0;
 
@@ -218,18 +229,76 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 	pa=*ppa;
 	pb=*ppb;
 
-	switch (type) {
+	switch (masked_sort_by(0)) {
 		case SORT_BY_GRAPH: {
+			double da=0,db=0;
 			int aa=0,ab=0;
 			int i;
 
-			if (grlen==0)
-				grlen=HISTORY_CNT;
-			for (i=0;i<grlen;i++) {
-				aa+=pa->iohist[i];
-				ab+=pb->iohist[i];
+			switch (masked_grtype(0)) {
+				case E_GR_IO:
+					if (grlen==0)
+						grlen=HISTORY_CNT;
+					for (i=0;i<grlen;i++) {
+						aa+=pa->iohist[i];
+						ab+=pb->iohist[i];
+					}
+					res=aa-ab;
+					break;
+				case E_GR_R:
+					if (grlen==0)
+						grlen=HISTORY_CNT;
+					for (i=0;i<grlen;i++) {
+						da+=pa->readhist[i];
+						db+=pb->readhist[i];
+					}
+					if (da>db)
+						res=1;
+					else if (da<db)
+						res=-1;
+					else
+						res=0;
+					break;
+				case E_GR_W:
+					if (grlen==0)
+						grlen=HISTORY_CNT;
+					for (i=0;i<grlen;i++) {
+						da+=pa->writehist[i];
+						db+=pb->writehist[i];
+					}
+					if (da>db)
+						res=1;
+					else if (da<db)
+						res=-1;
+					else
+						res=0;
+					break;
+				case E_GR_RW:
+					if (grlen==0)
+						grlen=HISTORY_CNT;
+					for (i=0;i<grlen;i++) {
+						da+=pa->readhist[i];
+						db+=pb->readhist[i];
+						da+=pa->writehist[i];
+						db+=pb->writehist[i];
+					}
+					if (da>db)
+						res=1;
+					else if (da<db)
+						res=-1;
+					else
+						res=0;
+					break;
+				case E_GR_SW:
+					if (grlen==0)
+						grlen=HISTORY_CNT;
+					for (i=0;i<grlen;i++) {
+						aa+=pa->sihist[i];
+						ab+=pb->sihist[i];
+					}
+					res=aa-ab;
+					break;
 			}
-			res=aa-ab;
 			break;
 		}
 		case SORT_BY_PRIO:
@@ -238,7 +307,7 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 		case SORT_BY_COMMAND:
 			res=strcmp(config.f.fullcmdline?pa->cmdline2:pa->cmdline1,config.f.fullcmdline?pb->cmdline2:pb->cmdline1);
 			break;
-		case SORT_BY_PID:
+		case SORT_BY_TID:
 			res=pa->tid-pb->tid;
 			break;
 		case SORT_BY_USER:
