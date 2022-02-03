@@ -100,7 +100,7 @@ inline int get_family_id(int sock_fd) {
 		return 0;
 
 	rep_len=recv(sock_fd,&answ,sizeof answ,0);
-	if (answ.n.nlmsg_type==NLMSG_ERROR||(rep_len<0)||!NLMSG_OK((&answ.n),rep_len))
+	if (rep_len<0||!NLMSG_OK((&answ.n),(size_t)rep_len)||answ.n.nlmsg_type==NLMSG_ERROR)
 		return 0;
 
 	na=(struct nlattr *)GENLMSG_DATA(&answ);
@@ -154,7 +154,7 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 	struct msgtemplate msg;
 	ssize_t rv=recv(nl_sock,&msg,sizeof msg,0);
 
-	if (msg.n.nlmsg_type==NLMSG_ERROR||!NLMSG_OK((&msg.n),rv)) {
+	if (rv<0||!NLMSG_OK((&msg.n),(size_t)rv)||msg.n.nlmsg_type==NLMSG_ERROR) {
 		struct nlmsgerr *err=NLMSG_DATA(&msg);
 		if (err->error!=-ESRCH)
 			fprintf(stderr,"fatal reply error, %d\n",err->error);
