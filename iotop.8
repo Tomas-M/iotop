@@ -11,12 +11,12 @@ or threads on the system. At least the CONFIG_TASK_DELAY_ACCT,
 CONFIG_TASK_IO_ACCOUNTING, CONFIG_TASKSTATS and CONFIG_VM_EVENT_COUNTERS
 options need to be enabled in your Linux kernel build configuration.
 .PP
-Running \fBiotop\fR as non-root user is possible by adding the NET_ADMIN
+Running \fBiotop\fR as non\-root user is possible by adding the NET_ADMIN
 capability. This can be done by e.g.:
 .RS
 
 .B
-$ sudo setcap 'cap_net_admin+eip' <path-to>/iotop
+$ sudo setcap 'cap_net_admin+eip' <path\-to>/iotop
 
 .RE
 Be warned that this will also allow other users to run it and get access to
@@ -44,9 +44,9 @@ from the \fBGRAPH\fR column or the \fBIO\fR column in case the \fBGRAPH\fR
 column is hidden), \fBp\fR to toggle the \fB\-\-processes\fR option, \fBa\fR to
 toggle the \fB\-\-accumulated\fR option, \fBi\fR to change the priority of a
 thread or a process's thread, \fBf\fR to change filtering by
-\fBUID\fR/\fBPID\fR (\fB\-\-user\fR and \fB\-\-pid\fR options), \fB1-9\fR to
+\fBUID\fR/\fBPID\fR (\fB\-\-user\fR and \fB\-\-pid\fR options), \fB1\-9\fR to
 toggle the visibility of the respective column, \fB0\fR to show all columns,
-\fBup\fR/\fBdown\fR arrows, \fBpage-up\fR/\fBpage-down\fR/\fBhome\fR/\fBend\fR
+\fBup\fR/\fBdown\fR arrows, \fBpage\-up\fR/\fBpage\-down\fR/\fBhome\fR/\fBend\fR
 keys to scroll and \fBq\fR to quit. Any unrecognized key will be ignored.
 .PP
 All processes or threads that have exited are displayed grayed for the same time
@@ -65,7 +65,7 @@ Threads activity is always aggregated with and shown inside the main process.
 When showing threads, they always appear below their main process and are sorted
 in the same way as the processes.
 .PP
-There are two ways to change the IO priority of a process or thread - press
+There are two ways to change the IO priority of a process or thread \- press
 \fBi\fR and use arrows to select the process or thread from the visible ones on
 screen or press \fBi\fR and type its TID (PID and TID have the same value for
 the main process). Then use \fBtab\fR and arrows to change the priority value
@@ -80,7 +80,7 @@ unique. Note that for the main process PID is the same as TID. Shortcuts
 .PP
 Starting with Linux kernel 5.14.x task_delayacct is configurable at runtime and
 set to off by default. This setting can be changed in interactive mode by the
-\fBCtrl-T\fR shortcut. In batch mode a warning is printed when the setting is
+\fBCtrl\-T\fR shortcut. In batch mode a warning is printed when the setting is
 OFF. From the command line this can be enabled by:
 .RS
 
@@ -106,6 +106,10 @@ Show the version number and exit
 \fB\-h\fR, \fB\-\-help\fR
 Show usage information and exit
 .TP
+\fB\-H\fR, \fB\-\-help\-type\fR=\fITYPE\fR
+Set the type of interactive help shown. Accepted values for \fITYPE\fR are
+\fBnone\fR, \fBwin\fR and \fBinline\fR.
+.TP
 \fB\-o\fR, \fB\-\-only\fR
 Only show processes or threads actually doing I/O, instead of showing all
 processes or threads. This can be dynamically toggled by pressing \fBo\fR
@@ -114,21 +118,21 @@ processes or threads. This can be dynamically toggled by pressing \fBo\fR
 Turn on non\-interactive mode.
 Useful for logging I/O usage over time
 .TP
-\fB\-n\fR NUM, \fB\-\-iter\fR=\fINUM\fR
+\fB\-n\fR \fINUM\fR, \fB\-\-iter\fR=\fINUM\fR
 Set the number of iterations before quitting (never quit by default).
 This is most useful in non\-interactive mode
 .TP
-\fB\-d\fR SEC, \fB\-\-delay\fR=\fISEC\fR
+\fB\-d\fR \fISEC\fR, \fB\-\-delay\fR=\fISEC\fR
 Set the delay between iterations in seconds (1 second by default).
-Accepts non-integer values such as 1.1 seconds
+Accepts non\-integer values such as 1.1 seconds
 .TP
-\fB\-p\fR PID, \fB\-\-pid\fR=\fIPID\fR
+\fB\-p\fR \fIPID\fR, \fB\-\-pid\fR=\fIPID\fR
 A process/thread id to monitor (all by default)
 .TP
-\fB\-u\fR USER, \fB\-\-user\fR=\fIUSER\fR
+\fB\-u\fR \fIUSER\fR, \fB\-\-user\fR=\fIUSER\fR
 A user id to monitor (all by default).
 The value will always be resolved first unless it is prefixed by \fB+\fR in
-which case it is threated as numeric only. Values that do not resolve but appear
+which case it is treated as numeric only. Values that do not resolve but appear
 to be numeric are used as numeric
 .TP
 \fB\-P\fR, \fB\-\-processes\fR
@@ -151,32 +155,36 @@ the current time
 \fB\-c\fR, \fB\-\-fullcmdline\fR
 Show processes' full file path and parameters
 .TP
-\fB\-1\fR, \fB\-\-hide-pid\fR
+\fB\-1\fR, \fB\-\-hide\-pid\fR
 Hide PID/TID column
 .TP
-\fB\-2\fR, \fB\-\-hide-prio\fR
+\fB\-2\fR, \fB\-\-hide\-prio\fR
 Hide PRIO column
 .TP
-\fB\-3\fR, \fB\-\-hide-user\fR
+\fB\-3\fR, \fB\-\-hide\-user\fR
 Hide USER column
 .TP
-\fB\-4\fR, \fB\-\-hide-read\fR
+\fB\-4\fR, \fB\-\-hide\-read\fR
 Hide DISK READ column
 .TP
-\fB\-5\fR, \fB\-\-hide-write\fR
+\fB\-5\fR, \fB\-\-hide\-write\fR
 Hide DISK WRITE column
 .TP
-\fB\-6\fR, \fB\-\-hide-swapin\fR
+\fB\-6\fR, \fB\-\-hide\-swapin\fR
 Hide SWAPIN column
 .TP
-\fB\-7\fR, \fB\-\-hide-io\fR
+\fB\-7\fR, \fB\-\-hide\-io\fR
 Hide IO column
 .TP
-\fB\-8\fR, \fB\-\-hide-graph\fR
+\fB\-8\fR, \fB\-\-hide\-graph\fR
 Hide GRAPH column
 .TP
-\fB\-9\fR, \fB\-\-hide-command\fR
+\fB\-9\fR, \fB\-\-hide\-command\fR
 Hide COMMAND column
+.TP
+\fB\-g\fR \fITYPE\fR, \fB\-\-grtype\fR=\fITYPE\fR
+Set GRAPH column data source. Accepted values for \fITYPE\fR are \fBio\fR,
+\fBr\fR, \fBw\fR, \fBrw\fR and \fBsw\fR.
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress some lines of header (implies \-\-batch). This option can be specified
@@ -212,10 +220,10 @@ Scroll to the top of the list
 \fB<end>\fR
 Scroll to the bottom of the list
 .TP
-\fB<page-up>\fR
+\fB<page\-up>\fR
 Scroll one screen up
 .TP
-\fB<page-down>\fR
+\fB<page\-down>\fR
 Scroll one screen down
 .TP
 \fB<up>\fR
@@ -255,6 +263,10 @@ Toggle showing the column (column number corresponds to the shortcut)
 \fB0\fR
 Show all columns
 .TP
+\fBg\fR, \fBG\fR
+Cycle GRAPH source (\fBIO\fR=IO, \fBR\fR=DISK READ , \fBW\fR=DISK WRITE, \fBR+W\fR=DISK READ+DISK WRITE,
+\fBSW\fR=SWAPIN). Using \fBg\fR will cycle forward and \fBG\fR will cycle backward.
+.TP
 \fBi\fR, \fBI\fR
 IOnice a process/thread (depends on process/thread display mode)
 .TP
@@ -271,7 +283,7 @@ background
 \fBs\fR, \fBS\fR
 Toggle freeze of data collection
 .TP
-\fBCtrl-T\fR
+\fBCtrl\-T\fR
 Toggle task_delayacct kernel sysctl
 .SH SEE ALSO
 .BR ionice (1),

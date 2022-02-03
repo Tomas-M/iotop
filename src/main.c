@@ -1,7 +1,7 @@
 /* SPDX-License-Identifer: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020,2021  Boian Bonev
+Copyright (C) 2020-2022  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -54,30 +54,32 @@ static inline void print_help(void) {
 		"option, a to toggle the --accumulated option, i to change I/O priority, q to\n"
 		"quit, any other key to force a refresh.\n\n"
 		"Options:\n"
-		"  -v, --version         show program's version number and exit\n"
-		"  -h, --help            show this help message and exit\n"
-		"  -o, --only            only show processes or threads actually doing I/O\n"
-		"  -b, --batch           non-interactive mode\n"
-		"  -n NUM, --iter=NUM    number of iterations before ending [infinite]\n"
-		"  -d SEC, --delay=SEC   delay between iterations [1 second]\n"
-		"  -p PID, --pid=PID     processes/threads to monitor [all]\n"
-		"  -u USER, --user=USER  users to monitor [all]\n"
-		"  -P, --processes       only show processes, not all threads\n"
-		"  -a, --accumulated     show accumulated I/O instead of bandwidth\n"
-		"  -k, --kilobytes       use kilobytes instead of a human friendly unit\n"
-		"  -t, --time            add a timestamp on each line (implies --batch)\n"
-		"  -c, --fullcmdline     show full command line\n"
-		"  -1, --hide-pid        hide PID/TID column\n"
-		"  -2, --hide-prio       hide PRIO column\n"
-		"  -3, --hide-user       hide USER column\n"
-		"  -4, --hide-read       hide DISK READ column\n"
-		"  -5, --hide-write      hide DISK WRITE column\n"
-		"  -6, --hide-swapin     hide SWAPIN column\n"
-		"  -7, --hide-io         hide IO column\n"
-		"  -8, --hide-graph      hide GRAPH column\n"
-		"  -9, --hide-command    hide COMMAND column\n"
-		"  -q, --quiet           suppress some lines of header (implies --batch)\n"
-		"  -x, --dead-x          show dead processes/threads with letter x\n",
+		"  -v, --version          show program's version number and exit\n"
+		"  -h, --help             show this help message and exit\n"
+		"  -H, --help-type=TYPE   set type of interactive help (none, win or inline)\n"
+		"  -o, --only             only show processes or threads actually doing I/O\n"
+		"  -b, --batch            non-interactive mode\n"
+		"  -n NUM, --iter=NUM     number of iterations before ending [infinite]\n"
+		"  -d SEC, --delay=SEC    delay between iterations [1 second]\n"
+		"  -p PID, --pid=PID      processes/threads to monitor [all]\n"
+		"  -u USER, --user=USER   users to monitor [all]\n"
+		"  -P, --processes        only show processes, not all threads\n"
+		"  -a, --accumulated      show accumulated I/O instead of bandwidth\n"
+		"  -k, --kilobytes        use kilobytes instead of a human friendly unit\n"
+		"  -t, --time             add a timestamp on each line (implies --batch)\n"
+		"  -c, --fullcmdline      show full command line\n"
+		"  -1, --hide-pid         hide PID/TID column\n"
+		"  -2, --hide-prio        hide PRIO column\n"
+		"  -3, --hide-user        hide USER column\n"
+		"  -4, --hide-read        hide DISK READ column\n"
+		"  -5, --hide-write       hide DISK WRITE column\n"
+		"  -6, --hide-swapin      hide SWAPIN column\n"
+		"  -7, --hide-io          hide IO column\n"
+		"  -8, --hide-graph       hide GRAPH column\n"
+		"  -9, --hide-command     hide COMMAND column\n"
+		"  -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)\n"
+		"  -q, --quiet            suppress some lines of header (implies --batch)\n"
+		"  -x, --dead-x           show dead processes/threads with letter x\n",
 		progname
 	);
 }
@@ -92,6 +94,7 @@ static inline void parse_args(int argc,char *argv[]) {
 		static struct option long_options[]={
 			{"version",no_argument,NULL,'v'},
 			{"help",no_argument,NULL,'h'},
+			{"help-type",required_argument,NULL,'H'},
 			{"batch",no_argument,NULL,'b'},
 			{"only",no_argument,NULL,'o'},
 			{"iter",required_argument,NULL,'n'},
@@ -114,10 +117,11 @@ static inline void parse_args(int argc,char *argv[]) {
 			{"hide-graph",no_argument,NULL,'8'},
 			{"hide-command",no_argument,NULL,'9'},
 			{"dead-x",no_argument,NULL,'x'},
+			{"grtype",required_argument,NULL,'g'},
 			{NULL,0,NULL,0}
 		};
 
-		int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789x",long_options,NULL);
+		int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xg:H:",long_options,NULL);
 
 		if (c==-1) {
 			if (optind<argc) {
@@ -137,6 +141,18 @@ static inline void parse_args(int argc,char *argv[]) {
 			case 'h':
 				print_help();
 				exit(EXIT_SUCCESS);
+			case 'H': // below values are not partial prefixes of each other, do a relaxed match
+				if (!strncmp(optarg,"none",strlen(optarg)))
+					config.f.helptype=0;
+				else if (!strncmp(optarg,"win",strlen(optarg)))
+					config.f.helptype=1;
+				else if (!strncmp(optarg,"inline",strlen(optarg)))
+					config.f.helptype=2;
+				else {
+					fprintf(stderr,"%s: invalid value %s for interactive help type\n",progname,optarg);
+					exit(EXIT_FAILURE);
+				}
+				break;
 			case 'o':
 			case 'b':
 			case 'P':
@@ -157,6 +173,24 @@ static inline void parse_args(int argc,char *argv[]) {
 				break;
 			case 'p':
 				params.pid=atoi(optarg);
+				break;
+			case 'g': // below values are not partial prefixes of each other, do a relaxed match
+				// except r is a prefix of rw, but r is matched first
+				// do an exact match for r and w - there is no point in relaxed match for single letter values
+				if (!strncmp(optarg,"io",strlen(optarg)))
+					config.f.grtype=E_GR_IO;
+				else if (!strcmp(optarg,"r"))
+					config.f.grtype=E_GR_R;
+				else if (!strcmp(optarg,"w"))
+					config.f.grtype=E_GR_W;
+				else if (!strcmp(optarg,"rw"))
+					config.f.grtype=E_GR_RW;
+				else if (!strncmp(optarg,"sw",strlen(optarg)))
+					config.f.grtype=E_GR_SW;
+				else {
+					fprintf(stderr,"%s: invalid value %s for graph type\n",progname,optarg);
+					exit(EXIT_FAILURE);
+				}
 				break;
 			case 'u':
 				if (optarg[0]=='+') // always interpret as numeric uid

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifer: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020,2021  Boian Bonev
+Copyright (C) 2020-2022  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -27,7 +27,17 @@ You should have received a copy of the GNU General Public License along with thi
 #include <sys/types.h>
 #include <stdint.h>
 
-#define VERSION "1.20"
+#define VERSION "1.21"
+
+typedef enum {
+	E_GR_IO,
+	E_GR_R,
+	E_GR_W,
+	E_GR_RW,
+	E_GR_SW,
+	E_GR_MIN=E_GR_IO,
+	E_GR_MAX=E_GR_SW,
+} e_grtype;
 
 typedef union {
 	struct _flags {
@@ -48,11 +58,13 @@ typedef union {
 		int hideio;
 		int hidegraph;
 		int hidecmd;
+		int deadx;
+		e_grtype grtype;
+		int helptype;
 		int sort_by;
 		int sort_order;
-		int deadx;
 	} f;
-	int opts[19];
+	int opts[20];
 } config_t;
 
 typedef struct {
@@ -99,7 +111,11 @@ struct xxxid_stats {
 	char *cmdline2;
 	char *pw_name;
 
-	uint8_t iohist[HISTORY_CNT];
+	uint8_t iohist[HISTORY_CNT]; // io history data
+	uint8_t sihist[HISTORY_CNT]; // swapin history data
+	double readhist[HISTORY_CNT]; // read history data
+	double writehist[HISTORY_CNT]; // write history data
+
 	int exited; // exited>0 shows for how many refresh cycles the process is gone
 	// there is no point to keep in memory data for processes exited before HISTORY_CNT cycles
 	struct xxxid_stats_arr *threads;
@@ -146,6 +162,9 @@ inline void view_curses_fini(void);
 
 inline unsigned int curses_sleep(unsigned int seconds);
 
+inline e_grtype masked_grtype(int isforward);
+inline int masked_sort_by(int isforward);
+
 /* utils.c */
 
 inline char *read_cmdline(int pid,int isshort);
@@ -175,7 +194,7 @@ enum {
 };
 
 enum {
-	SORT_BY_PID,
+	SORT_BY_TID,
 	SORT_BY_PRIO,
 	SORT_BY_USER,
 	SORT_BY_READ,
