@@ -126,6 +126,10 @@ inline void nl_init(void) {
 
 	nl_sock=sock_fd;
 	nl_fam_id=get_family_id(sock_fd);
+	if (!nl_fam_id) {
+		fprintf(stderr,"nl_init: couldn't get netlink family id\n");
+		exit(EXIT_FAILURE);
+	}
 
 	return;
 
@@ -139,7 +143,11 @@ error:
 
 inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 	if (nl_sock<0) {
-		perror("nl_xxxid_info");
+		fprintf(stderr,"nl_xxxid_info: nl_sock is %d",nl_sock);
+		exit(EXIT_FAILURE);
+	}
+	if (nl_fam_id==0) { // this will cause recv to wait forever
+		fprintf(stderr,"nl_xxxid_info: nl_fam_id is 0");
 		exit(EXIT_FAILURE);
 	}
 
@@ -193,8 +201,6 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 		na=(struct nlattr *)((char *)GENLMSG_DATA(&msg)+len);
 	}
 
-	stats->io_prio=get_ioprio(tid);
-
 	return 0;
 }
 
@@ -226,7 +232,9 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 		return NULL;
 
 	if (nl_xxxid_info(tid,pid,s))
-		goto error;
+		s->error=1;
+
+	s->io_prio=get_ioprio(tid);
 
 	cmdline1=read_cmdline(tid,1);
 	cmdline2=read_cmdline(tid,0);
@@ -237,10 +245,6 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	s->pw_name=strdup(pwd&&pwd->pw_name?pwd->pw_name:unknown);
 
 	return s;
-
-error:
-	free_stats(s);
-	return NULL;
 }
 
 static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback filter) {
