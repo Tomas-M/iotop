@@ -117,6 +117,7 @@ struct xxxid_stats {
 	double writehist[HISTORY_CNT]; // write history data
 
 	int exited; // exited>0 shows for how many refresh cycles the process is gone
+	int error; // netlink api did not return valid data
 	// there is no point to keep in memory data for processes exited before HISTORY_CNT cycles
 	struct xxxid_stats_arr *threads;
 };
