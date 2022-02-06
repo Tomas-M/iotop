@@ -865,14 +865,38 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			}
 			if (!config.f.hideuser)
 				printw("%s ",pw_name?pw_name:"(null)");
-			if (!config.f.hideread)
-				printw("%7.2f %-3.3s ",read_val,read_str);
-			if (!config.f.hidewrite)
-				printw("%7.2f %-3.3s ",write_val,write_str);
-			if (!config.f.hideswapin&&has_tda)
-				printw("%6.2f %% ",s->swapin_val);
-			if (!config.f.hideio&&has_tda)
-				printw("%6.2f %% ",s->blkio_val);
+			if (!config.f.hideread) {
+				if (s->error) {
+					attron(COLOR_PAIR(RED_PAIR));
+					printw("   Error    ");
+					attroff(COLOR_PAIR(RED_PAIR));
+				} else
+					printw("%7.2f %-3.3s ",read_val,read_str);
+			}
+			if (!config.f.hidewrite) {
+				if (s->error) {
+					attron(COLOR_PAIR(RED_PAIR));
+					printw("   Error    ");
+					attroff(COLOR_PAIR(RED_PAIR));
+				} else
+					printw("%7.2f %-3.3s ",write_val,write_str);
+			}
+			if (!config.f.hideswapin&&has_tda) {
+				if (s->error) {
+					attron(COLOR_PAIR(RED_PAIR));
+					printw("  Error  ");
+					attroff(COLOR_PAIR(RED_PAIR));
+				} else
+					printw("%6.2f %% ",s->swapin_val);
+			}
+			if (!config.f.hideio&&has_tda) {
+				if (s->error) {
+					attron(COLOR_PAIR(RED_PAIR));
+					printw("  Error  ");
+					attroff(COLOR_PAIR(RED_PAIR));
+				} else
+					printw("%6.2f %% ",s->blkio_val);
+			}
 			if (!config.f.hidegraph&&hrevpos>0) {
 				attron(A_REVERSE);
 				printw("%*.*s",hrevpos,hrevpos,graphstr);
