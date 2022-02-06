@@ -216,10 +216,15 @@ static inline void parse_args(int argc,char *argv[]) {
 }
 
 inline void sig_handler(int signo) {
-	if (signo==SIGINT) {
-		v_fini_cb();
-		nl_fini();
-		exit(EXIT_SUCCESS);
+	switch (signo) {
+		default:
+			break;
+		case SIGINT:
+		case SIGHUP:
+		case SIGQUIT:
+			v_fini_cb();
+			nl_fini();
+			exit(EXIT_SUCCESS);
 	}
 }
 
@@ -234,6 +239,10 @@ int main(int argc,char *argv[]) {
 	nl_init();
 
 	if (signal(SIGINT,sig_handler)==SIG_ERR)
+		perror("signal");
+	if (signal(SIGHUP,sig_handler)==SIG_ERR)
+		perror("signal");
+	if (signal(SIGQUIT,sig_handler)==SIG_ERR)
 		perror("signal");
 
 	if (config.f.timestamp||config.f.quiet)
