@@ -1672,6 +1672,7 @@ inline void view_curses_init(void) {
 	curs_set(FALSE);
 	nodelay(stdscr,TRUE);
 	start_color();
+	use_default_colors();
 	init_pair(RED_PAIR,COLOR_RED,COLOR_BLACK);
 	init_pair(CYAN_PAIR,COLOR_CYAN,COLOR_BLACK);
 
