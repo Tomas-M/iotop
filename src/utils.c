@@ -322,3 +322,18 @@ inline char *u8strpadt(const char *s,ssize_t rlen) {
 	return d;
 }
 
+inline int is_a_dir(const char *p) {
+	struct stat st;
+
+	if (stat(p,&st))
+		return 0;
+	return (st.st_mode&S_IFMT)==S_IFDIR;
+}
+
+inline int is_a_process(pid_t tid) {
+	char path[30];
+
+	snprintf(path,sizeof path,"/proc/%d",tid);
+	return is_a_dir(path);
+}
+
