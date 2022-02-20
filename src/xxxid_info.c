@@ -164,6 +164,7 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 
 	if (rv<0||!NLMSG_OK((&msg.n),(size_t)rv)||msg.n.nlmsg_type==NLMSG_ERROR) {
 		struct nlmsgerr *err=NLMSG_DATA(&msg);
+
 		if (err->error!=-ESRCH)
 			fprintf(stderr,"fatal reply error, %d\n",err->error);
 		return -1;
@@ -227,14 +228,21 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	struct passwd *pwd;
 	char *cmdline1;
 	char *cmdline2;
+	int prio;
 
 	if (!s)
 		return NULL;
 
 	if (nl_xxxid_info(tid,pid,s))
-		s->error=1;
+		s->error_x=1;
 
-	s->io_prio=get_ioprio(tid);
+
+	prio=get_ioprio(tid);
+	if (prio==-1) {
+		s->error_i=1;
+		s->io_prio=0;
+	} else
+		s->io_prio=prio;
 
 	cmdline1=read_cmdline(tid,1);
 	cmdline2=read_cmdline(tid,0);
@@ -244,6 +252,10 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	pwd=getpwuid(s->euid);
 	s->pw_name=strdup(pwd&&pwd->pw_name?pwd->pw_name:unknown);
 
+	if ((s->error_x||s->error_i||!cmdline1||!cmdline2)&&!is_a_process(tid)) { // process exited in the meantime
+		free_stats(s);
+		return NULL;
+	}
 	return s;
 }
 
