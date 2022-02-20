@@ -117,7 +117,8 @@ struct xxxid_stats {
 	double writehist[HISTORY_CNT]; // write history data
 
 	int exited; // exited>0 shows for how many refresh cycles the process is gone
-	int error; // netlink api did not return valid data
+	int error_x; // netlink api did not return valid data
+	int error_i; // get_ioprio did not return valid data
 	// there is no point to keep in memory data for processes exited before HISTORY_CNT cycles
 	struct xxxid_stats_arr *threads;
 };
@@ -176,6 +177,10 @@ inline char *esc_low_ascii(char *p);
 
 typedef void (*pg_cb)(pid_t pid,pid_t tid,void *hint1,void *hint2);
 inline void pidgen_cb(pg_cb cb,void *hint1,void *hint2);
+
+
+inline int is_a_dir(const char *p);
+inline int is_a_process(pid_t tid);
 
 /* ioprio.c */
 
