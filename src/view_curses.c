@@ -861,12 +861,17 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 				if (k==-1&&th_prio_diff)
 					c='!';
-				printw("%c%4s ",c,str_ioprio(s->io_prio));
+				if (s->error_i) {
+					attron(COLOR_PAIR(RED_PAIR));
+					printw("Error ");
+					attroff(COLOR_PAIR(RED_PAIR));
+				} else
+					printw("%c%4s ",c,str_ioprio(s->io_prio));
 			}
 			if (!config.f.hideuser)
 				printw("%s ",pw_name?pw_name:"(null)");
 			if (!config.f.hideread) {
-				if (s->error) {
+				if (s->error_x) {
 					attron(COLOR_PAIR(RED_PAIR));
 					printw("   Error    ");
 					attroff(COLOR_PAIR(RED_PAIR));
@@ -874,7 +879,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					printw("%7.2f %-3.3s ",read_val,read_str);
 			}
 			if (!config.f.hidewrite) {
-				if (s->error) {
+				if (s->error_x) {
 					attron(COLOR_PAIR(RED_PAIR));
 					printw("   Error    ");
 					attroff(COLOR_PAIR(RED_PAIR));
@@ -882,7 +887,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					printw("%7.2f %-3.3s ",write_val,write_str);
 			}
 			if (!config.f.hideswapin&&has_tda) {
-				if (s->error) {
+				if (s->error_x) {
 					attron(COLOR_PAIR(RED_PAIR));
 					printw("  Error  ");
 					attroff(COLOR_PAIR(RED_PAIR));
@@ -890,7 +895,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					printw("%6.2f %% ",s->swapin_val);
 			}
 			if (!config.f.hideio&&has_tda) {
-				if (s->error) {
+				if (s->error_x) {
 					attron(COLOR_PAIR(RED_PAIR));
 					printw("  Error  ");
 					attroff(COLOR_PAIR(RED_PAIR));
