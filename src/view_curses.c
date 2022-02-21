@@ -275,16 +275,32 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 			attroff(A_REVERSE);
 		}
 	} else {
-		int i;
-		int visible=to-from+1; // count of visible items
-		int linecnt=visible-2; // count of lines usable by scroller
-		int drscale=(unicode&&has_unicode)?8:1; // draw scale
-		int poitems=(items>visible)?items-visible:1; // positionable items
-		int scrols0=(drscale*linecnt*visible)/poitems; // scroller size (may be smaller than scale, even 0)
-		int scrolsz=(scrols0<drscale)?drscale:scrols0; // scroller size, not less than scale
-		int begpos=(pos*(linecnt*drscale-scrolsz))/poitems+(from+1)*drscale;
-		int endpos=begpos+scrolsz;
 
+
+		int begpos;
+		int endpos;
+
+  	int visible=to-from+1; // count of visible items
+		if( items <= visible ) {
+			begpos = from; 
+			endpos = to;
+			}
+	  else {
+			int u = unicode&&has_unicode;
+			int linecnt=visible-2; // count of lines usable by scroller
+			int drscale=u?8:1; // draw scale
+
+			int y = drscale * linecnt;     // all scroll space
+			int ss = y * visible / items;  // scroller size in scroll space
+			int min_ss = u ? 8 : 1;
+			if(ss < min_ss) ss = min_ss;   // min scroller size
+			int vss = y - ss + 1;          // available scroll space without scroller size
+
+			begpos = ((from + 1) * drscale) + vss * pos / (items - visible); 
+			endpos = begpos + ss - 1 * (!u);
+	    }		
+
+		int i;
 		for (i=from;i<=to;i++) {
 			if (i==from||i==to) {
 				attron(A_REVERSE);
