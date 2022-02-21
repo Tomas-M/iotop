@@ -279,11 +279,15 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 		int visible=to-from+1; // count of visible items
 		int linecnt=visible-2; // count of lines usable by scroller
 		int drscale=(unicode&&has_unicode)?8:1; // draw scale
-		int poitems=(items>visible)?items-visible:1; // positionable items
-		int scrols0=(drscale*linecnt*visible)/poitems; // scroller size (may be smaller than scale, even 0)
-		int scrolsz=(scrols0<drscale)?drscale:scrols0; // scroller size, not less than scale
-		int begpos=(pos*(linecnt*drscale-scrolsz))/poitems+(from+1)*drscale;
-		int endpos=begpos+scrolsz;
+
+		int y = drscale * linecnt;     // all scroll space
+		int ss = y * visible / items;  // scroller size in scroll space
+		int min_ss = has_unicode == 0 ? 1 : 8;
+		if(ss < min_ss) ss = min_ss;   // min scroller size
+		int vss = y - ss + 1;          // available scroll space without scroller size
+
+		int begpos = ((from + 1) * drscale) + vss * pos / (items - visible); 
+		int endpos = begpos + ss - 1 * (has_unicode == 0);
 
 		for (i=from;i<=to;i++) {
 			if (i==from||i==to) {
