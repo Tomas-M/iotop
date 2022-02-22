@@ -157,13 +157,17 @@ The iotop community gathers in #iotop on libera.chat:
 
 Notable contributions (ordered by time of last contribution):
 
+-   Vladi Belperchinov-Shabanski &lt;[cade@noxrun.com](mailto:cade@noxrun.com)&gt; - Scroller code improvement, multiple reviews and ideas
+-   Alexander Monakov &lt;[amonakov@ispras.ru](mailto:amonakov@ispras.ru)&gt; - Improvement of ncurses color handling
+-   Alexander Rezvov &lt;[alex@rezvov.ru](mailto:alex@rezvov.ru)&gt; - NixOS packaging and testing
 -   EinProfiSpieler - README.md, build system improvements
 -   Paul Wise &lt;[pabs@debian.org](mailto:pabs@debian.org)&gt; - Debian packaging, man page, multiple reviews and ideas
 -   Rumen Jekov &lt;[rvjekov@gmail.com](mailto:rvjekov@gmail.com)&gt; - Arch Linux packaging and testing
+-   Milan P. Stanić &lt;[mps@arvanta.net](mailto:mps@arvanta.net)&gt; - Alpine Linux packaging and testing
 -   Arthur Zamarin &lt;[arthurzam+gentoo@gmail.com](mailto:arthurzam+gentoo@gmail.com)&gt; - Gentoo packaging and testing
--   Yuriy M. Kaminskiy &lt;[yumkam@gmail.com](mailto:yumkam@gmail.com)&gt; - code fixes and improvements
--   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - documentation imrpovements
--   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - build system imrpovements
+-   Yuriy M. Kaminskiy &lt;[yumkam@gmail.com](mailto:yumkam@gmail.com)&gt; - Code fixes and improvements
+-   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - Documentation imrpovements
+-   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - Build system imrpovements
 
 **Thanks!** This project is what it is now because the steam you have put into it
 
