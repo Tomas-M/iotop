@@ -85,7 +85,7 @@ Use the following commands (note that `-y` disables confirmation prompts):
 Use the following commands (note that `-y` disables confirmation prompts):
 
     dnf install git gcc make ncurses-devel pkgconfig -y
-    git clone https://github.com/Thomas-M/iotop
+    git clone https://github.com/Tomas-M/iotop
     cd iotop
     make -j
 </details>
@@ -97,7 +97,7 @@ Use the following commands (note that `-y` disables confirmation prompts):
 Use the following commands (note that `-y` disables confirmation prompts):
 
     yum install git gcc make ncurses-devel pkgconfig -y
-    git clone https://github.com/Thomas-M/iotop
+    git clone https://github.com/Tomas-M/iotop
     cd iotop
     make -j
 </details>
