@@ -35,6 +35,8 @@ You should have received a copy of the GNU General Public License along with thi
 
 #define RED_PAIR 1
 #define CYAN_PAIR 2
+#define GREEN_PAIR 3
+#define MAGENTA_PAIR 4
 
 #define mymax(a,b) (((a)>(b))?(a):(b))
 
@@ -112,6 +114,7 @@ const s_helpitem thelp[]={
 	{.descr="IOnice a process/thread",.k2="i",.k3="I"},
 	{.descr="Change UID and PID filters",.k2="f",.k3="F"},
 	{.descr="Toggle using Unicode/ASCII characters",.k2="u",.k3="U"},
+	{.descr="Toggle colorizing values",.k2="l",.k3="L"},
 	{.descr="Toggle exited processes xxx/inverse",.k2="x",.k3="X"},
 	{.descr="Toggle showing exited processes",.k2="e",.k3="E"},
 	{.descr="Toggle data freeze",.k2="s",.k3="S"},
@@ -386,6 +389,25 @@ static inline void view_warning(void) {
 	wattron(wtda,A_REVERSE);
 	mvwprintw(wtda,whh-1,1," press a key to hide ");
 	wattroff(wtda,A_REVERSE);
+}
+
+static inline void color_print_pc(double v) {
+	int cp=0;
+
+	if (v<=10)
+		cp=0;
+	else if (v<=40)
+		cp=COLOR_PAIR(GREEN_PAIR);
+	else if (v<=80)
+		cp=COLOR_PAIR(MAGENTA_PAIR);
+	else // 80-100
+		cp=COLOR_PAIR(RED_PAIR);
+	if (config.f.nocolor)
+		cp=0;
+	attron(cp);
+	printw("%6.2f",v);
+	attroff(cp);
+	printw(" %% ");
 }
 
 static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
@@ -908,7 +930,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					printw("  Error  ");
 					attroff(COLOR_PAIR(RED_PAIR));
 				} else
-					printw("%6.2f %% ",s->swapin_val);
+					color_print_pc(s->swapin_val);
 			}
 			if (!config.f.hideio&&has_tda) {
 				if (s->error_x) {
@@ -916,7 +938,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					printw("  Error  ");
 					attroff(COLOR_PAIR(RED_PAIR));
 				} else
-					printw("%6.2f %% ",s->blkio_val);
+					color_print_pc(s->blkio_val);
 			}
 			if (!config.f.hidegraph&&hrevpos>0) {
 				attron(A_REVERSE);
@@ -1488,6 +1510,10 @@ static inline int curses_key(int ch) {
 		case 'A':
 			config.f.accumulated=!config.f.accumulated;
 			break;
+		case 'l':
+		case 'L':
+			config.f.nocolor=!config.f.nocolor;
+			break;
 		case '?':
 			if (config.f.helptype!=2)
 				config.f.helptype=2;
@@ -1721,8 +1747,10 @@ inline void view_curses_init(void) {
 	nodelay(stdscr,TRUE);
 	start_color();
 	use_default_colors();
-	init_pair(RED_PAIR,COLOR_RED,COLOR_BLACK);
-	init_pair(CYAN_PAIR,COLOR_CYAN,COLOR_BLACK);
+	init_pair(RED_PAIR,COLOR_RED,-1);
+	init_pair(CYAN_PAIR,COLOR_CYAN,-1);
+	init_pair(GREEN_PAIR,COLOR_GREEN,-1);
+	init_pair(MAGENTA_PAIR,COLOR_MAGENTA,-1);
 
 	for (p=thelp;p->descr;p++) {
 		if (p->k1&&strlen(p->k1)>c1w)
