@@ -107,7 +107,8 @@ const s_helpitem thelp[]={
 	{.descr="Toggle showing COMMAND",.k2="9"},
 	{.descr="Show all columns",.k2="0"},
 	{.descr="Cycle GRAPH source (IO, R, W, R+W, SW)",.k2="g",.k3="G"},
-	{.descr="Cycle showing this, inline or no help",.k1="          ?",.k2="h",.k3="H"}, // padded to match <page-down>
+	{.descr="Toggle showing inline help",.k2="?"},
+	{.descr="Toggle showing this help",.k2="h",.k3="H"},
 	{.descr="IOnice a process/thread",.k2="i",.k3="I"},
 	{.descr="Change UID and PID filters",.k2="f",.k3="F"},
 	{.descr="Toggle using Unicode/ASCII characters",.k2="u",.k3="U"},
@@ -1488,20 +1489,19 @@ static inline int curses_key(int ch) {
 			config.f.accumulated=!config.f.accumulated;
 			break;
 		case '?':
-		case 'h':
-			config.f.helptype++;
-			if (config.f.helptype>2)
+			if (config.f.helptype!=2)
+				config.f.helptype=2;
+			else
 				config.f.helptype=0;
 			if (noinlinehelp&&config.f.helptype==2)
 				config.f.helptype=0;
 			break;
+		case 'h':
 		case 'H':
-			if (config.f.helptype)
-				config.f.helptype--;
-			else
-				config.f.helptype=2;
-			if (noinlinehelp&&config.f.helptype==2)
+			if (config.f.helptype!=1)
 				config.f.helptype=1;
+			else
+				config.f.helptype=0;
 			break;
 		case 'c':
 		case 'C':
