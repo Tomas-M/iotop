@@ -59,12 +59,13 @@ typedef union {
 		int hidegraph;
 		int hidecmd;
 		int deadx;
+		int hideexited;
 		e_grtype grtype;
 		int helptype;
 		int sort_by;
 		int sort_order;
 	} f;
-	int opts[20];
+	int opts[21];
 } config_t;
 
 typedef struct {

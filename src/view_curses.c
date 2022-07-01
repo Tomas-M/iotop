@@ -112,6 +112,7 @@ const s_helpitem thelp[]={
 	{.descr="Change UID and PID filters",.k2="f",.k3="F"},
 	{.descr="Toggle using Unicode/ASCII characters",.k2="u",.k3="U"},
 	{.descr="Toggle exited processes xxx/inverse",.k2="x",.k3="X"},
+	{.descr="Toggle showing exited processes",.k2="e",.k3="E"},
 	{.descr="Toggle data freeze",.k2="s",.k3="S"},
 	{.descr="Toggle task_delayacct (if available)",.k1="<Ctrl-T>",.k2="",.k3=""},
 	{.descr="Redraw screen",.k1="<Ctrl-L>",.k2="",.k3=""},
@@ -248,6 +249,8 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 			}
 		}
 	}
+	if (config.f.hideexited&&s->exited)
+		return 1;
 	if (config.f.processes&&s->tid!=s->pid)
 		return 1;
 	if (config.f.hidegraph) {
@@ -1527,6 +1530,10 @@ static inline int curses_key(int ch) {
 				ionice_pos=-1;
 				ionice_col=0;
 			}
+			break;
+		case 'e':
+		case 'E':
+			config.f.hideexited=!config.f.hideexited;
 			break;
 		case 'f':
 		case 'F':
