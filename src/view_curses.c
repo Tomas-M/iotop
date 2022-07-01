@@ -35,6 +35,8 @@ You should have received a copy of the GNU General Public License along with thi
 
 #define RED_PAIR 1
 #define CYAN_PAIR 2
+#define GREEN_PAIR 3
+#define MAGENTA_PAIR 4
 
 #define mymax(a,b) (((a)>(b))?(a):(b))
 
@@ -107,11 +109,14 @@ const s_helpitem thelp[]={
 	{.descr="Toggle showing COMMAND",.k2="9"},
 	{.descr="Show all columns",.k2="0"},
 	{.descr="Cycle GRAPH source (IO, R, W, R+W, SW)",.k2="g",.k3="G"},
-	{.descr="Cycle showing this, inline or no help",.k1="          ?",.k2="h",.k3="H"}, // padded to match <page-down>
+	{.descr="Toggle showing inline help",.k2="?"},
+	{.descr="Toggle showing this help",.k2="h",.k3="H"},
 	{.descr="IOnice a process/thread",.k2="i",.k3="I"},
 	{.descr="Change UID and PID filters",.k2="f",.k3="F"},
 	{.descr="Toggle using Unicode/ASCII characters",.k2="u",.k3="U"},
+	{.descr="Toggle colorizing values",.k2="l",.k3="L"},
 	{.descr="Toggle exited processes xxx/inverse",.k2="x",.k3="X"},
+	{.descr="Toggle showing exited processes",.k2="e",.k3="E"},
 	{.descr="Toggle data freeze",.k2="s",.k3="S"},
 	{.descr="Toggle task_delayacct (if available)",.k1="<Ctrl-T>",.k2="",.k3=""},
 	{.descr="Redraw screen",.k1="<Ctrl-L>",.k2="",.k3=""},
@@ -248,6 +253,8 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 			}
 		}
 	}
+	if (config.f.hideexited&&s->exited)
+		return 1;
 	if (config.f.processes&&s->tid!=s->pid)
 		return 1;
 	if (config.f.hidegraph) {
@@ -289,7 +296,7 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 			int drscale=u?8:1; // draw scale
 			int y=drscale*linecnt; // all scroll space
 			int ss=y*visible/items; // scroller size in scroll space
-			int min_ss=u?8:1; // minumum size of scroll bar in draw units
+			int min_ss=u?8:1; // minimum size of scroll bar in draw units
 			int adjss=(ss<min_ss)?min_ss:ss; // adjusted scroller size
 			int vss=y-adjss+1; // available scroll space without scroller size
 
@@ -382,6 +389,25 @@ static inline void view_warning(void) {
 	wattron(wtda,A_REVERSE);
 	mvwprintw(wtda,whh-1,1," press a key to hide ");
 	wattroff(wtda,A_REVERSE);
+}
+
+static inline void color_print_pc(double v) {
+	int cp=0;
+
+	if (v<=10)
+		cp=0;
+	else if (v<=40)
+		cp=COLOR_PAIR(GREEN_PAIR);
+	else if (v<=80)
+		cp=COLOR_PAIR(MAGENTA_PAIR);
+	else // 80-100
+		cp=COLOR_PAIR(RED_PAIR);
+	if (config.f.nocolor)
+		cp=0;
+	attron(cp);
+	printw("%6.2f",v);
+	attroff(cp);
+	printw(" %% ");
 }
 
 static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
@@ -904,7 +930,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					printw("  Error  ");
 					attroff(COLOR_PAIR(RED_PAIR));
 				} else
-					printw("%6.2f %% ",s->swapin_val);
+					color_print_pc(s->swapin_val);
 			}
 			if (!config.f.hideio&&has_tda) {
 				if (s->error_x) {
@@ -912,7 +938,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					printw("  Error  ");
 					attroff(COLOR_PAIR(RED_PAIR));
 				} else
-					printw("%6.2f %% ",s->blkio_val);
+					color_print_pc(s->blkio_val);
 			}
 			if (!config.f.hidegraph&&hrevpos>0) {
 				attron(A_REVERSE);
@@ -1484,21 +1510,24 @@ static inline int curses_key(int ch) {
 		case 'A':
 			config.f.accumulated=!config.f.accumulated;
 			break;
+		case 'l':
+		case 'L':
+			config.f.nocolor=!config.f.nocolor;
+			break;
 		case '?':
-		case 'h':
-			config.f.helptype++;
-			if (config.f.helptype>2)
+			if (config.f.helptype!=2)
+				config.f.helptype=2;
+			else
 				config.f.helptype=0;
 			if (noinlinehelp&&config.f.helptype==2)
 				config.f.helptype=0;
 			break;
+		case 'h':
 		case 'H':
-			if (config.f.helptype)
-				config.f.helptype--;
-			else
-				config.f.helptype=2;
-			if (noinlinehelp&&config.f.helptype==2)
+			if (config.f.helptype!=1)
 				config.f.helptype=1;
+			else
+				config.f.helptype=0;
 			break;
 		case 'c':
 		case 'C':
@@ -1527,6 +1556,10 @@ static inline int curses_key(int ch) {
 				ionice_pos=-1;
 				ionice_col=0;
 			}
+			break;
+		case 'e':
+		case 'E':
+			config.f.hideexited=!config.f.hideexited;
 			break;
 		case 'f':
 		case 'F':
@@ -1714,8 +1747,10 @@ inline void view_curses_init(void) {
 	nodelay(stdscr,TRUE);
 	start_color();
 	use_default_colors();
-	init_pair(RED_PAIR,COLOR_RED,COLOR_BLACK);
-	init_pair(CYAN_PAIR,COLOR_CYAN,COLOR_BLACK);
+	init_pair(RED_PAIR,COLOR_RED,-1);
+	init_pair(CYAN_PAIR,COLOR_CYAN,-1);
+	init_pair(GREEN_PAIR,COLOR_GREEN,-1);
+	init_pair(MAGENTA_PAIR,COLOR_MAGENTA,-1);
 
 	for (p=thelp;p->descr;p++) {
 		if (p->k1&&strlen(p->k1)>c1w)

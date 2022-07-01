@@ -204,7 +204,13 @@ the I/O summary is never printed
 .PD 1
 .TP
 \fB\-x\fR, \fB\-\-dead\-x\fR
-Show dead processes/threads with letter x instead of inverse background
+Show exited processes/threads with letter x instead of inverse background
+.TP
+\fB\-e\fR, \fB\-\-hide\-exited\fR
+Hide exited processes
+.TP
+\fB\-l\fR, \fB\-\-no\-color\fR
+Do not colorize values
 .PD 1
 .SH KEYBOARD SHORTCUTS
 .TP
@@ -251,8 +257,11 @@ Toggle showing processes/threads
 \fBa\fR, \fBA\fR
 Toggle showing accumulated/current values
 .TP
-\fB?\fR, \fBh\fR, \fBH\fR
-Toggle showing shortcut help
+\fB?\fR
+Toggle showing inline help
+.TP
+\fBh\fR, \fBH\fR
+Toggle showing window help
 .TP
 \fBc\fR, \fBC\fR
 Toggle showing full command line
@@ -276,9 +285,15 @@ Change UID and PID filters
 \fBu\fR, \fBU\fR
 Toggle using Unicode/ASCII characters for pseudo graph
 .TP
+\fBl\fR, \fBL\fR
+Toggle colorizing values
+.TP
 \fBx\fR, \fBX\fR
 Toggle the display mode of exited processes/threads between letter x and inverse
 background
+.TP
+\fBe\fR, \fBE\fR
+Toggle the display of exited processes
 .TP
 \fBs\fR, \fBS\fR
 Toggle freeze of data collection
