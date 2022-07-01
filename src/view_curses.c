@@ -296,7 +296,7 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 			int drscale=u?8:1; // draw scale
 			int y=drscale*linecnt; // all scroll space
 			int ss=y*visible/items; // scroller size in scroll space
-			int min_ss=u?8:1; // minumum size of scroll bar in draw units
+			int min_ss=u?8:1; // minimum size of scroll bar in draw units
 			int adjss=(ss<min_ss)?min_ss:ss; // adjusted scroller size
 			int vss=y-adjss+1; // available scroll space without scroller size
 
