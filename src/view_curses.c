@@ -1,4 +1,4 @@
-/* SPDX-License-Identifer: GPL-2.0-or-later
+/* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
 Copyright (C) 2020-2022  Boian Bonev
@@ -633,7 +633,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (!has_tda)
 			xpos-=strlen("[T]");
 		if (dontrefresh)
-			xpos-=strlen("[freezed]");
+			xpos-=strlen("[frozen]");
 
 		// don't step on column descriptions
 		if (xpos<maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1))
@@ -646,7 +646,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			attroff(A_REVERSE);
 		}
 		if (dontrefresh)
-			mvprintw(ionice_line+1,xpos+(has_tda?0:strlen("[T]")),"[freezed]");
+			mvprintw(ionice_line+1,xpos+(has_tda?0:strlen("[T]")),"[frozen]");
 	}
 	// easiest place to print debug info
 	//mvprintw(ionice_line+1,maxx-maxcmdline+strlen(COLUMN_L(0))+1," ... ",...);

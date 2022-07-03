@@ -1,4 +1,4 @@
-/* SPDX-License-Identifer: GPL-2.0-or-later
+/* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
 Copyright (C) 2020-2022  Boian Bonev
@@ -87,10 +87,16 @@ static inline void print_help(void) {
 }
 
 static inline void parse_args(int argc,char *argv[]) {
+	char *no_color=getenv("NO_COLOR");
+
 	init_params();
 	memset(&config,0,sizeof(config));
 	config.f.sort_by=SORT_BY_GRAPH;
 	config.f.sort_order=SORT_DESC;
+
+	// implement https://no-color.org/ proposal
+	if (no_color&&*no_color)
+		config.f.nocolor=1;
 
 	while (1) {
 		static struct option long_options[]={
