@@ -998,7 +998,7 @@ donedraw:
 			attron(A_BOLD);
 			printw("%s",ionice_id);
 			attroff(A_BOLD);
-			getyx(stdscr,promptx,prompty);
+			getyx(stdscr,prompty,promptx);
 			show=TRUE;
 			if (id&&(p=arr_find(cs,id))&&!p->exited) {
 				printw(" Current: ");
@@ -1093,7 +1093,7 @@ donedraw:
 		attron(A_BOLD);
 		printw("%s",filter_uid);
 		if (filter_col==0) {
-			getyx(stdscr,promptx,prompty);
+			getyx(stdscr,prompty,promptx);
 			show=TRUE;
 		}
 		if (strlen(filter_uid)&&strcmp(filter_uid,"none")) {
@@ -1116,7 +1116,7 @@ donedraw:
 		printw("%s",filter_pid);
 		attroff(A_BOLD);
 		if (filter_col==1) {
-			getyx(stdscr,promptx,prompty);
+			getyx(stdscr,prompty,promptx);
 			show=TRUE;
 		}
 
@@ -1337,7 +1337,7 @@ donedraw:
 		wnoutrefresh(wtda);
 	}
 	if (show)
-		move(promptx,prompty);
+		move(prompty,promptx);
 	curs_set(show);
 	doupdate();
 }
