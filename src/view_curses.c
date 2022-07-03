@@ -12,6 +12,7 @@ You should have received a copy of the GNU General Public License along with thi
 */
 
 #include "iotop.h"
+#include "ucell.h"
 
 // allow ncurses printf-like arguments checking
 #define GCC_PRINTF
@@ -53,6 +54,12 @@ static int in_filter=0; // filter by pid/uid interface flag and state vars
 static char filter_uid[50];
 static char filter_pid[50];
 static int filter_col=0; // select what to edit uid(0), pid(1)
+static int in_search=0; // search by regex interface flag
+static int search_off=0; // display offset of search regex
+static int search_pos=0; // cursor position in search regex
+static char *search_regx=NULL; // search regex
+static int search_sz=0; // search_regx memory allocation size (including 0 termination)
+static ucell *search_uc=NULL; // utf cell array
 static struct xxxid_stats *ionice_pos_data=NULL;
 static int has_unicode=0;
 static int unicode=1; // enable unicode (only valid if unicode is available)
@@ -564,7 +571,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	ionice_line=1;
 	if (head1row) {
 		ionice_line=0;
-		if (!in_ionice&&!in_filter) {
+		if (!in_ionice&&!in_filter&&!in_search) {
 			if (shrink_dm) {
 				str_read[1]=0;
 				str_write[1]=0;
@@ -579,7 +586,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		mvhline(0,0,' ',maxx);
 		mvprintw(0,0,HEADER1_FORMAT,total_read,str_read,!config.f.hidegraph?pg_t_r:"",total_write,str_write,!config.f.hidegraph?pg_t_w:"");
 
-		if (!in_ionice&&!in_filter) {
+		if (!in_ionice&&!in_filter&&!in_search) {
 			mvhline(1,0,' ',maxx);
 			mvprintw(1,0,HEADER2_FORMAT,total_a_read,str_a_read,!config.f.hidegraph?pg_a_r:"",total_a_write,str_a_write,!config.f.hidegraph?pg_a_w:"");
 			show=FALSE;
@@ -1125,6 +1132,30 @@ donedraw:
 		printw("[use 0-9/n/bksp for UID/TID, tab to switch UID/TID]");
 		attroff(A_REVERSE);
 	}
+	if (in_search) {
+		int ssize=maxx-strlen("Search: ")-10;
+
+		mvhline(ionice_line,0,' ',maxx);
+		mvprintw(ionice_line,0,"Search: ");
+		if (ssize>2) {
+			char *ss=ucell_substr(search_uc,0,ssize);
+			char *ps=u8strpadt(ss,ssize);
+
+			attron(A_REVERSE);
+			if (ps)
+				printw("%s",ps);
+			else
+				printw("%*.*s",ssize,ssize,"");
+			attroff(A_REVERSE);
+			promptx=strlen("Search: ")+ucell_cursor_c(search_uc);
+			prompty=ionice_line;
+			show=TRUE;
+			if (ps)
+				free(ps);
+			if (ss)
+				free(ss);
+		}
+	}
 	draw_vscroll(maxx-1,head1row?2:3,maxy-1-(noinlinehelp==0&&config.f.helptype==2?2:0),dispcount,saveskip);
 	if (config.f.helptype==2) {
 		attron(A_REVERSE);
@@ -1342,7 +1373,52 @@ donedraw:
 	doupdate();
 }
 
+static inline int curses_key_search(int ch) {
+	switch (ch) {
+		case 27: // ESC
+			in_search=0;
+			break;
+		case '\r': // CR
+		case KEY_ENTER:
+			// TODO: set the filter if regex is valid
+			in_search=0;
+			break;
+		case KEY_HOME:
+			ucell_cursor_set(search_uc,0);
+			break;
+		case KEY_END:
+			ucell_cursor_set(search_uc,ucell_len(search_uc));
+			break;
+		case KEY_RIGHT:
+			ucell_cursor_set(search_uc,ucell_cursor(search_uc)+1);
+			break;
+		case KEY_LEFT:
+			ucell_cursor_set(search_uc,ucell_cursor(search_uc)-1);
+			break;
+		case 0x08: // Ctrl-H, Backspace on some terminals
+		case KEY_BACKSPACE:
+			ucell_backspace(search_uc);
+			break;
+		case KEY_DC:
+			ucell_del(search_uc);
+			break;
+		case KEY_CTRL_L: // Ctrl-L
+			redrawwin(stdscr);
+		case KEY_REFRESH:
+		case KEY_RESIZE:
+			break;
+		default:
+			if (ch>=' '&&ch<=0xff)
+				if (ucell_utf_feed(search_uc,ch)>0)
+					return 0; // refresh screen
+			return -1;
+	}
+	return 0;
+}
+
 static inline int curses_key(int ch) {
+	if (in_search)
+		return curses_key_search(ch);
 	switch (ch) {
 		case 's':
 		case 'S':
@@ -1703,6 +1779,25 @@ static inline int curses_key(int ch) {
 					for (i=1;i<=9;i++)
 						config.opts[&config.f.hidepid-config.opts+i-1]=0;
 				}
+			}
+			break;
+		case '/':
+			if (!in_ionice&&!in_filter) {
+				in_search=1;
+				if (search_uc)
+					ucell_free(search_uc);
+				search_uc=ucell_init(0);
+				search_off=0;
+				search_pos=0;
+				if (!search_regx) {
+					search_regx=calloc(1,200);
+					search_sz=200;
+				} else
+					memset(search_regx,0,search_sz);
+				if (!search_regx)
+					in_search=0;
+				if (!search_uc)
+					in_search=0;
 			}
 			break;
 		case KEY_CTRL_T:
