@@ -1125,9 +1125,6 @@ donedraw:
 		printw("[use 0-9/n/bksp for UID/TID, tab to switch UID/TID]");
 		attroff(A_REVERSE);
 	}
-	if (show)
-		move(promptx,prompty);
-	curs_set(show);
 	draw_vscroll(maxx-1,head1row?2:3,maxy-1-(noinlinehelp==0&&config.f.helptype==2?2:0),dispcount,saveskip);
 	if (config.f.helptype==2) {
 		attron(A_REVERSE);
@@ -1339,6 +1336,9 @@ donedraw:
 		view_warning();
 		wnoutrefresh(wtda);
 	}
+	if (show)
+		move(promptx,prompty);
+	curs_set(show);
 	doupdate();
 }
 
