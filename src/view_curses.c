@@ -895,8 +895,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				attron(A_UNDERLINE);
 				ionice_pos_data=s;
 			}
-			if (s->exited)
-				attron(A_DIM);
+			attron(s->exited?A_DIM:A_BOLD);
 			mvhline(line,0,' ',maxx);
 			move(line,0);
 			if (!config.f.hidepid)
@@ -980,8 +979,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				free(pw_name);
 			if (cmdline)
 				free(cmdline);
-			if (s->exited)
-				attroff(A_DIM);
+			attroff(s->exited?A_DIM:A_BOLD);
 
 			line++;
 			lastline=line;
