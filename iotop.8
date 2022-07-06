@@ -300,6 +300,10 @@ Toggle freeze of data collection
 .TP
 \fBCtrl\-T\fR
 Toggle task_delayacct kernel sysctl
+.SH ENVIRONMENT
+As per the recommendation of \fBhttps://www.no-color.org/\fR iotop honors the
+contents of the environment variable \fBNO_COLOR\fR and when it is set to a non
+empty string, all color output is suppressed.
 .SH SEE ALSO
 .BR ionice (1),
 .BR top (1),
