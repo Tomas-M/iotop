@@ -1424,7 +1424,7 @@ static inline int curses_key_search(int ch) {
 		case '\r': // CR
 		case KEY_ENTER:
 			in_search=0;
-			if (search_regx_ok&&search_str&&!strlen(search_str)) { // empty srting=cancel search
+			if (search_regx_ok&&search_str&&!strlen(search_str)) { // empty string=cancel search
 				regfree(&search_regx);
 				search_regx_ok=0;
 			}
