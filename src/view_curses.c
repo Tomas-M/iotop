@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define GCC_PRINTF
 
 #include <pwd.h>
+#include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,10 +56,9 @@ static char filter_uid[50];
 static char filter_pid[50];
 static int filter_col=0; // select what to edit uid(0), pid(1)
 static int in_search=0; // search by regex interface flag
-static int search_off=0; // display offset of search regex
-static int search_pos=0; // cursor position in search regex
-static char *search_regx=NULL; // search regex
-static int search_sz=0; // search_regx memory allocation size (including 0 termination)
+static char *search_str=NULL; // search regex string
+static regex_t search_regx; // search regex
+static int search_regx_ok=0; // search regex compiles ok
 static ucell *search_uc=NULL; // utf cell array
 static struct xxxid_stats *ionice_pos_data=NULL;
 static int has_unicode=0;
@@ -216,6 +216,9 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	// apply uid/pid filter
 	if (filter1(s))
 		return 1;
+	if (search_regx_ok)
+		if (regexec(&search_regx,s->cmdline1,0,NULL,0)&&regexec(&search_regx,s->cmdline2,0,NULL,0))
+			return 1;
 	// visible history is non-zero
 	if (config.f.only) {
 		if (config.f.hidegraph) {
@@ -1145,6 +1148,15 @@ donedraw:
 			else
 				printw("%*.*s",ssize,ssize,"");
 			attroff(A_REVERSE);
+			printw(" [");
+			if (!config.f.nocolor)
+				attron(search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
+			attron(A_BOLD);
+			printw("%s",search_regx_ok?"  OK  ":"Error!");
+			if (!config.f.nocolor)
+				attroff(search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
+			attroff(A_BOLD);
+			printw("]");
 			promptx=strlen("Search: ")+ucell_cursor_c(search_uc);
 			prompty=ionice_line;
 			show=TRUE;
@@ -1371,15 +1383,60 @@ donedraw:
 	doupdate();
 }
 
+static inline void update_search(void) {
+	char *fs;
+
+	if (!search_uc)
+		return;
+
+	fs=ucell_substr(search_uc,0,0); // regex to compile
+	if (!fs)
+		return;
+	if (search_str)
+		free(search_str);
+	search_str=fs;
+	if (search_regx_ok) {
+		regfree(&search_regx);
+		search_regx_ok=0;
+	}
+	if (search_str)
+		search_regx_ok=regcomp(&search_regx,search_str,REG_EXTENDED)==0;
+}
+
 static inline int curses_key_search(int ch) {
 	switch (ch) {
 		case 27: // ESC
 			in_search=0;
+			if (search_str) {
+				free(search_str);
+				search_str=0;
+			}
+			if (search_regx_ok) {
+				regfree(&search_regx);
+				search_regx_ok=0;
+			}
+			if (search_uc) {
+				ucell_free(search_uc);
+				search_uc=NULL;
+			}
 			break;
 		case '\r': // CR
 		case KEY_ENTER:
-			// TODO: set the filter if regex is valid
 			in_search=0;
+			if (search_regx_ok&&search_str&&!strlen(search_str)) { // empty srting=cancel search
+				regfree(&search_regx);
+				search_regx_ok=0;
+			}
+			if (!search_regx_ok) {
+				if (search_str) {
+					free(search_str);
+					search_str=0;
+				}
+				if (search_uc) {
+					ucell_free(search_uc);
+					search_uc=NULL;
+				}
+			}
 			break;
 		case KEY_HOME:
 			ucell_cursor_set(search_uc,0);
@@ -1396,9 +1453,11 @@ static inline int curses_key_search(int ch) {
 		case 0x08: // Ctrl-H, Backspace on some terminals
 		case KEY_BACKSPACE:
 			ucell_backspace(search_uc);
+			update_search();
 			break;
 		case KEY_DC:
 			ucell_del(search_uc);
+			update_search();
 			break;
 		case KEY_CTRL_L: // Ctrl-L
 			redrawwin(stdscr);
@@ -1407,8 +1466,10 @@ static inline int curses_key_search(int ch) {
 			break;
 		default:
 			if (ch>=' '&&ch<=0xff)
-				if (ucell_utf_feed(search_uc,ch)>0)
+				if (ucell_utf_feed(search_uc,ch)>0) {
+					update_search();
 					return 0; // refresh screen
+				}
 			return -1;
 	}
 	return 0;
@@ -1782,20 +1843,21 @@ static inline int curses_key(int ch) {
 		case '/':
 			if (!in_ionice&&!in_filter) {
 				in_search=1;
-				if (search_uc)
-					ucell_free(search_uc);
-				search_uc=ucell_init(0);
-				search_off=0;
-				search_pos=0;
-				if (!search_regx) {
-					search_regx=calloc(1,200);
-					search_sz=200;
-				} else
-					memset(search_regx,0,search_sz);
-				if (!search_regx)
-					in_search=0;
+				if (!search_regx_ok) {
+					if (search_uc) {
+						ucell_free(search_uc);
+						search_uc=NULL;
+					}
+				}
+				if (!search_uc)
+					search_uc=ucell_init(0);
+				if (search_str) {
+					free(search_str);
+					search_str=NULL;
+				}
 				if (!search_uc)
 					in_search=0;
+				update_search();
 			}
 			break;
 		case KEY_CTRL_T:
@@ -1876,7 +1938,21 @@ inline void view_curses_init(void) {
 inline void view_curses_fini(void) {
 	if (whelp)
 		delwin(whelp);
+	if (wtda)
+		delwin(wtda);
 	endwin();
+	if (search_str) {
+		free(search_str);
+		search_str=NULL;
+	}
+	if (search_regx_ok) {
+		regfree(&search_regx);
+		search_regx_ok=0;
+	}
+	if (search_uc) {
+		ucell_free(search_uc);
+		search_uc=NULL;
+	}
 
 	if (has_task_delayacct())
 		if (!initial_delayacct&&read_task_delayacct()) {
