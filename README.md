@@ -112,30 +112,34 @@ cd iotop && git checkout master && git pull && make clean && make -j
 
 ## Options
 
-    -v, --version         show program's version number and exit
-    -h, --help            show this help message and exit
-    -o, --only            only show processes or threads actually doing I/O
-    -b, --batch           non-interactive mode
-    -n NUM, --iter=NUM    number of iterations before ending [infinite]
-    -d SEC, --delay=SEC   delay between iterations [1 second]
-    -p PID, --pid=PID     processes/threads to monitor [all]
-    -u USER, --user=USER  users to monitor [all]
-    -P, --processes       only show processes, not all threads
-    -a, --accumulated     show accumulated I/O instead of bandwidth
-    -k, --kilobytes       use kilobytes instead of a human friendly unit
-    -t, --time            add a timestamp on each line (implies --batch)
-    -c, --fullcmdline     show full command line
-    -1, --hide-pid        hide PID/TID column
-    -2, --hide-prio       hide PRIO column
-    -3, --hide-user       hide USER column
-    -4, --hide-read       hide DISK READ column
-    -5, --hide-write      hide DISK WRITE column
-    -6, --hide-swapin     hide SWAPIN column
-    -7, --hide-io         hide IO column
-    -8, --hide-graph      hide GRAPH column
-    -9, --hide-command    hide COMMAND column
-    -q, --quiet           suppress some lines of header (implies --batch)
-    -H, --no-help         suppress listing of shortcuts
+    -v, --version          show program's version number and exit
+    -h, --help             show this help message and exit
+    -H, --help-type=TYPE   set type of interactive help (none, win or inline)
+    -o, --only             only show processes or threads actually doing I/O
+    -b, --batch            non-interactive mode
+    -n NUM, --iter=NUM     number of iterations before ending [infinite]
+    -d SEC, --delay=SEC    delay between iterations [1 second]
+    -p PID, --pid=PID      processes/threads to monitor [all]
+    -u USER, --user=USER   users to monitor [all]
+    -P, --processes        only show processes, not all threads
+    -a, --accumulated      show accumulated I/O instead of bandwidth
+    -k, --kilobytes        use kilobytes instead of a human friendly unit
+    -t, --time             add a timestamp on each line (implies --batch)
+    -c, --fullcmdline      show full command line
+    -1, --hide-pid         hide PID/TID column
+    -2, --hide-prio        hide PRIO column
+    -3, --hide-user        hide USER column
+    -4, --hide-read        hide DISK READ column
+    -5, --hide-write       hide DISK WRITE column
+    -6, --hide-swapin      hide SWAPIN column
+    -7, --hide-io          hide IO column
+    -8, --hide-graph       hide GRAPH column
+    -9, --hide-command     hide COMMAND column
+    -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)
+    -q, --quiet            suppress some lines of header (implies --batch)
+    -x, --dead-x           show exited processes/threads with letter x
+    -e, --hide-exited      hide exited processes
+    -l, --no-color         do not colorize values
 
 ## Contribute
 
