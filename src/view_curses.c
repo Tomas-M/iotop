@@ -384,9 +384,9 @@ static inline void view_warning(void) {
 
 	mvwprintw(wtda,0,0,"%s",(has_unicode&&unicode)?"─":"_");
 	wattron(wtda,A_REVERSE);
-	wattron(wtda,COLOR_PAIR(RED_PAIR));
+	wattron(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 	wprintw(wtda," warning ");
-	wattroff(wtda,COLOR_PAIR(RED_PAIR));
+	wattroff(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 	wattroff(wtda,A_REVERSE);
 	for (i=1+strlen(" warning ");i<whw;i++)
 		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
@@ -651,9 +651,9 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			xpos=maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1);
 		if (!has_tda) {
 			attron(A_REVERSE);
-			attron(COLOR_PAIR(RED_PAIR));
+			attron(config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 			mvprintw(ionice_line+1,xpos,"[T]");
-			attroff(COLOR_PAIR(RED_PAIR));
+			attroff(config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 			attroff(A_REVERSE);
 		}
 		if (dontrefresh)
@@ -910,9 +910,9 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				if (k==-1&&th_prio_diff)
 					c='!';
 				if (s->error_i) {
-					attron(COLOR_PAIR(RED_PAIR));
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 					printw("Error ");
-					attroff(COLOR_PAIR(RED_PAIR));
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
 					printw("%c%4s ",c,str_ioprio(s->io_prio));
 			}
@@ -920,33 +920,33 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				printw("%s ",pw_name?pw_name:"(null)");
 			if (!config.f.hideread) {
 				if (s->error_x) {
-					attron(COLOR_PAIR(RED_PAIR));
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 					printw("   Error    ");
-					attroff(COLOR_PAIR(RED_PAIR));
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
 					printw("%7.2f %-3.3s ",read_val,read_str);
 			}
 			if (!config.f.hidewrite) {
 				if (s->error_x) {
-					attron(COLOR_PAIR(RED_PAIR));
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 					printw("   Error    ");
-					attroff(COLOR_PAIR(RED_PAIR));
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
 					printw("%7.2f %-3.3s ",write_val,write_str);
 			}
 			if (!config.f.hideswapin&&has_tda) {
 				if (s->error_x) {
-					attron(COLOR_PAIR(RED_PAIR));
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 					printw("  Error  ");
-					attroff(COLOR_PAIR(RED_PAIR));
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
 					color_print_pc(s->swapin_val);
 			}
 			if (!config.f.hideio&&has_tda) {
 				if (s->error_x) {
-					attron(COLOR_PAIR(RED_PAIR));
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 					printw("  Error  ");
-					attroff(COLOR_PAIR(RED_PAIR));
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
 					color_print_pc(s->blkio_val);
 			}
@@ -1179,74 +1179,74 @@ donedraw:
 		attroff(A_BOLD);
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("^L");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": redraw ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("q");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": quit ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("i");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": ionice ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("f");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": uid/pid ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("o");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.only?"all":"active");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("p");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.processes?"threads":"procs");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("a");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.accumulated?"bandwidth":"accum");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("g");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": graph src ");
 
 		if (has_unicode) {
 			attron(A_UNDERLINE);
-			attron(COLOR_PAIR(CYAN_PAIR));
+			attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 			printw("u");
-			attroff(COLOR_PAIR(CYAN_PAIR));
+			attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 			attroff(A_UNDERLINE);
 			printw(": %s ",unicode?"ASCII":"UTF");
 		}
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("h/?");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": help");
 
@@ -1255,16 +1255,16 @@ donedraw:
 		attroff(A_BOLD);
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("r");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.sort_order==SORT_ASC?"desc":"asc");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("left/right");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": select ");
 
@@ -1273,37 +1273,37 @@ donedraw:
 		attroff(A_BOLD);
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("1-9");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": toggle ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("0");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": show all ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("(pg)up/dn/home/end");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": scroll ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("x");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.deadx?"bkg":"xxx");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("s");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",dontrefresh?"unfreeze":"freeze");
 
