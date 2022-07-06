@@ -571,7 +571,7 @@ inline char *ucell_substr(ucell *uc,int skip,int maxc) { // {{{
 			stp=i+1;
 			continue;
 		}
-		if (clen+uc->cells[i].w<=maxc) {
+		if (!maxc||clen+uc->cells[i].w<=maxc) { // maxc==0 means no limit
 			clen+=uc->cells[i].w;
 			blen+=strlen((uc->cells[i].flags&UC_ALLOC)?uc->cells[i].p:uc->cells[i].d);
 			enp=i+1;
