@@ -363,18 +363,18 @@ static inline void view_help(void) {
 	const s_helpitem *p;
 
 	mvwprintw(whelp,0,0,"%s",(has_unicode&&unicode)?"─":"_");
-	wattron(whelp,A_REVERSE);
+	wattron(whelp,A_REVERSE|A_DIM);
 	wprintw(whelp," help ");
-	wattroff(whelp,A_REVERSE);
+	wattroff(whelp,A_REVERSE|A_DIM);
 	for (i=1+strlen(" help ");i<hw;i++)
 		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
 	for (p=thelp,i=1;i<hh-1;i++,p++)
 		mvwprintw(whelp,i,0," %-*.*s %-*.*s %-*.*s - %-*.*s ",a,a,p->k1?p->k1:"",b,b,p->k2?p->k2:"",c,c,p->k3?p->k3:"",d,d,p->descr);
 	mvwprintw(whelp,hh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
-	wattron(whelp,A_REVERSE);
+	wattron(whelp,A_REVERSE|A_DIM);
 	for (i=1;i<hw&&i<(int)strlen(" iotop "VERSION" ");i++)
 		mvwprintw(whelp,hh-1,i,"%c",(" iotop "VERSION" ")[i]);
-	wattroff(whelp,A_REVERSE);
+	wattroff(whelp,A_REVERSE|A_DIM);
 	for (i=1+strlen(" iotop "VERSION" ");i<hw;i++)
 		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
 }
@@ -383,11 +383,11 @@ static inline void view_warning(void) {
 	int i;
 
 	mvwprintw(wtda,0,0,"%s",(has_unicode&&unicode)?"─":"_");
-	wattron(wtda,A_REVERSE);
+	wattron(wtda,A_REVERSE|A_DIM);
 	wattron(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 	wprintw(wtda," warning ");
 	wattroff(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
-	wattroff(wtda,A_REVERSE);
+	wattroff(wtda,A_REVERSE|A_DIM);
 	for (i=1+strlen(" warning ");i<whw;i++)
 		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
 	mvwprintw(wtda,1,0,"%*.*s",whw,whw,"");
@@ -397,9 +397,9 @@ static inline void view_warning(void) {
 	mvwprintw(wtda,whh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
 	for (i=1;i<whw;i++)
 		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
-	wattron(wtda,A_REVERSE);
+	wattron(wtda,A_REVERSE|A_DIM);
 	mvwprintw(wtda,whh-1,1," press a key to hide ");
-	wattroff(wtda,A_REVERSE);
+	wattroff(wtda,A_REVERSE|A_DIM);
 }
 
 static inline void color_print_pc(double v) {
