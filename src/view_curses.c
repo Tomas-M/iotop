@@ -363,9 +363,9 @@ static inline void view_help(void) {
 	const s_helpitem *p;
 
 	mvwprintw(whelp,0,0,"%s",(has_unicode&&unicode)?"─":"_");
-	wattron(whelp,A_REVERSE|A_DIM);
+	wattron(whelp,A_REVERSE);
 	wprintw(whelp," help ");
-	wattroff(whelp,A_REVERSE|A_DIM);
+	wattroff(whelp,A_REVERSE);
 	for (i=1+strlen(" help ");i<hw;i++)
 		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
 	for (p=thelp,i=1;i<hh-1;i++,p++)
@@ -383,11 +383,11 @@ static inline void view_warning(void) {
 	int i;
 
 	mvwprintw(wtda,0,0,"%s",(has_unicode&&unicode)?"─":"_");
-	wattron(wtda,A_REVERSE|A_DIM);
+	wattron(wtda,A_REVERSE);
 	wattron(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 	wprintw(wtda," warning ");
 	wattroff(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
-	wattroff(wtda,A_REVERSE|A_DIM);
+	wattroff(wtda,A_REVERSE);
 	for (i=1+strlen(" warning ");i<whw;i++)
 		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
 	mvwprintw(wtda,1,0,"%*.*s",whw,whw,"");
