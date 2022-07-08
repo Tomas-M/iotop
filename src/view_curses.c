@@ -1192,7 +1192,8 @@ donedraw:
 		mvhline(ionice_line,0,' ',maxx);
 		mvprintw(ionice_line,0,"Search: ");
 		if (ssize>2) {
-			char *ss=ucell_substr(search_uc,0,ssize);
+			int toskip=ssize-1<ucell_cursor_c(search_uc)?ucell_cursor_c(search_uc)-ssize+1:0;
+			char *ss=ucell_substr(search_uc,toskip,ssize);
 			char *ps=u8strpadt(ss,ssize);
 
 			attron(A_REVERSE);
@@ -1210,7 +1211,7 @@ donedraw:
 				attroff(search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
 			attroff(A_BOLD);
 			printw("]");
-			promptx=strlen("Search: ")+ucell_cursor_c(search_uc);
+			promptx=strlen("Search: ")+ucell_cursor_c(search_uc)-toskip;
 			prompty=ionice_line;
 			show=TRUE;
 			if (ps)
