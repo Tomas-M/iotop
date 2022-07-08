@@ -28,6 +28,56 @@ You should have received a copy of the GNU General Public License along with thi
 #include <langinfo.h>
 #include <sys/types.h>
 
+// key definitions
+#ifndef KEY_CTRL_A
+#define KEY_CTRL_A 0x01
+#endif
+#ifndef KEY_CTRL_B
+#define KEY_CTRL_B 0x02
+#endif
+#ifndef KEY_CTRL_D
+#define KEY_CTRL_D 0x04
+#endif
+#ifndef KEY_CTRL_E
+#define KEY_CTRL_E 0x05
+#endif
+#ifndef KEY_CTRL_F
+#define KEY_CTRL_F 0x06
+#endif
+#ifndef KEY_CTRL_H
+#define KEY_CTRL_H 0x08
+#endif
+#ifndef KEY_CTRL_I
+#define KEY_CTRL_I 0x09
+#endif
+#ifndef KEY_TAB
+#define KEY_TAB KEY_CTRL_I
+#endif
+#ifndef KEY_CTRL_K
+#define KEY_CTRL_K 0x0b
+#endif
+#ifndef KEY_CTRL_L
+#define KEY_CTRL_L 0x0c
+#endif
+#ifndef KEY_CTRL_M
+#define KEY_CTRL_M 0x0d
+#endif
+#ifndef KEY_RET
+#define KEY_RET KEY_CTRL_M
+#endif
+#ifndef KEY_CTRL_T
+#define KEY_CTRL_T 0x14
+#endif
+#ifndef KEY_CTRL_U
+#define KEY_CTRL_U 0x15
+#endif
+#ifndef KEY_CTRL_W
+#define KEY_CTRL_W 0x17
+#endif
+#ifndef KEY_ESCAPE
+#define KEY_ESCAPE 0x1b
+#endif
+
 #define HEADER_XXS_FORMAT "%4.0f%s%s/%4.0f%s%s|%4.0f%s%s/%4.0f%s%s"
 #define HEADER_XS_FORMAT "TR:%4.0f%s%sW:%4.0f%s%s|CR:%4.0f%s%sW:%4.0f%s%s"
 #define HEADER_S_FORMAT "T R:%7.2f%s%s W:%7.2f%s%s|C R:%7.2f%s%s W:%7.2f%s%s"
@@ -1406,9 +1456,47 @@ static inline void update_search(void) {
 		search_regx_ok=regcomp(&search_regx,search_str,REG_EXTENDED)==0;
 }
 
+static inline void key_log(int ch __attribute__((unused)),int issecond __attribute__((unused))) {
+#if 0 // debug key logging
+	const char *kn=keyname(ch);
+	FILE *f=fopen("iotop-key.log","a+");
+
+	if (f) {
+		fprintf(f,"[%u] key: %8x name: %s\n",issecond,ch,kn);
+		fclose(f);
+	}
+#endif
+}
+
 static inline int curses_key_search(int ch) {
+	int k2;
+
 	switch (ch) {
-		case 27: // ESC
+		case KEY_ESCAPE: // ESC
+			nocbreak();
+			k2=getch();
+			cbreak();
+			key_log(k2,1);
+			if (k2!=ERR) {
+				switch (k2) {
+					// add alt-/meta- key handling here
+					case KEY_CTRL_H: // Ctrl-H, Backspace on some terminals
+					case KEY_BACKSPACE:
+						goto case_Alt_Backspace;
+					case 'b':
+					case 'B':
+						goto case_Alt_b;
+					case 'd':
+					case 'D':
+						goto case_Alt_d;
+					case 'f':
+					case 'F':
+						goto case_Alt_f;
+					default:
+						break;
+				}
+				break;
+			}
 			in_search=0;
 			if (search_str) {
 				free(search_str);
@@ -1423,7 +1511,7 @@ static inline int curses_key_search(int ch) {
 				search_uc=NULL;
 			}
 			break;
-		case '\r': // CR
+		case KEY_RET: // CR
 		case KEY_ENTER:
 			in_search=0;
 			if (search_regx_ok&&search_str&&!strlen(search_str)) { // empty string=cancel search
@@ -1442,24 +1530,56 @@ static inline int curses_key_search(int ch) {
 			}
 			break;
 		case KEY_HOME:
-			ucell_cursor_set(search_uc,0);
+		case KEY_CTRL_A:
+			ucell_move_home(search_uc);
 			break;
 		case KEY_END:
-			ucell_cursor_set(search_uc,ucell_len(search_uc));
+		case KEY_CTRL_E:
+			ucell_move_end(search_uc);
 			break;
 		case KEY_RIGHT:
-			ucell_cursor_set(search_uc,ucell_cursor(search_uc)+1);
+		case KEY_CTRL_F:
+			ucell_move(search_uc);
 			break;
 		case KEY_LEFT:
-			ucell_cursor_set(search_uc,ucell_cursor(search_uc)-1);
+		case KEY_CTRL_B:
+			ucell_move_back(search_uc);
 			break;
-		case 0x08: // Ctrl-H, Backspace on some terminals
-		case KEY_BACKSPACE:
-			ucell_backspace(search_uc);
+		case KEY_CTRL_H: // Ctrl-H, Backspace on some terminals
+		case KEY_BACKSPACE: // del prev char
+			ucell_del_char_prev(search_uc);
 			update_search();
 			break;
 		case KEY_DC:
-			ucell_del(search_uc);
+		case KEY_CTRL_D: // del current char
+			ucell_del_char(search_uc);
+			update_search();
+			break;
+		case KEY_CTRL_K: // Ctrl-K, del to end of line
+			ucell_del_to_end(search_uc);
+			update_search();
+			break;
+		case KEY_CTRL_U: // Ctrl-U, del all
+			ucell_del_all(search_uc);
+			update_search();
+			break;
+		case KEY_CTRL_W: // Ctrl-W, del prev word
+		case_Alt_Backspace:
+			ucell_del_word_prev(search_uc);
+			update_search();
+			break;
+		case_Alt_f: // word forward
+		case_Ctrl_Right:
+			ucell_move_word(search_uc);
+			update_search();
+			break;
+		case_Alt_b: // word backward
+		case_Ctrl_Left:
+			ucell_move_word_back(search_uc);
+			update_search();
+			break;
+		case_Alt_d: // del word at cursor
+			ucell_del_word(search_uc);
 			update_search();
 			break;
 		case KEY_CTRL_L: // Ctrl-L
@@ -1468,17 +1588,44 @@ static inline int curses_key_search(int ch) {
 		case KEY_RESIZE:
 			break;
 		default:
-			if (ch>=' '&&ch<=0xff)
+			if (ch>=' '&&ch<=0xff) {
 				if (ucell_utf_feed(search_uc,ch)>0) {
 					update_search();
 					return 0; // refresh screen
 				}
+			} else if (ch>0xff) {
+				const char *kn=keyname(ch);
+
+				if (kn&&!strcmp(kn,"kLFT5")) // CTRL-Left
+					goto case_Ctrl_Left;
+				if (kn&&!strcmp(kn,"kRIT5")) // CTRL-Right
+					goto case_Ctrl_Right;
+				if (kn&&!strcmp(kn,"M-b")) // Alt-b
+					goto case_Alt_b;
+				if (kn&&!strcmp(kn,"M-B")) // Alt-B
+					goto case_Alt_b;
+				if (kn&&!strcmp(kn,"M-d")) // Alt-d
+					goto case_Alt_d;
+				if (kn&&!strcmp(kn,"M-D")) // Alt-D
+					goto case_Alt_d;
+				if (kn&&!strcmp(kn,"M-f")) // Alt-f
+					goto case_Alt_f;
+				if (kn&&!strcmp(kn,"M-F")) // Alt-F
+					goto case_Alt_f;
+				if (kn&&!strcmp(kn,"M-^H")) // Alt-Backspace
+					goto case_Alt_Backspace;
+				if (kn&&!strcmp(kn,"M-^?")) // Alt-Backspace
+					goto case_Alt_Backspace;
+			}
 			return -1;
 	}
 	return 0;
 }
 
 static inline int curses_key(int ch) {
+	int k2;
+
+	key_log(ch,0);
 	if (in_search)
 		return curses_key_search(ch);
 	switch (ch) {
@@ -1727,7 +1874,19 @@ static inline int curses_key(int ch) {
 		case 'X':
 			config.f.deadx=!config.f.deadx;
 			break;
-		case 27: // ESC
+		case KEY_ESCAPE: // ESC
+			nocbreak();
+			k2=getch();
+			cbreak();
+			key_log(k2,1);
+			if (k2!=ERR) {
+				switch (k2) {
+					// add alt-/meta- key handling here
+					default:
+						break;
+				}
+				break;
+			}
 			if (config.f.helptype==1&&!in_ionice&&!in_filter)
 				config.f.helptype=0;
 			// unlike help window these cannot happen at the same time
@@ -1736,7 +1895,7 @@ static inline int curses_key(int ch) {
 			if (in_filter)
 				in_filter=0;
 			break;
-		case '\r': // CR
+		case KEY_RET: // CR
 		case KEY_ENTER:
 			if (in_ionice&&strlen(ionice_id)) {
 				pid_t pgid=atoi(ionice_id);
@@ -1772,7 +1931,7 @@ static inline int curses_key(int ch) {
 				in_filter=0;
 			}
 			break;
-		case '\t': // TAB
+		case KEY_TAB: // TAB
 			if (in_ionice) {
 				if (strlen(ionice_id))
 					ionice_cl=!ionice_cl;
@@ -1783,7 +1942,7 @@ static inline int curses_key(int ch) {
 			if (in_filter)
 				filter_col^=1;
 			break;
-		case 0x08: // Ctrl-H, Backspace on some terminals
+		case KEY_CTRL_H: // Ctrl-H, Backspace on some terminals
 		case KEY_BACKSPACE:
 			if (in_ionice) {
 				int idlen=strlen(ionice_id);
