@@ -388,7 +388,7 @@ inline int ucell_utf_feed(ucell *uc,uint8_t c) { // {{{
 			if ((c&0xc0)==0x80) { // continuation byte
 				ucell_utf_feed2(uc,uc->utf[0],c);
 				uc->utfst=U_NORM;
-				break;
+				return 2;
 			}
 			if (c&0x80) // start another sequence
 				goto startbyte;
@@ -409,9 +409,8 @@ inline int ucell_utf_feed(ucell *uc,uint8_t c) { // {{{
 		case U_L3C2:
 			if ((c&0xc0)==0x80) { // continuation byte
 				ucell_utf_feed3(uc,uc->utf[0],uc->utf[1],c);
-				return 3;
 				uc->utfst=U_NORM;
-				break;
+				return 3;
 			}
 			if (c&0x80) // start another sequence
 				goto startbyte;
@@ -443,9 +442,8 @@ inline int ucell_utf_feed(ucell *uc,uint8_t c) { // {{{
 		case U_L4C3:
 			if ((c&0xc0)==0x80) { // continuation byte
 				ucell_utf_feed4(uc,uc->utf[0],uc->utf[1],uc->utf[2],c);
-				return 4;
 				uc->utfst=U_NORM;
-				break;
+				return 4;
 			}
 			if (c&0x80) // start another sequence
 				goto startbyte;
