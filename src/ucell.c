@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <wchar.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wctype.h>
 #include <inttypes.h>
 
 // }}}
@@ -112,6 +113,7 @@ inline void ucell_free(ucell *uc) { // {{{
 inline int ucell_resize(ucell *uc,int newsz) { // {{{
 	if (!uc)
 		return -EINVAL;
+
 	if (newsz<=0)
 		return -EINVAL;
 
@@ -145,6 +147,7 @@ inline int ucell_resize(ucell *uc,int newsz) { // {{{
 		nc=reallocarray(uc->cells,newsz,sizeof *uc->cells);
 		if (!nc)
 			return -ENOMEM;
+
 		uc->cells=nc;
 		for (i=uc->sz;i<newsz;i++) {
 			uc->cells[i].flags=0;
@@ -159,12 +162,16 @@ inline int ucell_app_cchar(ucell *uc,int pos,const char *c) { // {{{
 	// append combining character
 	if (!uc||!c)
 		return -EINVAL;
+
 	if (pos<0) // snap to start
 		pos=0;
+
 	if (pos>uc->len) // snap to end
 		pos=uc->len;
+
 	if (pos>=uc->len)
 		return -ERANGE;
+
 	if (!(uc->cells[pos].flags&UC_ALLOC)&&strlen(uc->cells[pos].d)+strlen(c)<PSIZE)
 		strcat(uc->cells[pos].d,c);
 	else {
@@ -172,6 +179,7 @@ inline int ucell_app_cchar(ucell *uc,int pos,const char *c) { // {{{
 
 		if (!s)
 			return -ENOMEM;
+
 		strcpy(s,(uc->cells[pos].flags&UC_ALLOC)?uc->cells[pos].p:uc->cells[pos].d);
 		strcat(s,c);
 		uc->cells[pos].flags=UC_ALLOC;
@@ -186,15 +194,20 @@ inline int ucell_ins_char(ucell *uc,int pos,const char *c,uint8_t w) { // {{{
 	// w is the precalculated terminal cell size
 	if (!uc)
 		return -EINVAL;
+
 	if (!c)
 		return -EINVAL;
+
 	if (pos<0) // snap to start
 		pos=0;
+
 	if (pos>uc->len) // snap to end
 		pos=uc->len;
 
-	if (!w)
+	if (!w) // append combining char
 		return ucell_app_cchar(uc,pos?pos-1:0,c);
+
+	// insert non-combining char
 	if (uc->len==uc->sz) { // grow
 		int rv=ucell_resize(uc,uc->sz+100);
 
@@ -221,13 +234,16 @@ inline int ucell_ins_char(ucell *uc,int pos,const char *c,uint8_t w) { // {{{
 	return 0;
 } // }}}
 
-inline int ucell_del_char(ucell *uc,int pos) { // {{{
+inline int ucell_del_char_at(ucell *uc,int pos) { // {{{
 	if (!uc)
 		return -EINVAL;
+
 	if (pos<0||pos>=uc->len)
 		return -EINVAL;
+
 	if (!uc->len)
 		return -EINVAL;
+
 	if (uc->cells[pos].flags&UC_ALLOC)
 		free(uc->cells[pos].p);
 	if (pos<uc->len-1) // shift tail
@@ -235,6 +251,10 @@ inline int ucell_del_char(ucell *uc,int pos) { // {{{
 	uc->cells[uc->len-1].d[0]=0;
 	uc->cells[uc->len-1].flags=0;
 	uc->len--;
+	if (uc->cursor<0)
+		uc->cursor=0;
+	if (uc->cursor>uc->len)
+		uc->cursor=uc->len;
 	return 0;
 } // }}}
 
@@ -292,6 +312,7 @@ inline void ucell_utf_feed1(ucell *uc,uint8_t c1) { // {{{
 
 	if (!uc)
 		return;
+
 	ucell_utf_feed_s(uc,s);
 } // }}}
 
@@ -300,6 +321,7 @@ inline void ucell_utf_feed2(ucell *uc,uint8_t c1,uint8_t c2) { // {{{
 
 	if (!uc)
 		return;
+
 	ucell_utf_feed_s(uc,s);
 } // }}}
 
@@ -308,6 +330,7 @@ inline void ucell_utf_feed3(ucell *uc,uint8_t c1,uint8_t c2,uint8_t c3) { // {{{
 
 	if (!uc)
 		return;
+
 	ucell_utf_feed_s(uc,s);
 } // }}}
 
@@ -316,6 +339,7 @@ inline void ucell_utf_feed4(ucell *uc,uint8_t c1,uint8_t c2,uint8_t c3,uint8_t c
 
 	if (!uc)
 		return;
+
 	ucell_utf_feed_s(uc,s);
 } // }}}
 
@@ -534,10 +558,13 @@ inline int ucell_utf_feed(ucell *uc,uint8_t c) { // {{{
 inline void ucell_cursor_set(ucell *uc,int c) { // {{{
 	if (!uc)
 		return;
+
 	if (c<0)
 		c=0;
+
 	if (c>uc->len)
 		c=uc->len;
+
 	uc->cursor=c;
 } // }}}
 
@@ -555,6 +582,7 @@ inline char *ucell_substr(ucell *uc,int skip,int maxc) { // {{{
 
 	if (skip<0)
 		skip=0;
+
 	if (maxc<0)
 		maxc=0;
 
@@ -583,6 +611,7 @@ inline char *ucell_substr(ucell *uc,int skip,int maxc) { // {{{
 	ress=calloc(blen+1,1);
 	if (!ress)
 		return NULL;
+
 	for (i=stp;i<enp;i++)
 		strcat(ress,(uc->cells[i].flags&UC_ALLOC)?uc->cells[i].p:uc->cells[i].d);
 	return ress;
@@ -591,12 +620,14 @@ inline char *ucell_substr(ucell *uc,int skip,int maxc) { // {{{
 inline int ucell_len(ucell *uc) { // {{{
 	if (!uc)
 		return 0;
+
 	return uc->len;
 } // }}}
 
 inline int ucell_cursor(ucell *uc) { // {{{
 	if (!uc)
 		return 0;
+
 	return uc->cursor;
 } // }}}
 
@@ -606,26 +637,157 @@ inline int ucell_cursor_c(ucell *uc) { // {{{
 
 	if (!uc)
 		return 0;
+
 	for (i=0;i<uc->len&&i<uc->cursor;i++)
 		pos+=uc->cells[i].w;
 	return pos;
 } // }}}
 
-inline void ucell_del(ucell *uc) { // {{{
+inline void ucell_del_char(ucell *uc) { // {{{
 	if (!uc)
 		return;
+
 	if (uc->cursor>=uc->len) // nothing to do
 		return;
-	ucell_del_char(uc,uc->cursor);
+
+	ucell_del_char_at(uc,uc->cursor);
 } // }}}
 
-inline void ucell_backspace(ucell *uc) { // {{{
+inline void ucell_del_char_prev(ucell *uc) { // {{{
 	if (!uc)
 		return;
+
 	if (!uc->cursor) // nothing to do
 		return;
-	ucell_del_char(uc,uc->cursor-1);
+
 	uc->cursor--;
+	ucell_del_char_at(uc,uc->cursor);
+} // }}}
+
+inline void ucell_del_to_end(ucell *uc) { // {{{
+	int i;
+
+	if (!uc)
+		return;
+
+	if (uc->cursor<0)
+		uc->cursor=0;
+
+	for (i=uc->len-1;i>=uc->cursor;i--)
+		ucell_del_char_at(uc,i);
+} // }}}
+
+inline void ucell_del_all(ucell *uc) { // {{{
+	int i;
+
+	if (!uc)
+		return;
+
+	uc->cursor=0;
+	for (i=uc->len-1;i>=0;i--)
+		ucell_del_char_at(uc,i);
+} // }}}
+
+inline int ucell_isalnum(const char *s) { // {{{
+	wchar_t ws[1];
+	size_t l,p=0;
+	int c=-1;
+
+	if (!s)
+		return 0;
+
+	mbtowc(NULL,NULL,0); // reset state
+	l=strlen(s);
+	while (p<l&&(c=mbtowc(ws,s+p,l-p))>0) {
+		if (!iswalnum(ws[0]))
+			return 0;
+		p+=c;
+	}
+	if (c<=0)
+		return 0;
+	return 1;
+} // }}}
+
+inline int ucell_isalnum_c(ucell *uc,int pos) { // {{{
+	if (!uc)
+		return 0;
+
+	if (pos<0||pos>=uc->len)
+		return 0;
+
+	return ucell_isalnum((uc->cells[pos].flags&UC_ALLOC)?uc->cells[pos].p:uc->cells[pos].d);
+} // }}}
+
+inline void ucell_del_word(ucell *uc) { // {{{
+	if (!uc)
+		return;
+
+	while (uc->cursor>=0&&uc->cursor<uc->len&&!ucell_isalnum_c(uc,uc->cursor))
+		ucell_del_char_at(uc,uc->cursor);
+	while (uc->cursor>=0&&uc->cursor<uc->len&&ucell_isalnum_c(uc,uc->cursor))
+		ucell_del_char_at(uc,uc->cursor);
+} // }}}
+
+inline void ucell_del_word_prev(ucell *uc) { // {{{
+	if (!uc)
+		return;
+
+	while (uc->cursor>0&&uc->cursor<=uc->len&&!ucell_isalnum_c(uc,uc->cursor-1)) {
+		uc->cursor--;
+		ucell_del_char_at(uc,uc->cursor);
+	}
+	while (uc->cursor>0&&uc->cursor<=uc->len&&ucell_isalnum_c(uc,uc->cursor-1)) {
+		uc->cursor--;
+		ucell_del_char_at(uc,uc->cursor);
+	}
+} // }}}
+
+inline void ucell_move_home(ucell *uc) { // {{{
+	if (!uc)
+		return;
+
+	ucell_cursor_set(uc,0);
+} // }}}
+
+inline void ucell_move_end(ucell *uc) { // {{{
+	if (!uc)
+		return;
+
+	ucell_cursor_set(uc,ucell_len(uc));
+} // }}}
+
+inline void ucell_move(ucell *uc) { // {{{
+	if (!uc)
+		return;
+
+	ucell_cursor_set(uc,ucell_cursor(uc)+1);
+} // }}}
+
+inline void ucell_move_back(ucell *uc) { // {{{
+	if (!uc)
+		return;
+
+	ucell_cursor_set(uc,ucell_cursor(uc)-1);
+} // }}}
+
+inline void ucell_move_word(ucell *uc) { // {{{
+	if (!uc)
+		return;
+
+	while (uc->cursor>=0&&uc->cursor<uc->len&&!ucell_isalnum_c(uc,uc->cursor))
+		uc->cursor++;
+	while (uc->cursor>=0&&uc->cursor<uc->len&&ucell_isalnum_c(uc,uc->cursor))
+		uc->cursor++;
+} // }}}
+
+inline void ucell_move_word_back(ucell *uc) { // {{{
+	if (!uc)
+		return;
+
+	while (uc->cursor>0&&uc->cursor<=uc->len&&!ucell_isalnum_c(uc,uc->cursor-1))
+		uc->cursor--;
+	while (uc->cursor>0&&uc->cursor<=uc->len&&ucell_isalnum_c(uc,uc->cursor-1))
+		uc->cursor--;
 } // }}}
 
 // {{{ struct alignment test
