@@ -256,13 +256,6 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 inline int value2scale(double val,double mx);
 inline int filter1(struct xxxid_stats *s);
 
-#ifndef KEY_CTRL_L
-#define KEY_CTRL_L 0x0c
-#endif
-#ifndef KEY_CTRL_T
-#define KEY_CTRL_T 0x14
-#endif
-
 /* delayacct.c */
 
 inline int has_task_delayacct(void);
