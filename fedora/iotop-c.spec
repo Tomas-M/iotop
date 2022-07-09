@@ -1,5 +1,5 @@
 Name:           iotop-c
-Version:        1.21
+Version:        1.22
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
@@ -52,6 +52,9 @@ mv %{buildroot}%{_mandir}/man8/iotop.8 %{buildroot}%{_mandir}/man8/iotop-c.8
 %{_mandir}/man8/iotop-c.8*
 
 %changelog
+* Sun Jul 10 2022 Boian Bonev <bbonev@ipacct.com> - 1.22-1
+- Update to latest ver 1.22
+
 * Wed Jan 26 2022 Boian Bonev <bbonev@ipacct.com> - 1.21-1
 - Update to latest ver 1.21
 
