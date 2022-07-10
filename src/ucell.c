@@ -271,7 +271,8 @@ inline void ucell_utf_feed_s(ucell *uc,const char *s) { // {{{
 
 	*d=0;
 	sl=strlen(s);
-	mbtowc(NULL,NULL,0);
+	if (mbtowc(NULL,NULL,0)) {
+	}
 	for (;;) {
 		int cl;
 		int tw;
@@ -694,7 +695,8 @@ inline int ucell_isalnum(const char *s) { // {{{
 	if (!s)
 		return 0;
 
-	mbtowc(NULL,NULL,0); // reset state
+	if (mbtowc(NULL,NULL,0)) { // reset state
+	}
 	l=strlen(s);
 	while (p<l&&(c=mbtowc(ws,s+p,l-p))>0) {
 		if (!iswalnum(ws[0]))
