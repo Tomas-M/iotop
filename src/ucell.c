@@ -130,7 +130,7 @@ inline int ucell_resize(ucell *uc,int newsz) { // {{{
 				uc->cells[i].flags=0;
 				uc->cells[i].d[0]=0;
 			}
-		nc=reallocarray(uc->cells,newsz,sizeof *uc->cells);
+		nc=realloc(uc->cells,newsz*sizeof *uc->cells);
 		if (uc->len>newsz)
 			uc->len=newsz;
 		if (nc) {
@@ -144,7 +144,7 @@ inline int ucell_resize(ucell *uc,int newsz) { // {{{
 		cell *nc;
 		int i;
 
-		nc=reallocarray(uc->cells,newsz,sizeof *uc->cells);
+		nc=realloc(uc->cells,newsz*sizeof *uc->cells);
 		if (!nc)
 			return -ENOMEM;
 
