@@ -266,7 +266,8 @@ inline char *u8strpadt(const char *s,ssize_t rlen) {
 		s="(null)";
 
 	sl=strlen(s);
-	mbtowc(NULL,NULL,0);
+	if (mbtowc(NULL,NULL,0)) {
+	}
 	for (;;) {
 		int cl;
 		int tw;
