@@ -1,4 +1,4 @@
-/* SPDX-License-Identifer: GPL-2.0-or-later
+/* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
 Copyright (C) 2020-2022  Boian Bonev
@@ -12,11 +12,13 @@ You should have received a copy of the GNU General Public License along with thi
 */
 
 #include "iotop.h"
+#include "ucell.h"
 
 // allow ncurses printf-like arguments checking
 #define GCC_PRINTF
 
 #include <pwd.h>
+#include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +27,61 @@ You should have received a copy of the GNU General Public License along with thi
 #include <locale.h>
 #include <langinfo.h>
 #include <sys/types.h>
+
+// key definitions
+#ifndef KEY_CTRL_A
+#define KEY_CTRL_A 0x01
+#endif
+#ifndef KEY_CTRL_B
+#define KEY_CTRL_B 0x02
+#endif
+#ifndef KEY_CTRL_D
+#define KEY_CTRL_D 0x04
+#endif
+#ifndef KEY_CTRL_E
+#define KEY_CTRL_E 0x05
+#endif
+#ifndef KEY_CTRL_F
+#define KEY_CTRL_F 0x06
+#endif
+#ifndef KEY_CTRL_H
+#define KEY_CTRL_H 0x08
+#endif
+#ifndef KEY_CTRL_I
+#define KEY_CTRL_I 0x09
+#endif
+#ifndef KEY_TAB
+#define KEY_TAB KEY_CTRL_I
+#endif
+#ifndef KEY_CTRL_K
+#define KEY_CTRL_K 0x0b
+#endif
+#ifndef KEY_CTRL_L
+#define KEY_CTRL_L 0x0c
+#endif
+#ifndef KEY_CTRL_M
+#define KEY_CTRL_M 0x0d
+#endif
+#ifndef KEY_RET
+#define KEY_RET KEY_CTRL_M
+#endif
+#ifndef KEY_CTRL_T
+#define KEY_CTRL_T 0x14
+#endif
+#ifndef KEY_CTRL_U
+#define KEY_CTRL_U 0x15
+#endif
+#ifndef KEY_CTRL_W
+#define KEY_CTRL_W 0x17
+#endif
+#ifndef KEY_ESCAPE
+#define KEY_ESCAPE 0x1b
+#endif
+
+// fix for old ncurses that does not implement A_ITALIC
+#ifndef A_ITALIC
+#define A_ITALIC A_BOLD
+#endif
 
 #define HEADER_XXS_FORMAT "%4.0f%s%s/%4.0f%s%s|%4.0f%s%s/%4.0f%s%s"
 #define HEADER_XS_FORMAT "TR:%4.0f%s%sW:%4.0f%s%s|CR:%4.0f%s%sW:%4.0f%s%s"
@@ -35,6 +92,8 @@ You should have received a copy of the GNU General Public License along with thi
 
 #define RED_PAIR 1
 #define CYAN_PAIR 2
+#define GREEN_PAIR 3
+#define MAGENTA_PAIR 4
 
 #define mymax(a,b) (((a)>(b))?(a):(b))
 
@@ -51,6 +110,11 @@ static int in_filter=0; // filter by pid/uid interface flag and state vars
 static char filter_uid[50];
 static char filter_pid[50];
 static int filter_col=0; // select what to edit uid(0), pid(1)
+static int in_search=0; // search by regex interface flag
+static char *search_str=NULL; // search regex string
+static regex_t search_regx; // search regex
+static int search_regx_ok=0; // search regex compiles ok
+static ucell *search_uc=NULL; // utf cell array
 static struct xxxid_stats *ionice_pos_data=NULL;
 static int has_unicode=0;
 static int unicode=1; // enable unicode (only valid if unicode is available)
@@ -91,7 +155,7 @@ const s_helpitem thelp[]={
 	{.descr="Scroll one line down",.k1="<down>"},
 	{.descr="Sort by next column",.k1="<right>"},
 	{.descr="Sort by previous column",.k1="<left>"},
-	{.descr="Cancel ionice/filter or close help window",.k1="<esc>"},
+	{.descr="Cancel ionice/filter/search or close help window",.k1="<esc>"},
 	{.descr="Toggle showing only processes with IO activity",.k2="o",.k3="O"},
 	{.descr="Toggle showing processes/threads",.k2="p",.k3="P"},
 	{.descr="Toggle showing accumulated/current values",.k2="a",.k3="A"},
@@ -107,11 +171,15 @@ const s_helpitem thelp[]={
 	{.descr="Toggle showing COMMAND",.k2="9"},
 	{.descr="Show all columns",.k2="0"},
 	{.descr="Cycle GRAPH source (IO, R, W, R+W, SW)",.k2="g",.k3="G"},
-	{.descr="Cycle showing this, inline or no help",.k1="          ?",.k2="h",.k3="H"}, // padded to match <page-down>
+	{.descr="Toggle showing inline help",.k2="?"},
+	{.descr="Toggle showing this help",.k2="h",.k3="H"},
 	{.descr="IOnice a process/thread",.k2="i",.k3="I"},
 	{.descr="Change UID and PID filters",.k2="f",.k3="F"},
+	{.descr="Search cmdline by regex",.k2="/"},
 	{.descr="Toggle using Unicode/ASCII characters",.k2="u",.k3="U"},
+	{.descr="Toggle colorizing values",.k2="l",.k3="L"},
 	{.descr="Toggle exited processes xxx/inverse",.k2="x",.k3="X"},
+	{.descr="Toggle showing exited processes",.k2="e",.k3="E"},
 	{.descr="Toggle data freeze",.k2="s",.k3="S"},
 	{.descr="Toggle task_delayacct (if available)",.k1="<Ctrl-T>",.k2="",.k3=""},
 	{.descr="Redraw screen",.k1="<Ctrl-L>",.k2="",.k3=""},
@@ -204,6 +272,9 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	// apply uid/pid filter
 	if (filter1(s))
 		return 1;
+	if (search_regx_ok)
+		if (regexec(&search_regx,s->cmdline1,0,NULL,0)&&regexec(&search_regx,s->cmdline2,0,NULL,0))
+			return 1;
 	// visible history is non-zero
 	if (config.f.only) {
 		if (config.f.hidegraph) {
@@ -248,6 +319,8 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 			}
 		}
 	}
+	if (config.f.hideexited&&s->exited)
+		return 1;
 	if (config.f.processes&&s->tid!=s->pid)
 		return 1;
 	if (config.f.hidegraph) {
@@ -275,15 +348,27 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 			attroff(A_REVERSE);
 		}
 	} else {
-		int i;
 		int visible=to-from+1; // count of visible items
-		int linecnt=visible-2; // count of lines usable by scroller
-		int drscale=(unicode&&has_unicode)?8:1; // draw scale
-		int poitems=(items>visible)?items-visible:1; // positionable items
-		int scrols0=(drscale*linecnt*visible)/poitems; // scroller size (may be smaller than scale, even 0)
-		int scrolsz=(scrols0<drscale)?drscale:scrols0; // scroller size, not less than scale
-		int begpos=(pos*(linecnt*drscale-scrolsz))/poitems+(from+1)*drscale;
-		int endpos=begpos+scrolsz;
+		int begpos;
+		int endpos;
+		int i;
+
+		if (items<=visible) {
+			begpos=from;
+			endpos=to;
+		} else {
+			int u=unicode&&has_unicode;
+			int linecnt=visible-2; // count of lines usable by scroller
+			int drscale=u?8:1; // draw scale
+			int y=drscale*linecnt; // all scroll space
+			int ss=y*visible/items; // scroller size in scroll space
+			int min_ss=u?8:1; // minimum size of scroll bar in draw units
+			int adjss=(ss<min_ss)?min_ss:ss; // adjusted scroller size
+			int vss=y-adjss+1; // available scroll space without scroller size
+
+			begpos=((from+1)*drscale)+vss*pos/(items-visible);
+			endpos=begpos+adjss-1*(!u);
+		}
 
 		for (i=from;i<=to;i++) {
 			if (i==from||i==to) {
@@ -341,10 +426,10 @@ static inline void view_help(void) {
 	for (p=thelp,i=1;i<hh-1;i++,p++)
 		mvwprintw(whelp,i,0," %-*.*s %-*.*s %-*.*s - %-*.*s ",a,a,p->k1?p->k1:"",b,b,p->k2?p->k2:"",c,c,p->k3?p->k3:"",d,d,p->descr);
 	mvwprintw(whelp,hh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
-	wattron(whelp,A_REVERSE);
+	wattron(whelp,A_REVERSE|A_DIM);
 	for (i=1;i<hw&&i<(int)strlen(" iotop "VERSION" ");i++)
 		mvwprintw(whelp,hh-1,i,"%c",(" iotop "VERSION" ")[i]);
-	wattroff(whelp,A_REVERSE);
+	wattroff(whelp,A_REVERSE|A_DIM);
 	for (i=1+strlen(" iotop "VERSION" ");i<hw;i++)
 		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
 }
@@ -354,9 +439,9 @@ static inline void view_warning(void) {
 
 	mvwprintw(wtda,0,0,"%s",(has_unicode&&unicode)?"─":"_");
 	wattron(wtda,A_REVERSE);
-	wattron(wtda,COLOR_PAIR(RED_PAIR));
+	wattron(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 	wprintw(wtda," warning ");
-	wattroff(wtda,COLOR_PAIR(RED_PAIR));
+	wattroff(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 	wattroff(wtda,A_REVERSE);
 	for (i=1+strlen(" warning ");i<whw;i++)
 		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
@@ -367,9 +452,28 @@ static inline void view_warning(void) {
 	mvwprintw(wtda,whh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
 	for (i=1;i<whw;i++)
 		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
-	wattron(wtda,A_REVERSE);
+	wattron(wtda,A_REVERSE|A_DIM);
 	mvwprintw(wtda,whh-1,1," press a key to hide ");
-	wattroff(wtda,A_REVERSE);
+	wattroff(wtda,A_REVERSE|A_DIM);
+}
+
+static inline void color_print_pc(double v) {
+	int cp=0;
+
+	if (v<=10)
+		cp=0;
+	else if (v<=40)
+		cp=COLOR_PAIR(GREEN_PAIR);
+	else if (v<=80)
+		cp=COLOR_PAIR(MAGENTA_PAIR);
+	else // 80-100
+		cp=COLOR_PAIR(RED_PAIR);
+	if (config.f.nocolor)
+		cp=0;
+	attron(cp);
+	printw("%6.2f",v);
+	attroff(cp);
+	printw(" %% ");
 }
 
 static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
@@ -526,7 +630,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	ionice_line=1;
 	if (head1row) {
 		ionice_line=0;
-		if (!in_ionice&&!in_filter) {
+		if (!in_ionice&&!in_filter&&!in_search) {
 			if (shrink_dm) {
 				str_read[1]=0;
 				str_write[1]=0;
@@ -541,7 +645,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		mvhline(0,0,' ',maxx);
 		mvprintw(0,0,HEADER1_FORMAT,total_read,str_read,!config.f.hidegraph?pg_t_r:"",total_write,str_write,!config.f.hidegraph?pg_t_w:"");
 
-		if (!in_ionice&&!in_filter) {
+		if (!in_ionice&&!in_filter&&!in_search) {
 			mvhline(1,0,' ',maxx);
 			mvprintw(1,0,HEADER2_FORMAT,total_a_read,str_a_read,!config.f.hidegraph?pg_a_r:"",total_a_write,str_a_write,!config.f.hidegraph?pg_a_w:"");
 			show=FALSE;
@@ -595,20 +699,20 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (!has_tda)
 			xpos-=strlen("[T]");
 		if (dontrefresh)
-			xpos-=strlen("[freezed]");
+			xpos-=strlen("[frozen]");
 
 		// don't step on column descriptions
 		if (xpos<maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1))
 			xpos=maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1);
 		if (!has_tda) {
 			attron(A_REVERSE);
-			attron(COLOR_PAIR(RED_PAIR));
+			attron(config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 			mvprintw(ionice_line+1,xpos,"[T]");
-			attroff(COLOR_PAIR(RED_PAIR));
+			attroff(config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 			attroff(A_REVERSE);
 		}
 		if (dontrefresh)
-			mvprintw(ionice_line+1,xpos+(has_tda?0:strlen("[T]")),"[freezed]");
+			mvprintw(ionice_line+1,xpos+(has_tda?0:strlen("[T]")),"[frozen]");
 	}
 	// easiest place to print debug info
 	//mvprintw(ionice_line+1,maxx-maxcmdline+strlen(COLUMN_L(0))+1," ... ",...);
@@ -861,18 +965,47 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 				if (k==-1&&th_prio_diff)
 					c='!';
-				printw("%c%4s ",c,str_ioprio(s->io_prio));
+				if (s->error_i) {
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+					printw("Error ");
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+				} else
+					printw("%c%4s ",c,str_ioprio(s->io_prio));
 			}
 			if (!config.f.hideuser)
 				printw("%s ",pw_name?pw_name:"(null)");
-			if (!config.f.hideread)
-				printw("%7.2f %-3.3s ",read_val,read_str);
-			if (!config.f.hidewrite)
-				printw("%7.2f %-3.3s ",write_val,write_str);
-			if (!config.f.hideswapin&&has_tda)
-				printw("%6.2f %% ",s->swapin_val);
-			if (!config.f.hideio&&has_tda)
-				printw("%6.2f %% ",s->blkio_val);
+			if (!config.f.hideread) {
+				if (s->error_x) {
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+					printw("   Error    ");
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+				} else
+					printw("%7.2f %-3.3s ",read_val,read_str);
+			}
+			if (!config.f.hidewrite) {
+				if (s->error_x) {
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+					printw("   Error    ");
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+				} else
+					printw("%7.2f %-3.3s ",write_val,write_str);
+			}
+			if (!config.f.hideswapin&&has_tda) {
+				if (s->error_x) {
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+					printw("  Error  ");
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+				} else
+					color_print_pc(s->swapin_val);
+			}
+			if (!config.f.hideio&&has_tda) {
+				if (s->error_x) {
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+					printw("  Error  ");
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+				} else
+					color_print_pc(s->blkio_val);
+			}
 			if (!config.f.hidegraph&&hrevpos>0) {
 				attron(A_REVERSE);
 				printw("%*.*s",hrevpos,hrevpos,graphstr);
@@ -931,7 +1064,7 @@ donedraw:
 			attron(A_BOLD);
 			printw("%s",ionice_id);
 			attroff(A_BOLD);
-			getyx(stdscr,promptx,prompty);
+			getyx(stdscr,prompty,promptx);
 			show=TRUE;
 			if (id&&(p=arr_find(cs,id))&&!p->exited) {
 				printw(" Current: ");
@@ -1026,7 +1159,7 @@ donedraw:
 		attron(A_BOLD);
 		printw("%s",filter_uid);
 		if (filter_col==0) {
-			getyx(stdscr,promptx,prompty);
+			getyx(stdscr,prompty,promptx);
 			show=TRUE;
 		}
 		if (strlen(filter_uid)&&strcmp(filter_uid,"none")) {
@@ -1049,7 +1182,7 @@ donedraw:
 		printw("%s",filter_pid);
 		attroff(A_BOLD);
 		if (filter_col==1) {
-			getyx(stdscr,promptx,prompty);
+			getyx(stdscr,prompty,promptx);
 			show=TRUE;
 		}
 
@@ -1058,9 +1191,40 @@ donedraw:
 		printw("[use 0-9/n/bksp for UID/TID, tab to switch UID/TID]");
 		attroff(A_REVERSE);
 	}
-	if (show)
-		move(promptx,prompty);
-	curs_set(show);
+	if (in_search) {
+		int ssize=maxx-strlen("Search: ")-10;
+
+		mvhline(ionice_line,0,' ',maxx);
+		mvprintw(ionice_line,0,"Search: ");
+		if (ssize>2) {
+			int toskip=ssize-1<ucell_cursor_c(search_uc)?ucell_cursor_c(search_uc)-ssize+1:0;
+			char *ss=ucell_substr(search_uc,toskip,ssize);
+			char *ps=u8strpadt(ss,ssize);
+
+			attron(A_REVERSE);
+			if (ps)
+				printw("%s",ps);
+			else
+				printw("%*.*s",ssize,ssize,"");
+			attroff(A_REVERSE);
+			printw(" [");
+			if (!config.f.nocolor)
+				attron(search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
+			attron(A_BOLD);
+			printw("%s",search_regx_ok?"  OK  ":"Error!");
+			if (!config.f.nocolor)
+				attroff(search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
+			attroff(A_BOLD);
+			printw("]");
+			promptx=strlen("Search: ")+ucell_cursor_c(search_uc)-toskip;
+			prompty=ionice_line;
+			show=TRUE;
+			if (ps)
+				free(ps);
+			if (ss)
+				free(ss);
+		}
+	}
 	draw_vscroll(maxx-1,head1row?2:3,maxy-1-(noinlinehelp==0&&config.f.helptype==2?2:0),dispcount,saveskip);
 	if (config.f.helptype==2) {
 		attron(A_REVERSE);
@@ -1073,74 +1237,74 @@ donedraw:
 		attroff(A_BOLD);
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("^L");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": redraw ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("q");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": quit ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("i");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": ionice ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("f");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": uid/pid ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("o");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.only?"all":"active");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("p");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.processes?"threads":"procs");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("a");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.accumulated?"bandwidth":"accum");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("g");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": graph src ");
 
 		if (has_unicode) {
 			attron(A_UNDERLINE);
-			attron(COLOR_PAIR(CYAN_PAIR));
+			attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 			printw("u");
-			attroff(COLOR_PAIR(CYAN_PAIR));
+			attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 			attroff(A_UNDERLINE);
 			printw(": %s ",unicode?"ASCII":"UTF");
 		}
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("h/?");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": help");
 
@@ -1149,16 +1313,16 @@ donedraw:
 		attroff(A_BOLD);
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("r");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.sort_order==SORT_ASC?"desc":"asc");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("left/right");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": select ");
 
@@ -1167,37 +1331,37 @@ donedraw:
 		attroff(A_BOLD);
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("1-9");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": toggle ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("0");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": show all ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("(pg)up/dn/home/end");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": scroll ");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("x");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",config.f.deadx?"bkg":"xxx");
 
 		attron(A_UNDERLINE);
-		attron(COLOR_PAIR(CYAN_PAIR));
+		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		printw("s");
-		attroff(COLOR_PAIR(CYAN_PAIR));
+		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": %s ",dontrefresh?"unfreeze":"freeze");
 
@@ -1272,10 +1436,204 @@ donedraw:
 		view_warning();
 		wnoutrefresh(wtda);
 	}
+	if (show)
+		move(prompty,promptx);
+	curs_set(show);
 	doupdate();
 }
 
+static inline void update_search(void) {
+	char *fs;
+
+	if (!search_uc)
+		return;
+
+	fs=ucell_substr(search_uc,0,0); // regex to compile
+	if (!fs)
+		return;
+	if (search_str)
+		free(search_str);
+	search_str=fs;
+	if (search_regx_ok) {
+		regfree(&search_regx);
+		search_regx_ok=0;
+	}
+	if (search_str)
+		search_regx_ok=regcomp(&search_regx,search_str,REG_EXTENDED)==0;
+}
+
+static inline void key_log(int ch __attribute__((unused)),int issecond __attribute__((unused))) {
+#if 0 // debug key logging
+	const char *kn=keyname(ch);
+	FILE *f=fopen("iotop-key.log","a+");
+
+	if (f) {
+		fprintf(f,"[%u] key: %8x name: %s\n",issecond,ch,kn);
+		fclose(f);
+	}
+#endif
+}
+
+static inline int curses_key_search(int ch) {
+	int k2;
+
+	switch (ch) {
+		case KEY_ESCAPE: // ESC
+			nocbreak();
+			k2=getch();
+			cbreak();
+			key_log(k2,1);
+			if (k2!=ERR) {
+				switch (k2) {
+					// add alt-/meta- key handling here
+					case KEY_CTRL_H: // Ctrl-H, Backspace on some terminals
+					case KEY_BACKSPACE:
+						goto case_Alt_Backspace;
+					case 'b':
+					case 'B':
+						goto case_Alt_b;
+					case 'd':
+					case 'D':
+						goto case_Alt_d;
+					case 'f':
+					case 'F':
+						goto case_Alt_f;
+					default:
+						break;
+				}
+				break;
+			}
+			in_search=0;
+			if (search_str) {
+				free(search_str);
+				search_str=0;
+			}
+			if (search_regx_ok) {
+				regfree(&search_regx);
+				search_regx_ok=0;
+			}
+			if (search_uc) {
+				ucell_free(search_uc);
+				search_uc=NULL;
+			}
+			break;
+		case KEY_RET: // CR
+		case KEY_ENTER:
+			in_search=0;
+			if (search_regx_ok&&search_str&&!strlen(search_str)) { // empty string=cancel search
+				regfree(&search_regx);
+				search_regx_ok=0;
+			}
+			if (!search_regx_ok) {
+				if (search_str) {
+					free(search_str);
+					search_str=0;
+				}
+				if (search_uc) {
+					ucell_free(search_uc);
+					search_uc=NULL;
+				}
+			}
+			break;
+		case KEY_HOME:
+		case KEY_CTRL_A:
+			ucell_move_home(search_uc);
+			break;
+		case KEY_END:
+		case KEY_CTRL_E:
+			ucell_move_end(search_uc);
+			break;
+		case KEY_RIGHT:
+		case KEY_CTRL_F:
+			ucell_move(search_uc);
+			break;
+		case KEY_LEFT:
+		case KEY_CTRL_B:
+			ucell_move_back(search_uc);
+			break;
+		case KEY_CTRL_H: // Ctrl-H, Backspace on some terminals
+		case KEY_BACKSPACE: // del prev char
+			ucell_del_char_prev(search_uc);
+			update_search();
+			break;
+		case KEY_DC:
+		case KEY_CTRL_D: // del current char
+			ucell_del_char(search_uc);
+			update_search();
+			break;
+		case KEY_CTRL_K: // Ctrl-K, del to end of line
+			ucell_del_to_end(search_uc);
+			update_search();
+			break;
+		case KEY_CTRL_U: // Ctrl-U, del all
+			ucell_del_all(search_uc);
+			update_search();
+			break;
+		case KEY_CTRL_W: // Ctrl-W, del prev word
+		case_Alt_Backspace:
+			ucell_del_word_prev(search_uc);
+			update_search();
+			break;
+		case_Alt_f: // word forward
+		case_Ctrl_Right:
+			ucell_move_word(search_uc);
+			update_search();
+			break;
+		case_Alt_b: // word backward
+		case_Ctrl_Left:
+			ucell_move_word_back(search_uc);
+			update_search();
+			break;
+		case_Alt_d: // del word at cursor
+			ucell_del_word(search_uc);
+			update_search();
+			break;
+		case KEY_CTRL_L: // Ctrl-L
+			redrawwin(stdscr);
+		case KEY_REFRESH:
+		case KEY_RESIZE:
+			break;
+		default:
+			if (ch>=' '&&ch<=0xff) {
+				if (ucell_utf_feed(search_uc,ch)>0) {
+					update_search();
+					return 0; // refresh screen
+				}
+			} else if (ch>0xff) {
+				const char *kn=keyname(ch);
+
+				if (kn&&!strcmp(kn,"kLFT5")) // CTRL-Left
+					goto case_Ctrl_Left;
+				if (kn&&!strcmp(kn,"kRIT5")) // CTRL-Right
+					goto case_Ctrl_Right;
+				if (kn&&!strcmp(kn,"M-b")) // Alt-b
+					goto case_Alt_b;
+				if (kn&&!strcmp(kn,"M-B")) // Alt-B
+					goto case_Alt_b;
+				if (kn&&!strcmp(kn,"M-d")) // Alt-d
+					goto case_Alt_d;
+				if (kn&&!strcmp(kn,"M-D")) // Alt-D
+					goto case_Alt_d;
+				if (kn&&!strcmp(kn,"M-f")) // Alt-f
+					goto case_Alt_f;
+				if (kn&&!strcmp(kn,"M-F")) // Alt-F
+					goto case_Alt_f;
+				if (kn&&!strcmp(kn,"M-^H")) // Alt-Backspace
+					goto case_Alt_Backspace;
+				if (kn&&!strcmp(kn,"M-^?")) // Alt-Backspace
+					goto case_Alt_Backspace;
+			}
+			return -1;
+	}
+	return 0;
+}
+
 static inline int curses_key(int ch) {
+	int k2;
+
+	key_log(ch,0);
+	if (in_search)
+		return curses_key_search(ch);
 	switch (ch) {
 		case 's':
 		case 'S':
@@ -1443,21 +1801,24 @@ static inline int curses_key(int ch) {
 		case 'A':
 			config.f.accumulated=!config.f.accumulated;
 			break;
+		case 'l':
+		case 'L':
+			config.f.nocolor=!config.f.nocolor;
+			break;
 		case '?':
-		case 'h':
-			config.f.helptype++;
-			if (config.f.helptype>2)
+			if (config.f.helptype!=2)
+				config.f.helptype=2;
+			else
 				config.f.helptype=0;
 			if (noinlinehelp&&config.f.helptype==2)
 				config.f.helptype=0;
 			break;
+		case 'h':
 		case 'H':
-			if (config.f.helptype)
-				config.f.helptype--;
-			else
-				config.f.helptype=2;
-			if (noinlinehelp&&config.f.helptype==2)
+			if (config.f.helptype!=1)
 				config.f.helptype=1;
+			else
+				config.f.helptype=0;
 			break;
 		case 'c':
 		case 'C':
@@ -1487,6 +1848,10 @@ static inline int curses_key(int ch) {
 				ionice_col=0;
 			}
 			break;
+		case 'e':
+		case 'E':
+			config.f.hideexited=!config.f.hideexited;
+			break;
 		case 'f':
 		case 'F':
 			if (!in_ionice) {
@@ -1515,7 +1880,19 @@ static inline int curses_key(int ch) {
 		case 'X':
 			config.f.deadx=!config.f.deadx;
 			break;
-		case 27: // ESC
+		case KEY_ESCAPE: // ESC
+			nocbreak();
+			k2=getch();
+			cbreak();
+			key_log(k2,1);
+			if (k2!=ERR) {
+				switch (k2) {
+					// add alt-/meta- key handling here
+					default:
+						break;
+				}
+				break;
+			}
 			if (config.f.helptype==1&&!in_ionice&&!in_filter)
 				config.f.helptype=0;
 			// unlike help window these cannot happen at the same time
@@ -1524,7 +1901,7 @@ static inline int curses_key(int ch) {
 			if (in_filter)
 				in_filter=0;
 			break;
-		case '\r': // CR
+		case KEY_RET: // CR
 		case KEY_ENTER:
 			if (in_ionice&&strlen(ionice_id)) {
 				pid_t pgid=atoi(ionice_id);
@@ -1560,7 +1937,7 @@ static inline int curses_key(int ch) {
 				in_filter=0;
 			}
 			break;
-		case '\t': // TAB
+		case KEY_TAB: // TAB
 			if (in_ionice) {
 				if (strlen(ionice_id))
 					ionice_cl=!ionice_cl;
@@ -1571,7 +1948,7 @@ static inline int curses_key(int ch) {
 			if (in_filter)
 				filter_col^=1;
 			break;
-		case 0x08: // Ctrl-H, Backspace on some terminals
+		case KEY_CTRL_H: // Ctrl-H, Backspace on some terminals
 		case KEY_BACKSPACE:
 			if (in_ionice) {
 				int idlen=strlen(ionice_id);
@@ -1631,6 +2008,26 @@ static inline int curses_key(int ch) {
 				}
 			}
 			break;
+		case '/':
+			if (!in_ionice&&!in_filter) {
+				in_search=1;
+				if (!search_regx_ok) {
+					if (search_uc) {
+						ucell_free(search_uc);
+						search_uc=NULL;
+					}
+				}
+				if (!search_uc)
+					search_uc=ucell_init(0);
+				if (search_str) {
+					free(search_str);
+					search_str=NULL;
+				}
+				if (!search_uc)
+					in_search=0;
+				update_search();
+			}
+			break;
 		case KEY_CTRL_T:
 			write_task_delayacct(!read_task_delayacct());
 			break;
@@ -1672,8 +2069,11 @@ inline void view_curses_init(void) {
 	curs_set(FALSE);
 	nodelay(stdscr,TRUE);
 	start_color();
-	init_pair(RED_PAIR,COLOR_RED,COLOR_BLACK);
-	init_pair(CYAN_PAIR,COLOR_CYAN,COLOR_BLACK);
+	use_default_colors();
+	init_pair(RED_PAIR,COLOR_RED,-1);
+	init_pair(CYAN_PAIR,COLOR_CYAN,-1);
+	init_pair(GREEN_PAIR,COLOR_GREEN,-1);
+	init_pair(MAGENTA_PAIR,COLOR_MAGENTA,-1);
 
 	for (p=thelp;p->descr;p++) {
 		if (p->k1&&strlen(p->k1)>c1w)
@@ -1706,7 +2106,21 @@ inline void view_curses_init(void) {
 inline void view_curses_fini(void) {
 	if (whelp)
 		delwin(whelp);
+	if (wtda)
+		delwin(wtda);
 	endwin();
+	if (search_str) {
+		free(search_str);
+		search_str=NULL;
+	}
+	if (search_regx_ok) {
+		regfree(&search_regx);
+		search_regx_ok=0;
+	}
+	if (search_uc) {
+		ucell_free(search_uc);
+		search_uc=NULL;
+	}
 
 	if (has_task_delayacct())
 		if (!initial_delayacct&&read_task_delayacct()) {

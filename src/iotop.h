@@ -1,4 +1,4 @@
-/* SPDX-License-Identifer: GPL-2.0-or-later
+/* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
 Copyright (C) 2020-2022  Boian Bonev
@@ -27,7 +27,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <sys/types.h>
 #include <stdint.h>
 
-#define VERSION "1.21"
+#define VERSION "1.22"
 
 typedef enum {
 	E_GR_IO,
@@ -59,12 +59,14 @@ typedef union {
 		int hidegraph;
 		int hidecmd;
 		int deadx;
+		int hideexited;
+		int nocolor;
 		e_grtype grtype;
 		int helptype;
 		int sort_by;
 		int sort_order;
 	} f;
-	int opts[20];
+	int opts[22];
 } config_t;
 
 typedef struct {
@@ -117,6 +119,8 @@ struct xxxid_stats {
 	double writehist[HISTORY_CNT]; // write history data
 
 	int exited; // exited>0 shows for how many refresh cycles the process is gone
+	int error_x; // netlink api did not return valid data
+	int error_i; // get_ioprio did not return valid data
 	// there is no point to keep in memory data for processes exited before HISTORY_CNT cycles
 	struct xxxid_stats_arr *threads;
 };
@@ -175,6 +179,10 @@ inline char *esc_low_ascii(char *p);
 
 typedef void (*pg_cb)(pid_t pid,pid_t tid,void *hint1,void *hint2);
 inline void pidgen_cb(pg_cb cb,void *hint1,void *hint2);
+
+
+inline int is_a_dir(const char *p);
+inline int is_a_process(pid_t tid);
 
 /* ioprio.c */
 
@@ -247,13 +255,6 @@ inline int iotop_sort_cb(const void *a,const void *b);
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,filter_callback_w cb,int width,int *cnt);
 inline int value2scale(double val,double mx);
 inline int filter1(struct xxxid_stats *s);
-
-#ifndef KEY_CTRL_L
-#define KEY_CTRL_L 0x0c
-#endif
-#ifndef KEY_CTRL_T
-#define KEY_CTRL_T 0x14
-#endif
 
 /* delayacct.c */
 

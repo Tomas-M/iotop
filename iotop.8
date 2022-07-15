@@ -1,13 +1,13 @@
-.TH IOTOP "8" "January 28, 2021"
+.TH IOTOP "8" "July 8, 2022"
 .SH NAME
 iotop \- simple top\-like I/O monitor
 .SH SYNOPSIS
 .B iotop
 [\fIOPTIONS\fR]
 .SH DESCRIPTION
-\fBiotop\fR watches I/O usage information available in the Linux kernel (requires
-2.6.20 or later) and displays a table of current I/O usage by processes
-or threads on the system. At least the CONFIG_TASK_DELAY_ACCT,
+\fBiotop\fR watches I/O usage information available in the Linux kernel
+(requires 2.6.20 or later) and displays a table of current I/O usage by
+processes or threads on the system. At least the CONFIG_TASK_DELAY_ACCT,
 CONFIG_TASK_IO_ACCOUNTING, CONFIG_TASKSTATS and CONFIG_VM_EVENT_COUNTERS
 options need to be enabled in your Linux kernel build configuration.
 .PP
@@ -39,15 +39,16 @@ any given moment of time due to data caching and I/O operations reordering that
 take place inside the Linux kernel.
 .PP
 Use the \fBleft\fR and \fBright\fR arrows to select the sort column, \fBr\fR or
-\fBspace\fR to reverse the sorting order, \fBo\fR to toggle the \fB\-\-only\fR option (this uses the visible values
-from the \fBGRAPH\fR column or the \fBIO\fR column in case the \fBGRAPH\fR
-column is hidden), \fBp\fR to toggle the \fB\-\-processes\fR option, \fBa\fR to
-toggle the \fB\-\-accumulated\fR option, \fBi\fR to change the priority of a
-thread or a process's thread, \fBf\fR to change filtering by
-\fBUID\fR/\fBPID\fR (\fB\-\-user\fR and \fB\-\-pid\fR options), \fB1\-9\fR to
-toggle the visibility of the respective column, \fB0\fR to show all columns,
-\fBup\fR/\fBdown\fR arrows, \fBpage\-up\fR/\fBpage\-down\fR/\fBhome\fR/\fBend\fR
-keys to scroll and \fBq\fR to quit. Any unrecognized key will be ignored.
+\fBspace\fR to reverse the sorting order, \fBo\fR to toggle the \fB\-\-only\fR
+option (this uses the visible values from the \fBGRAPH\fR column or the
+\fBIO\fR column in case the \fBGRAPH\fR column is hidden), \fBp\fR to toggle
+the \fB\-\-processes\fR option, \fBa\fR to toggle the \fB\-\-accumulated\fR
+option, \fBi\fR to change the priority of a thread or a process's thread,
+\fBf\fR to change filtering by \fBUID\fR/\fBPID\fR (\fB\-\-user\fR and
+\fB\-\-pid\fR options), \fB1\-9\fR to toggle the visibility of the respective
+column, \fB0\fR to show all columns, \fBup\fR/\fBdown\fR arrows,
+\fBpage\-up\fR/\fBpage\-down\fR/\fBhome\fR/\fBend\fR keys to scroll and \fBq\fR
+to quit. Any unrecognized key will be ignored.
 .PP
 All processes or threads that have exited are displayed grayed for the same time
 as is visible in the \fBGRAPH\fR column or 3 seconds when it is hidden. The
@@ -204,7 +205,13 @@ the I/O summary is never printed
 .PD 1
 .TP
 \fB\-x\fR, \fB\-\-dead\-x\fR
-Show dead processes/threads with letter x instead of inverse background
+Show exited processes/threads with letter x instead of inverse background
+.TP
+\fB\-e\fR, \fB\-\-hide\-exited\fR
+Hide exited processes
+.TP
+\fB\-l\fR, \fB\-\-no\-color\fR
+Do not colorize values
 .PD 1
 .SH KEYBOARD SHORTCUTS
 .TP
@@ -251,8 +258,11 @@ Toggle showing processes/threads
 \fBa\fR, \fBA\fR
 Toggle showing accumulated/current values
 .TP
-\fB?\fR, \fBh\fR, \fBH\fR
-Toggle showing shortcut help
+\fB?\fR
+Toggle showing inline help
+.TP
+\fBh\fR, \fBH\fR
+Toggle showing window help
 .TP
 \fBc\fR, \fBC\fR
 Toggle showing full command line
@@ -264,8 +274,9 @@ Toggle showing the column (column number corresponds to the shortcut)
 Show all columns
 .TP
 \fBg\fR, \fBG\fR
-Cycle GRAPH source (\fBIO\fR=IO, \fBR\fR=DISK READ , \fBW\fR=DISK WRITE, \fBR+W\fR=DISK READ+DISK WRITE,
-\fBSW\fR=SWAPIN). Using \fBg\fR will cycle forward and \fBG\fR will cycle backward.
+Cycle GRAPH source (\fBIO\fR=IO, \fBR\fR=DISK READ , \fBW\fR=DISK WRITE,
+\fBR+W\fR=DISK READ+DISK WRITE, \fBSW\fR=SWAPIN). Using \fBg\fR will cycle
+forward and \fBG\fR will cycle backward.
 .TP
 \fBi\fR, \fBI\fR
 IOnice a process/thread (depends on process/thread display mode)
@@ -276,15 +287,83 @@ Change UID and PID filters
 \fBu\fR, \fBU\fR
 Toggle using Unicode/ASCII characters for pseudo graph
 .TP
+\fBl\fR, \fBL\fR
+Toggle colorizing values
+.TP
 \fBx\fR, \fBX\fR
 Toggle the display mode of exited processes/threads between letter x and inverse
 background
+.TP
+\fBe\fR, \fBE\fR
+Toggle the display of exited processes
 .TP
 \fBs\fR, \fBS\fR
 Toggle freeze of data collection
 .TP
 \fBCtrl\-T\fR
 Toggle task_delayacct kernel sysctl
+.TP
+\fB/\fR
+Change search regular expression. While the search regular expression is being
+edited, there is an indicator next to it that shows if the expression is valid.
+The search is confirmed by \fB<enter>\fR or cancelled by \fB<esc>\fR.
+
+\fBList of shortcuts in the editor:\fR
+.RS
+.TP
+\fB<esc>\fR
+Cancel editing and remove the regular expression filter
+.TP
+\fB<enter>\fR
+Confirm the current regular expression and exit edit mode. In case the regular
+expression is empty or invalid it will match everything.
+.TP
+\fBAlt/Meta\-<backspace>\fR, \fBCtrl\-W\fR
+Delete one word from cursor to the left
+.TP
+\fBAlt/Meta\-D\fR
+Delete one word from cursor to the right
+.TP
+\fBAlt/Meta\-B\fR, \fBCtrl\-<left>\fR
+Move the cursor to the beginning of the word on the left
+.TP
+\fBAlt/Meta\-F\fR, \fBCtrl\-<right>\fR
+Move the cursor after the end of the word on the right
+.TP
+\fBCtrl\-A\fR, \fB<home>\fR
+Move the cursor to the leftmost position
+.TP
+\fBCtrl\-E\fR, \fB<end>\fR
+Move the cursor after the last character
+.TP
+\fBCtrl\-B\fR, \fB<left>\fR
+Move the cursor to the left
+.TP
+\fBCtrl\-F\fR, \fB<right>\fR
+Move the cursor to the right
+.TP
+\fBCtrl\-H\fR, \fB<backspace>\fR
+Delete the character left of cursor
+.TP
+\fBCtrl\-D\fR, \fB<del>\fR
+Delete the character under the cursor
+.TP
+\fBCtrl\-K\fR
+Delete from the character under the cursor to the end of the line
+.TP
+\fBCtrl\-U\fR
+Delete everything
+.TP
+\fB[anything\-else]\fR
+Non-printable characters are ignored. Normal characters are inserted before
+the character under the cursor. UTF-8 sequences are parsed and treated
+as a single character. Unicode combining characters will be appended to the
+character under the cursor.
+.RE
+.SH ENVIRONMENT
+As per the recommendation of \fBhttps://www.no-color.org/\fR iotop honors the
+contents of the environment variable \fBNO_COLOR\fR and when it is set to a non
+empty string, all color output is suppressed.
 .SH SEE ALSO
 .BR ionice (1),
 .BR top (1),
@@ -293,9 +372,9 @@ Toggle task_delayacct kernel sysctl
 .BR htop (1)
 .SH AUTHOR
 The original Python iotop implementation was written by Guillaume Chazarain.
-This rewrite in C was started in 2014 by Vyacheslav Trushkin and
-reworked to include all missing features from the original Python code and
-several new ones in 2020 and 2021 by Boian Bonev.
+This rewrite in C was started in 2014 by Vyacheslav Trushkin and reworked to
+include all missing features from the original Python code and several new ones
+from 2020 to 2022 by Boian Bonev.
 .PP
-This manual page was started by Paul Wise for the
-Debian project and is placed in the public domain.
+This manual page was started by Paul Wise for the Debian project and is placed
+in the public domain.

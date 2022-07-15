@@ -85,7 +85,7 @@ Use the following commands (note that `-y` disables confirmation prompts):
 Use the following commands (note that `-y` disables confirmation prompts):
 
     dnf install git gcc make ncurses-devel pkgconfig -y
-    git clone https://github.com/Thomas-M/iotop
+    git clone https://github.com/Tomas-M/iotop
     cd iotop
     make -j
 </details>
@@ -97,7 +97,7 @@ Use the following commands (note that `-y` disables confirmation prompts):
 Use the following commands (note that `-y` disables confirmation prompts):
 
     yum install git gcc make ncurses-devel pkgconfig -y
-    git clone https://github.com/Thomas-M/iotop
+    git clone https://github.com/Tomas-M/iotop
     cd iotop
     make -j
 </details>
@@ -112,30 +112,34 @@ cd iotop && git checkout master && git pull && make clean && make -j
 
 ## Options
 
-    -v, --version         show program's version number and exit
-    -h, --help            show this help message and exit
-    -o, --only            only show processes or threads actually doing I/O
-    -b, --batch           non-interactive mode
-    -n NUM, --iter=NUM    number of iterations before ending [infinite]
-    -d SEC, --delay=SEC   delay between iterations [1 second]
-    -p PID, --pid=PID     processes/threads to monitor [all]
-    -u USER, --user=USER  users to monitor [all]
-    -P, --processes       only show processes, not all threads
-    -a, --accumulated     show accumulated I/O instead of bandwidth
-    -k, --kilobytes       use kilobytes instead of a human friendly unit
-    -t, --time            add a timestamp on each line (implies --batch)
-    -c, --fullcmdline     show full command line
-    -1, --hide-pid        hide PID/TID column
-    -2, --hide-prio       hide PRIO column
-    -3, --hide-user       hide USER column
-    -4, --hide-read       hide DISK READ column
-    -5, --hide-write      hide DISK WRITE column
-    -6, --hide-swapin     hide SWAPIN column
-    -7, --hide-io         hide IO column
-    -8, --hide-graph      hide GRAPH column
-    -9, --hide-command    hide COMMAND column
-    -q, --quiet           suppress some lines of header (implies --batch)
-    -H, --no-help         suppress listing of shortcuts
+    -v, --version          show program's version number and exit
+    -h, --help             show this help message and exit
+    -H, --help-type=TYPE   set type of interactive help (none, win or inline)
+    -o, --only             only show processes or threads actually doing I/O
+    -b, --batch            non-interactive mode
+    -n NUM, --iter=NUM     number of iterations before ending [infinite]
+    -d SEC, --delay=SEC    delay between iterations [1 second]
+    -p PID, --pid=PID      processes/threads to monitor [all]
+    -u USER, --user=USER   users to monitor [all]
+    -P, --processes        only show processes, not all threads
+    -a, --accumulated      show accumulated I/O instead of bandwidth
+    -k, --kilobytes        use kilobytes instead of a human friendly unit
+    -t, --time             add a timestamp on each line (implies --batch)
+    -c, --fullcmdline      show full command line
+    -1, --hide-pid         hide PID/TID column
+    -2, --hide-prio        hide PRIO column
+    -3, --hide-user        hide USER column
+    -4, --hide-read        hide DISK READ column
+    -5, --hide-write       hide DISK WRITE column
+    -6, --hide-swapin      hide SWAPIN column
+    -7, --hide-io          hide IO column
+    -8, --hide-graph       hide GRAPH column
+    -9, --hide-command     hide COMMAND column
+    -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)
+    -q, --quiet            suppress some lines of header (implies --batch)
+    -x, --dead-x           show exited processes/threads with letter x
+    -e, --hide-exited      hide exited processes
+    -l, --no-color         do not colorize values
 
 ## Contribute
 
@@ -157,13 +161,17 @@ The iotop community gathers in #iotop on libera.chat:
 
 Notable contributions (ordered by time of last contribution):
 
+-   Vladi Belperchinov-Shabanski &lt;[cade@noxrun.com](mailto:cade@noxrun.com)&gt; - Scroller code improvement, multiple reviews and ideas
+-   Alexander Monakov &lt;[amonakov@ispras.ru](mailto:amonakov@ispras.ru)&gt; - Improvement of ncurses color handling
+-   Alexander Rezvov &lt;[alex@rezvov.ru](mailto:alex@rezvov.ru)&gt; - NixOS packaging and testing
 -   EinProfiSpieler - README.md, build system improvements
 -   Paul Wise &lt;[pabs@debian.org](mailto:pabs@debian.org)&gt; - Debian packaging, man page, multiple reviews and ideas
 -   Rumen Jekov &lt;[rvjekov@gmail.com](mailto:rvjekov@gmail.com)&gt; - Arch Linux packaging and testing
+-   Milan P. Stanić &lt;[mps@arvanta.net](mailto:mps@arvanta.net)&gt; - Alpine Linux packaging and testing
 -   Arthur Zamarin &lt;[arthurzam+gentoo@gmail.com](mailto:arthurzam+gentoo@gmail.com)&gt; - Gentoo packaging and testing
--   Yuriy M. Kaminskiy &lt;[yumkam@gmail.com](mailto:yumkam@gmail.com)&gt; - code fixes and improvements
--   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - documentation imrpovements
--   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - build system imrpovements
+-   Yuriy M. Kaminskiy &lt;[yumkam@gmail.com](mailto:yumkam@gmail.com)&gt; - Code fixes and improvements
+-   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - Documentation imrpovements
+-   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - Build system imrpovements
 
 **Thanks!** This project is what it is now because the steam you have put into it
 

@@ -1,4 +1,4 @@
-/* SPDX-License-Identifer: GPL-2.0-or-later
+/* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
 Copyright (C) 2020-2022  Boian Bonev
@@ -40,7 +40,7 @@ inline void init_params(void) {
 	params.user_id=-1;
 }
 
-static const char str_opt[]="boPaktqc123456789x";
+static const char str_opt[]="boPaktqc123456789xel";
 
 static inline void print_help(void) {
 	printf(
@@ -79,16 +79,24 @@ static inline void print_help(void) {
 		"  -9, --hide-command     hide COMMAND column\n"
 		"  -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)\n"
 		"  -q, --quiet            suppress some lines of header (implies --batch)\n"
-		"  -x, --dead-x           show dead processes/threads with letter x\n",
+		"  -x, --dead-x           show exited processes/threads with letter x\n"
+		"  -e, --hide-exited      hide exited processes\n"
+		"  -l, --no-color         do not colorize values\n",
 		progname
 	);
 }
 
 static inline void parse_args(int argc,char *argv[]) {
+	char *no_color=getenv("NO_COLOR");
+
 	init_params();
 	memset(&config,0,sizeof(config));
 	config.f.sort_by=SORT_BY_GRAPH;
 	config.f.sort_order=SORT_DESC;
+
+	// implement https://no-color.org/ proposal
+	if (no_color&&*no_color)
+		config.f.nocolor=1;
 
 	while (1) {
 		static struct option long_options[]={
@@ -117,11 +125,13 @@ static inline void parse_args(int argc,char *argv[]) {
 			{"hide-graph",no_argument,NULL,'8'},
 			{"hide-command",no_argument,NULL,'9'},
 			{"dead-x",no_argument,NULL,'x'},
+			{"hide-exited",no_argument,NULL,'e'},
+			{"no-color",no_argument,NULL,'l'},
 			{"grtype",required_argument,NULL,'g'},
 			{NULL,0,NULL,0}
 		};
 
-		int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xg:H:",long_options,NULL);
+		int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xelg:H:",long_options,NULL);
 
 		if (c==-1) {
 			if (optind<argc) {
@@ -163,6 +173,8 @@ static inline void parse_args(int argc,char *argv[]) {
 			case 'c':
 			case '1' ... '9':
 			case 'x':
+			case 'e':
+			case 'l':
 				config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
 				break;
 			case 'n':
@@ -216,10 +228,15 @@ static inline void parse_args(int argc,char *argv[]) {
 }
 
 inline void sig_handler(int signo) {
-	if (signo==SIGINT) {
-		v_fini_cb();
-		nl_fini();
-		exit(EXIT_SUCCESS);
+	switch (signo) {
+		default:
+			break;
+		case SIGINT:
+		case SIGHUP:
+		case SIGQUIT:
+			v_fini_cb();
+			nl_fini();
+			exit(EXIT_SUCCESS);
 	}
 }
 
@@ -234,6 +251,10 @@ int main(int argc,char *argv[]) {
 	nl_init();
 
 	if (signal(SIGINT,sig_handler)==SIG_ERR)
+		perror("signal");
+	if (signal(SIGHUP,sig_handler)==SIG_ERR)
+		perror("signal");
+	if (signal(SIGQUIT,sig_handler)==SIG_ERR)
 		perror("signal");
 
 	if (config.f.timestamp||config.f.quiet)

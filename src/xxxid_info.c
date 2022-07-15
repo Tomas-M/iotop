@@ -1,4 +1,4 @@
-/* SPDX-License-Identifer: GPL-2.0-or-later
+/* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
 Copyright (C) 2020-2022  Boian Bonev
@@ -100,7 +100,7 @@ inline int get_family_id(int sock_fd) {
 		return 0;
 
 	rep_len=recv(sock_fd,&answ,sizeof answ,0);
-	if (answ.n.nlmsg_type==NLMSG_ERROR||(rep_len<0)||!NLMSG_OK((&answ.n),rep_len))
+	if (rep_len<0||!NLMSG_OK((&answ.n),(size_t)rep_len)||answ.n.nlmsg_type==NLMSG_ERROR)
 		return 0;
 
 	na=(struct nlattr *)GENLMSG_DATA(&answ);
@@ -126,6 +126,10 @@ inline void nl_init(void) {
 
 	nl_sock=sock_fd;
 	nl_fam_id=get_family_id(sock_fd);
+	if (!nl_fam_id) {
+		fprintf(stderr,"nl_init: couldn't get netlink family id\n");
+		exit(EXIT_FAILURE);
+	}
 
 	return;
 
@@ -139,7 +143,11 @@ error:
 
 inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 	if (nl_sock<0) {
-		perror("nl_xxxid_info");
+		fprintf(stderr,"nl_xxxid_info: nl_sock is %d",nl_sock);
+		exit(EXIT_FAILURE);
+	}
+	if (nl_fam_id==0) { // this will cause recv to wait forever
+		fprintf(stderr,"nl_xxxid_info: nl_fam_id is 0");
 		exit(EXIT_FAILURE);
 	}
 
@@ -154,8 +162,9 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 	struct msgtemplate msg;
 	ssize_t rv=recv(nl_sock,&msg,sizeof msg,0);
 
-	if (msg.n.nlmsg_type==NLMSG_ERROR||!NLMSG_OK((&msg.n),rv)) {
+	if (rv<0||!NLMSG_OK((&msg.n),(size_t)rv)||msg.n.nlmsg_type==NLMSG_ERROR) {
 		struct nlmsgerr *err=NLMSG_DATA(&msg);
+
 		if (err->error!=-ESRCH)
 			fprintf(stderr,"fatal reply error, %d\n",err->error);
 		return -1;
@@ -193,8 +202,6 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 		na=(struct nlattr *)((char *)GENLMSG_DATA(&msg)+len);
 	}
 
-	stats->io_prio=get_ioprio(tid);
-
 	return 0;
 }
 
@@ -221,12 +228,21 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	struct passwd *pwd;
 	char *cmdline1;
 	char *cmdline2;
+	int prio;
 
 	if (!s)
 		return NULL;
 
 	if (nl_xxxid_info(tid,pid,s))
-		goto error;
+		s->error_x=1;
+
+
+	prio=get_ioprio(tid);
+	if (prio==-1) {
+		s->error_i=1;
+		s->io_prio=0;
+	} else
+		s->io_prio=prio;
 
 	cmdline1=read_cmdline(tid,1);
 	cmdline2=read_cmdline(tid,0);
@@ -236,11 +252,11 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	pwd=getpwuid(s->euid);
 	s->pw_name=strdup(pwd&&pwd->pw_name?pwd->pw_name:unknown);
 
+	if ((s->error_x||s->error_i||!cmdline1||!cmdline2)&&!is_a_process(tid)) { // process exited in the meantime
+		free_stats(s);
+		return NULL;
+	}
 	return s;
-
-error:
-	free_stats(s);
-	return NULL;
 }
 
 static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback filter) {

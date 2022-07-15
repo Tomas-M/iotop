@@ -1,4 +1,4 @@
-/* SPDX-License-Identifer: GPL-2.0-or-later
+/* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
 Copyright (C) 2020-2022  Boian Bonev
@@ -41,6 +41,8 @@ inline int get_ioprio(pid_t pid) {
 	int io_prio,io_class;
 
 	io_prio=syscall(SYS_ioprio_get,IOPRIO_WHO_PROCESS,pid);
+	if (io_prio==-1)
+		return -1;
 	io_class=io_prio>>IOPRIO_CLASS_SHIFT;
 	if (!io_class)
 		return get_ioprio_from_sched(pid);
