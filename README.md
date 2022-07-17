@@ -91,7 +91,7 @@ Use the following commands (note that `-y` disables confirmation prompts):
 </details>
 
 <details>
-<summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+<summary>CentOS 8/RHEL 8/RHEL 9</summary>
 &nbsp;  
 
 Use the following commands (note that `-y` disables confirmation prompts):
@@ -99,6 +99,21 @@ Use the following commands (note that `-y` disables confirmation prompts):
     yum install git gcc make ncurses-devel pkgconfig -y
     git clone https://github.com/Tomas-M/iotop
     cd iotop
+    make -j
+</details>
+
+<details>
+<summary>CentOS 7/RHEL 7</summary>
+&nbsp;  
+
+*Note:* On CentOS 7/RHEL 7 `gcc` does not support `-Wdate-time` and needs a `-Wno-strict-overflow` to suppress a pile of bogus warnings.
+
+Use the following commands (note that `-y` disables confirmation prompts):
+
+    yum install git gcc make ncurses-devel pkgconfig -y
+    git clone https://github.com/Tomas-M/iotop
+    cd iotop
+    sed -i 's/-Wdate-time/-Wno-strict-overflow/' Makefile
     make -j
 </details>
 
