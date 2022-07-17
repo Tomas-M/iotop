@@ -170,8 +170,8 @@ Notable contributions (ordered by time of last contribution):
 -   Milan P. Stanić &lt;[mps@arvanta.net](mailto:mps@arvanta.net)&gt; - Alpine Linux packaging and testing
 -   Arthur Zamarin &lt;[arthurzam+gentoo@gmail.com](mailto:arthurzam+gentoo@gmail.com)&gt; - Gentoo packaging and testing
 -   Yuriy M. Kaminskiy &lt;[yumkam@gmail.com](mailto:yumkam@gmail.com)&gt; - Code fixes and improvements
--   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - Documentation imrpovements
--   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - Build system imrpovements
+-   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - Documentation improvements
+-   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - Build system improvements
 
 **Thanks!** This project is what it is now because the steam you have put into it
 
