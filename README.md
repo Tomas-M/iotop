@@ -54,13 +54,22 @@ Use the following command (note that `-y` disables confirmation prompts):
 </details>
 
 <details>
-  <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+  <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8/RHEL 9</summary>
 &nbsp;  
 
 Use the following commands (note that `-y` disables confirmation prompts):
     
     sudo yum install epel-release -y
     sudo yum install iotop-c -y
+</details>
+
+<details>
+  <summary>Void Linux</summary>
+&nbsp;  
+
+Use the following command:
+    
+    sudo xbps-install iotop-c
 </details>
 
 ## How to build from source
@@ -114,6 +123,18 @@ Use the following commands (note that `-y` disables confirmation prompts):
     git clone https://github.com/Tomas-M/iotop
     cd iotop
     sed -i 's/-Wdate-time/-Wno-strict-overflow/' Makefile
+    make -j
+</details>
+
+<details>
+<summary>Void Linux</summary>
+&nbsp;  
+
+Use the following commands:
+
+    xbps-install git base-devel ncurses-devel
+    git clone https://github.com/Tomas-M/iotop
+    cd iotop
     make -j
 </details>
 
