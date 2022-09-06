@@ -190,6 +190,8 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 					#define COPY(field) { stats->field = ts->field; }
 					COPY(read_bytes);
 					COPY(write_bytes);
+					COPY(read_syscalls);
+					COPY(write_syscalls);
 					COPY(swapin_delay_total);
 					COPY(blkio_delay_total);
 					#undef COPY
