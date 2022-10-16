@@ -1,3 +1,11 @@
+iotop-c (1.22-2) UNRELEASED; urgency=medium
+
+  * Re-export upstream signing key without extra signatures.
+  * Fix day-of-week for changelog entry 1.22-1.
+  * Update standards version to 4.6.1, no changes needed.
+
+ -- Debian Janitor <janitor@jelmer.uk>  Wed, 12 Oct 2022 12:51:07 -0000
+
 iotop-c (1.22-1) unstable; urgency=medium
 
   * Update to new upstream release of 1.22
