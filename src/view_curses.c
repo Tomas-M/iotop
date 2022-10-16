@@ -78,6 +78,11 @@ You should have received a copy of the GNU General Public License along with thi
 #define KEY_ESCAPE 0x1b
 #endif
 
+// fix for old ncurses that does not implement A_ITALIC
+#ifndef A_ITALIC
+#define A_ITALIC A_BOLD
+#endif
+
 #define HEADER_XXS_FORMAT "%4.0f%s%s/%4.0f%s%s|%4.0f%s%s/%4.0f%s%s"
 #define HEADER_XS_FORMAT "TR:%4.0f%s%sW:%4.0f%s%s|CR:%4.0f%s%sW:%4.0f%s%s"
 #define HEADER_S_FORMAT "T R:%7.2f%s%s W:%7.2f%s%s|C R:%7.2f%s%s W:%7.2f%s%s"
