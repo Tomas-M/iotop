@@ -9,8 +9,9 @@ iotop-c (1.22-2) UNRELEASED; urgency=medium
 iotop-c (1.22-1) unstable; urgency=medium
 
   * Update to new upstream release of 1.22
+  * Update standards to 4.6.1, no changes
 
- -- Boian Bonev <bbonev@ipacct.com>  Wed, 06 Jul 2022 23:54:01 +0000
+ -- Boian Bonev <bbonev@ipacct.com>  Sat, 09 Jul 2022 23:54:01 +0000
 
 iotop-c (1.21-1) unstable; urgency=medium
 
