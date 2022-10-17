@@ -98,8 +98,6 @@ struct xxxid_stats {
 	uint64_t blkio_delay_total; // nanoseconds
 	uint64_t read_bytes;
 	uint64_t write_bytes;
-	uint64_t read_syscalls;
-	uint64_t write_syscalls;
 
 	double blkio_val;
 	double swapin_val;
