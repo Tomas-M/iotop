@@ -190,8 +190,6 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 					#define COPY(field) { stats->field = ts->field; }
 					COPY(read_bytes);
 					COPY(write_bytes);
-					COPY(read_syscalls);
-					COPY(write_syscalls);
 					COPY(swapin_delay_total);
 					COPY(blkio_delay_total);
 					#undef COPY
@@ -281,8 +279,6 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 						p->blkio_delay_total+=s->blkio_delay_total;
 						p->read_bytes+=s->read_bytes;
 						p->write_bytes+=s->write_bytes;
-						p->read_syscalls+=s->read_syscalls;
-						p->write_syscalls+=s->write_syscalls;
 					}
 				}
 			}
