@@ -281,8 +281,6 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 						p->blkio_delay_total+=s->blkio_delay_total;
 						p->read_bytes+=s->read_bytes;
 						p->write_bytes+=s->write_bytes;
-						p->read_syscalls+=s->read_syscalls;
-						p->write_syscalls+=s->write_syscalls;
 					}
 				}
 			}
