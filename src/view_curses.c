@@ -146,7 +146,7 @@ typedef struct {
 
 const s_helpitem thelp[]={
 	{.descr="Exit",.k2="q",.k3="Q"},
-	{.descr="Toggle sort order",.k1="<space>",.k2="r",.k3="R"},
+	{.descr="Toggle sort order",.k1="<space>",.k2="r"},
 	{.descr="Scroll to the top of the list",.k1="<home>"},
 	{.descr="Scroll to the bottom of the list",.k1="<end>"},
 	{.descr="Scroll one screen up",.k1="<page-up>"},
@@ -171,6 +171,7 @@ const s_helpitem thelp[]={
 	{.descr="Toggle showing COMMAND",.k2="9"},
 	{.descr="Show all columns",.k2="0"},
 	{.descr="Cycle GRAPH source (IO, R, W, R+W, SW)",.k2="g",.k3="G"},
+	{.descr="Toggle reverse GRAPH direction",.k2="R"},
 	{.descr="Toggle showing inline help",.k2="?"},
 	{.descr="Toggle showing this help",.k2="h",.k3="H"},
 	{.descr="IOnice a process/thread",.k2="i",.k3="I"},
@@ -501,6 +502,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	int gr_width;
 	int diff_len;
 	int saveskip;
+	int gs,ge,gi;
 	int i,j,k;
 	int maxy;
 	int maxx;
@@ -613,12 +615,15 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	strcpy(pg_t_w," ");
 	strcpy(pg_a_r," ");
 	strcpy(pg_a_w," ");
-	for (j=0;j<gr_width_h;j++) {
+	gs=config.f.reverse_graph?gr_width_h-1:0;
+	ge=config.f.reverse_graph?0:gr_width_h-1;
+	gi=config.f.reverse_graph?-1:1;
+	for (j=gs;ge<gs?j>=ge:j<=ge;j+=gi) {
 		if (has_unicode&&unicode) {
-			strcat(pg_t_r,br_graph[value2scale(hist_t_r[j*2],mx_t_r)][value2scale(hist_t_r[j*2+1],mx_t_r)]);
-			strcat(pg_t_w,br_graph[value2scale(hist_t_w[j*2],mx_t_w)][value2scale(hist_t_w[j*2+1],mx_t_w)]);
-			strcat(pg_a_r,br_graph[value2scale(hist_a_r[j*2],mx_a_r)][value2scale(hist_a_r[j*2+1],mx_a_r)]);
-			strcat(pg_a_w,br_graph[value2scale(hist_a_w[j*2],mx_a_w)][value2scale(hist_a_w[j*2+1],mx_a_w)]);
+			strcat(pg_t_r,br_graph[value2scale(hist_t_r[j*2],mx_t_r)][value2scale(hist_t_r[j*2+gi],mx_t_r)]);
+			strcat(pg_t_w,br_graph[value2scale(hist_t_w[j*2],mx_t_w)][value2scale(hist_t_w[j*2+gi],mx_t_w)]);
+			strcat(pg_a_r,br_graph[value2scale(hist_a_r[j*2],mx_a_r)][value2scale(hist_a_r[j*2+gi],mx_a_r)]);
+			strcat(pg_a_w,br_graph[value2scale(hist_a_w[j*2],mx_a_w)][value2scale(hist_a_w[j*2+gi],mx_a_w)]);
 		} else {
 			strcat(pg_t_r,as_graph[value2scale(hist_t_r[j],mx_t_r)]);
 			strcat(pg_t_w,as_graph[value2scale(hist_t_w[j],mx_t_w)]);
@@ -887,42 +892,45 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			hrevpos=-1;
 			if (!config.f.hidegraph) {
 				*graphstr=0;
-				for (j=0;j<gr_width;j++) {
+				gs=config.f.reverse_graph?gr_width-1:0;
+				ge=config.f.reverse_graph?0:gr_width-1;
+				gi=config.f.reverse_graph?-1:1;
+				for (j=gs;ge<gs?j>=ge:j<=ge;j+=gi) {
 					uint8_t v1=0,v2=0;
 
 					switch (masked_grtype(0)) {
 						case E_GR_IO:
 							if (has_unicode&&unicode) {
 								v1=s->iohist[j*2];
-								v2=s->iohist[j*2+1];
+								v2=s->iohist[j*2+gi];
 							} else
 								v1=s->iohist[j];
 							break;
 						case E_GR_R:
 							if (has_unicode&&unicode) {
 								v1=value2scale(s->readhist[j*2],maxvisible);
-								v2=value2scale(s->readhist[j*2+1],maxvisible);
+								v2=value2scale(s->readhist[j*2+gi],maxvisible);
 							} else
 								v1=value2scale(s->readhist[j*2],maxvisible);
 							break;
 						case E_GR_W:
 							if (has_unicode&&unicode) {
 								v1=value2scale(s->writehist[j*2],maxvisible);
-								v2=value2scale(s->writehist[j*2+1],maxvisible);
+								v2=value2scale(s->writehist[j*2+gi],maxvisible);
 							} else
 								v1=value2scale(s->writehist[j*2],maxvisible);
 							break;
 						case E_GR_RW:
 							if (has_unicode&&unicode) {
 								v1=value2scale(s->readhist[j*2]+s->writehist[j*2],maxvisible);
-								v2=value2scale(s->readhist[j*2+1]+s->writehist[j*2+1],maxvisible);
+								v2=value2scale(s->readhist[j*2+gi]+s->writehist[j*2+gi],maxvisible);
 							} else
 								v1=value2scale(s->readhist[j*2]+s->writehist[j*2],maxvisible);
 							break;
 						case E_GR_SW:
 							if (has_unicode&&unicode) {
 								v1=s->sihist[j*2];
-								v2=s->sihist[j*2+1];
+								v2=s->sihist[j*2+gi];
 							} else
 								v1=s->sihist[j];
 							break;
@@ -943,8 +951,13 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 							strcat(graphstr,br_graph[v1][v2]);
 						else
 							strcat(graphstr,as_graph[v1]);
-						if (((has_unicode&&unicode)?j*2:j)<s->exited)
-							hrevpos=strlen(graphstr);
+						if (config.f.reverse_graph) {
+							if (((has_unicode&&unicode)?j*2:j)>=s->exited&&s->exited)
+								hrevpos=strlen(graphstr);
+						} else {
+							if (((has_unicode&&unicode)?j*2:j)<s->exited&&s->exited)
+								hrevpos=strlen(graphstr);
+						}
 					}
 				}
 				strcat(graphstr," ");
@@ -1007,10 +1020,19 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					color_print_pc(s->blkio_val);
 			}
 			if (!config.f.hidegraph&&hrevpos>0) {
-				attron(A_REVERSE);
-				printw("%*.*s",hrevpos,hrevpos,graphstr);
-				attroff(A_REVERSE);
-				printw("%s",graphstr+hrevpos);
+				if (config.f.reverse_graph) {
+					graphstr[strlen(graphstr)-1]=0; // remove last space
+					printw("%*.*s",hrevpos,hrevpos,graphstr);
+					attron(A_REVERSE);
+					printw("%s",graphstr+hrevpos);
+					attroff(A_REVERSE);
+					printw(" ");
+				} else {
+					attron(A_REVERSE);
+					printw("%*.*s",hrevpos,hrevpos,graphstr);
+					attroff(A_REVERSE);
+					printw("%s",graphstr+hrevpos);
+				}
 			} else
 				printw("%s",!config.f.hidegraph?graphstr:"");
 			if (!config.f.hidecmd) {
@@ -1652,8 +1674,10 @@ static inline int curses_key(int ch) {
 			return 1;
 		case ' ':
 		case 'r':
-		case 'R':
 			config.f.sort_order=(config.f.sort_order==SORT_ASC)?SORT_DESC:SORT_ASC;
+			break;
+		case 'R':
+			config.f.reverse_graph=!config.f.reverse_graph;
 			break;
 		case KEY_HOME:
 			scrollpos=0;

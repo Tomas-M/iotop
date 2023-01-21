@@ -40,7 +40,7 @@ inline void init_params(void) {
 	params.user_id=-1;
 }
 
-static const char str_opt[]="boPaktqc123456789xel";
+static const char str_opt[]="boPaktqc123456789xelR";
 
 static inline void print_help(void) {
 	printf(
@@ -78,6 +78,7 @@ static inline void print_help(void) {
 		"  -8, --hide-graph       hide GRAPH column\n"
 		"  -9, --hide-command     hide COMMAND column\n"
 		"  -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)\n"
+		"  -R, --reverse-graph    reverse GRAPH column direction\n"
 		"  -q, --quiet            suppress some lines of header (implies --batch)\n"
 		"  -x, --dead-x           show exited processes/threads with letter x\n"
 		"  -e, --hide-exited      hide exited processes\n"
@@ -127,11 +128,12 @@ static inline void parse_args(int argc,char *argv[]) {
 			{"dead-x",no_argument,NULL,'x'},
 			{"hide-exited",no_argument,NULL,'e'},
 			{"no-color",no_argument,NULL,'l'},
+			{"reverse-graph",no_argument,NULL,'R'},
 			{"grtype",required_argument,NULL,'g'},
 			{NULL,0,NULL,0}
 		};
 
-		int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xelg:H:",long_options,NULL);
+		int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xelRg:H:",long_options,NULL);
 
 		if (c==-1) {
 			if (optind<argc) {
@@ -175,6 +177,7 @@ static inline void parse_args(int argc,char *argv[]) {
 			case 'x':
 			case 'e':
 			case 'l':
+			case 'R':
 				config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
 				break;
 			case 'n':

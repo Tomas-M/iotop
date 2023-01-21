@@ -187,6 +187,9 @@ Hide COMMAND column
 Set GRAPH column data source. Accepted values for \fITYPE\fR are \fBio\fR,
 \fBr\fR, \fBw\fR, \fBrw\fR and \fBsw\fR.
 .TP
+\fB\-R\fR, \fB\-\-reverse\-graph\fR
+Reverse GRAPH direction \- show most recent values on the right side
+.TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress some lines of header (implies \-\-batch). This option can be specified
 up to three times to remove header lines
@@ -218,7 +221,7 @@ Do not colorize values
 \fBq\fR, \fBQ\fR
 Exit
 .TP
-\fB<space>\fR, \fBr\fR, \fBR\fR
+\fB<space>\fR, \fBr\fR
 Toggle sort order
 .TP
 \fB<home>\fR
@@ -277,6 +280,9 @@ Show all columns
 Cycle GRAPH source (\fBIO\fR=IO, \fBR\fR=DISK READ , \fBW\fR=DISK WRITE,
 \fBR+W\fR=DISK READ+DISK WRITE, \fBSW\fR=SWAPIN). Using \fBg\fR will cycle
 forward and \fBG\fR will cycle backward.
+.TP
+\fBR\fR
+Toggle reverse GRAPH direction
 .TP
 \fBi\fR, \fBI\fR
 IOnice a process/thread (depends on process/thread display mode)
