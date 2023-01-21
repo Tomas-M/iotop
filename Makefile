@@ -122,4 +122,4 @@ mkotar:
 
 -include $(DEPS)
 
-.PHONY: clean install uninstall
+.PHONY: all clean install uninstall mkotar
