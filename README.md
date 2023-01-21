@@ -172,6 +172,7 @@ cd iotop && git checkout master && git pull && make clean && make -j
     -8, --hide-graph       hide GRAPH column
     -9, --hide-command     hide COMMAND column
     -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)
+    -R, --reverse-graph    reverse GRAPH column direction
     -q, --quiet            suppress some lines of header (implies --batch)
     -x, --dead-x           show exited processes/threads with letter x
     -e, --hide-exited      hide exited processes
