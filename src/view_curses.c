@@ -135,6 +135,7 @@ static int has_tda=1; // flag if delayacct kernel support is enabled
 static WINDOW *whelp; // pop-up help window
 static int hx=1,hy=1,hw=2+2+3,hh=2; // help window size and position
 static size_t c1w=0,c2w=0,c3w=0,cdw=0; // help window column widths
+static int helppos=0; // help window scroll position
 static WINDOW *wtda; // pop-up warning window
 static int whx=1,why=1,whw=2+2+20,whh=6; // warning window size and position
 static int dontrefresh=0; // flag to inhibit refresh of data
@@ -426,7 +427,24 @@ static inline void view_help(void) {
 	int i,a=c1w,b=c2w,c=c3w,d=cdw;
 	int hh=getmaxy(whelp);
 	int hw=getmaxx(whelp);
+	static int helpcnt=0;
 	const s_helpitem *p;
+	int can_scroll;
+
+	if (!helpcnt) // count thelp items once
+		for (p=thelp;p->descr;p++)
+			helpcnt++;
+
+	// adjust scroll position
+	if (hh-2>=helpcnt) { // all fits, no scroll
+		can_scroll=0;
+		helppos=0;
+	} else
+		can_scroll=1;
+	if (helpcnt-helppos<hh-2)
+		helppos=helpcnt-(hh-2);
+	if (helppos<0) // can't go before start
+		helppos=0;
 
 	snprintf(units,sizeof units,"Toggle SI units [now: %d]",config.f.base);
 	snprintf(unitt,sizeof unitt,"Cycle unit threshold [now: %d]",config.f.threshold);
@@ -437,15 +455,28 @@ static inline void view_help(void) {
 	wattroff(whelp,A_REVERSE);
 	for (i=1+strlen(" help ");i<hw;i++)
 		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
-	for (p=thelp,i=1;i<hh-1;i++,p++)
+	for (p=thelp+helppos,i=1;i<hh-1&&p->descr;i++,p++)
 		mvwprintw(whelp,i,0," %-*.*s %-*.*s %-*.*s - %-*.*s ",a,a,p->k1?p->k1:"",b,b,p->k2?p->k2:"",c,c,p->k3?p->k3:"",d,d,p->descr);
 	mvwprintw(whelp,hh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
 	wattron(whelp,A_REVERSE|A_DIM);
-	for (i=1;i<hw&&i<(int)strlen(" iotop "VERSION" ");i++)
-		mvwprintw(whelp,hh-1,i,"%c",(" iotop "VERSION" ")[i]);
+	for (i=1;i<hw&&i<1+(int)strlen(" iotop "VERSION" ");i++)
+		mvwprintw(whelp,hh-1,i,"%c",(" iotop "VERSION" ")[i-1]);
 	wattroff(whelp,A_REVERSE|A_DIM);
-	for (i=1+strlen(" iotop "VERSION" ");i<hw;i++)
-		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
+	if (can_scroll) {
+		int vp=1+strlen(" iotop "VERSION" ");
+
+		for (i=vp;i<hw&&i<vp+2;i++)
+			wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
+		wattron(whelp,A_REVERSE);
+		for (i=vp+2;i<hw&&i<vp+2+(int)strlen(" < > scroll ");i++)
+			mvwprintw(whelp,hh-1,i,"%c",(" < > scroll ")[i-vp-2]);
+		wattroff(whelp,A_REVERSE);
+		vp+=strlen(" < > scroll ");
+		for (i=vp;i<hw;i++)
+			wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
+	} else
+		for (i=1+strlen(" iotop "VERSION" ");i<hw;i++)
+			wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
 }
 
 static inline void view_warning(void) {
@@ -1854,10 +1885,19 @@ static inline int curses_key(int ch) {
 			break;
 		case 'h':
 		case 'H':
-			if (config.f.helptype!=1)
+			if (config.f.helptype!=1) {
 				config.f.helptype=1;
-			else
+				helppos=0;
+			} else
 				config.f.helptype=0;
+			break;
+		case '<':
+			if (config.f.helptype==1) // out of bounds checks are in view_help
+				helppos--;
+			break;
+		case '>':
+			if (config.f.helptype==1)
+				helppos++;
 			break;
 		case 'c':
 		case 'C':
