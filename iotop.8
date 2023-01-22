@@ -1,4 +1,4 @@
-.TH IOTOP "8" "July 8, 2022"
+.TH IOTOP "8" "January 22, 2023"
 .SH NAME
 iotop \- simple top\-like I/O monitor
 .SH SYNOPSIS
@@ -187,6 +187,9 @@ Hide COMMAND column
 Set GRAPH column data source. Accepted values for \fITYPE\fR are \fBio\fR,
 \fBr\fR, \fBw\fR, \fBrw\fR and \fBsw\fR.
 .TP
+\fB\-R\fR, \fB\-\-reverse\-graph\fR
+Reverse GRAPH direction \- show most recent values on the right side
+.TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress some lines of header (implies \-\-batch). This option can be specified
 up to three times to remove header lines
@@ -212,13 +215,23 @@ Hide exited processes
 .TP
 \fB\-l\fR, \fB\-\-no\-color\fR
 Do not colorize values
+.TP
+\fB\-\-si\fR
+Use SI units of \fB1000\fR when printing values. The default is non\-SI
+\fB1024\fR
+.TP
+\fB\-\-threshold=1..10\fR
+Set the threshold to switch to next unit. The default value is \fB2\fR
+.TP
+\fB\-\-ascii\fR
+Disable using Unicode
 .PD 1
 .SH KEYBOARD SHORTCUTS
 .TP
 \fBq\fR, \fBQ\fR
 Exit
 .TP
-\fB<space>\fR, \fBr\fR, \fBR\fR
+\fB<space>\fR, \fBr\fR
 Toggle sort order
 .TP
 \fB<home>\fR
@@ -278,6 +291,9 @@ Cycle GRAPH source (\fBIO\fR=IO, \fBR\fR=DISK READ , \fBW\fR=DISK WRITE,
 \fBR+W\fR=DISK READ+DISK WRITE, \fBSW\fR=SWAPIN). Using \fBg\fR will cycle
 forward and \fBG\fR will cycle backward.
 .TP
+\fBR\fR
+Toggle reverse GRAPH direction
+.TP
 \fBi\fR, \fBI\fR
 IOnice a process/thread (depends on process/thread display mode)
 .TP
@@ -300,8 +316,17 @@ Toggle the display of exited processes
 \fBs\fR, \fBS\fR
 Toggle freeze of data collection
 .TP
+\fBCtrl\-B\fR
+Toggle SI units
+.TP
+\fBCtrl\-R\fR
+Cycle unit threshold
+.TP
 \fBCtrl\-T\fR
 Toggle task_delayacct kernel sysctl
+.TP
+\fBCtrl\-L\fR
+Redraw screen
 .TP
 \fB/\fR
 Change search regular expression. While the search regular expression is being
@@ -361,7 +386,7 @@ as a single character. Unicode combining characters will be appended to the
 character under the cursor.
 .RE
 .SH ENVIRONMENT
-As per the recommendation of \fBhttps://www.no-color.org/\fR iotop honors the
+As per the recommendation of \fBhttps://www.no\-color.org/\fR iotop honors the
 contents of the environment variable \fBNO_COLOR\fR and when it is set to a non
 empty string, all color output is suppressed.
 .SH SEE ALSO
@@ -374,7 +399,7 @@ empty string, all color output is suppressed.
 The original Python iotop implementation was written by Guillaume Chazarain.
 This rewrite in C was started in 2014 by Vyacheslav Trushkin and reworked to
 include all missing features from the original Python code and several new ones
-from 2020 to 2022 by Boian Bonev.
+from 2020 to 2023 by Boian Bonev.
 .PP
 This manual page was started by Paul Wise for the Debian project and is placed
 in the public domain.

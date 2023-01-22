@@ -29,5 +29,6 @@ build() {
 
 package() {
 	cd iotop-${pkgver}
+	unset PREFIX
 	make DESTDIR="${pkgdir}" install
 }

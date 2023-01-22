@@ -54,13 +54,22 @@ Use the following command (note that `-y` disables confirmation prompts):
 </details>
 
 <details>
-  <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+  <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8/RHEL 9</summary>
 &nbsp;  
 
 Use the following commands (note that `-y` disables confirmation prompts):
     
     sudo yum install epel-release -y
     sudo yum install iotop-c -y
+</details>
+
+<details>
+  <summary>Void Linux</summary>
+&nbsp;  
+
+Use the following command:
+    
+    sudo xbps-install iotop-c
 </details>
 
 ## How to build from source
@@ -91,12 +100,39 @@ Use the following commands (note that `-y` disables confirmation prompts):
 </details>
 
 <details>
-<summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+<summary>CentOS 8/RHEL 8/RHEL 9</summary>
 &nbsp;  
 
 Use the following commands (note that `-y` disables confirmation prompts):
 
     yum install git gcc make ncurses-devel pkgconfig -y
+    git clone https://github.com/Tomas-M/iotop
+    cd iotop
+    make -j
+</details>
+
+<details>
+<summary>CentOS 7/RHEL 7</summary>
+&nbsp;  
+
+*Note:* On CentOS 7/RHEL 7 `gcc` does not support `-Wdate-time` and needs a `-Wno-strict-overflow` to suppress a pile of bogus warnings.
+
+Use the following commands (note that `-y` disables confirmation prompts):
+
+    yum install git gcc make ncurses-devel pkgconfig -y
+    git clone https://github.com/Tomas-M/iotop
+    cd iotop
+    sed -i 's/-Wdate-time/-Wno-strict-overflow/' Makefile
+    make -j
+</details>
+
+<details>
+<summary>Void Linux</summary>
+&nbsp;  
+
+Use the following commands:
+
+    xbps-install git base-devel ncurses-devel
     git clone https://github.com/Tomas-M/iotop
     cd iotop
     make -j
@@ -136,10 +172,14 @@ cd iotop && git checkout master && git pull && make clean && make -j
     -8, --hide-graph       hide GRAPH column
     -9, --hide-command     hide COMMAND column
     -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)
+    -R, --reverse-graph    reverse GRAPH column direction
     -q, --quiet            suppress some lines of header (implies --batch)
     -x, --dead-x           show exited processes/threads with letter x
     -e, --hide-exited      hide exited processes
     -l, --no-color         do not colorize values
+        --si               use SI units of 1000 when printing values
+        --threshold=1..10  threshold to switch to next unit
+        --ascii            disable using Unicode
 
 ## Contribute
 
@@ -161,6 +201,10 @@ The iotop community gathers in #iotop on libera.chat:
 
 Notable contributions (ordered by time of last contribution):
 
+-   Leah Neukirchen &lt;[leah@vuxu.org](mailto:leah@vuxu.org)&gt; - Void Linux packaging and testing
+-   Vitaly Chikunov &lt;[vt@altlinux.org](mailto:vt@altlinux.org)&gt; - ALT Linux packaging and testing
+-   Matteo Bernardini &lt;[ponce@slackbuilds.org](mailto:ponce@slackbuilds.org)&gt; - SlackBuilds packaging and testing
+-   Jonathan Papineau &lt;[jonathan@jontech.app](mailto:jonathan@jontech.app)&gt; - OpenSUSE packaging and testing
 -   Vladi Belperchinov-Shabanski &lt;[cade@noxrun.com](mailto:cade@noxrun.com)&gt; - Scroller code improvement, multiple reviews and ideas
 -   Alexander Monakov &lt;[amonakov@ispras.ru](mailto:amonakov@ispras.ru)&gt; - Improvement of ncurses color handling
 -   Alexander Rezvov &lt;[alex@rezvov.ru](mailto:alex@rezvov.ru)&gt; - NixOS packaging and testing
@@ -170,8 +214,8 @@ Notable contributions (ordered by time of last contribution):
 -   Milan P. Stanić &lt;[mps@arvanta.net](mailto:mps@arvanta.net)&gt; - Alpine Linux packaging and testing
 -   Arthur Zamarin &lt;[arthurzam+gentoo@gmail.com](mailto:arthurzam+gentoo@gmail.com)&gt; - Gentoo packaging and testing
 -   Yuriy M. Kaminskiy &lt;[yumkam@gmail.com](mailto:yumkam@gmail.com)&gt; - Code fixes and improvements
--   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - Documentation imrpovements
--   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - Build system imrpovements
+-   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - Documentation improvements
+-   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - Build system improvements
 
 **Thanks!** This project is what it is now because the steam you have put into it
 

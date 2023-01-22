@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020-2022  Boian Bonev
+Copyright (C) 2020-2023  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -23,6 +23,10 @@ You should have received a copy of the GNU General Public License along with thi
 #include <string.h>
 #include <sys/types.h>
 
+#define OPT_SI 0x100
+#define OPT_THR 0x101
+#define OPT_ASCII 0x102
+
 static const char *progname=NULL;
 int maxpidlen=5;
 
@@ -40,7 +44,7 @@ inline void init_params(void) {
 	params.user_id=-1;
 }
 
-static const char str_opt[]="boPaktqc123456789xel";
+static const char str_opt[]="boPaktqc123456789xelR";
 
 static inline void print_help(void) {
 	printf(
@@ -78,21 +82,29 @@ static inline void print_help(void) {
 		"  -8, --hide-graph       hide GRAPH column\n"
 		"  -9, --hide-command     hide COMMAND column\n"
 		"  -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)\n"
+		"  -R, --reverse-graph    reverse GRAPH column direction\n"
 		"  -q, --quiet            suppress some lines of header (implies --batch)\n"
 		"  -x, --dead-x           show exited processes/threads with letter x\n"
 		"  -e, --hide-exited      hide exited processes\n"
-		"  -l, --no-color         do not colorize values\n",
+		"  -l, --no-color         do not colorize values\n"
+		"      --si               use SI units of 1000 when printing values\n"
+		"      --threshold=1..10  threshold to switch to next unit\n"
+		"      --ascii            disable using Unicode\n",
 		progname
 	);
 }
 
 static inline void parse_args(int argc,char *argv[]) {
 	char *no_color=getenv("NO_COLOR");
+	int v;
 
 	init_params();
 	memset(&config,0,sizeof(config));
 	config.f.sort_by=SORT_BY_GRAPH;
 	config.f.sort_order=SORT_DESC;
+	config.f.base=1024; // use SI units by default
+	config.f.threshold=2; // default threshold is 2*base
+	config.f.unicode=1; // default is unicode
 
 	// implement https://no-color.org/ proposal
 	if (no_color&&*no_color)
@@ -127,11 +139,15 @@ static inline void parse_args(int argc,char *argv[]) {
 			{"dead-x",no_argument,NULL,'x'},
 			{"hide-exited",no_argument,NULL,'e'},
 			{"no-color",no_argument,NULL,'l'},
+			{"reverse-graph",no_argument,NULL,'R'},
 			{"grtype",required_argument,NULL,'g'},
+			{"si",no_argument,NULL,OPT_SI},
+			{"threshold",required_argument,NULL,OPT_THR},
+			{"ascii",no_argument,NULL,OPT_ASCII},
 			{NULL,0,NULL,0}
 		};
 
-		int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xelg:H:",long_options,NULL);
+		int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xelRg:H:",long_options,NULL);
 
 		if (c==-1) {
 			if (optind<argc) {
@@ -175,6 +191,7 @@ static inline void parse_args(int argc,char *argv[]) {
 			case 'x':
 			case 'e':
 			case 'l':
+			case 'R':
 				config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
 				break;
 			case 'n':
@@ -220,6 +237,20 @@ static inline void parse_args(int argc,char *argv[]) {
 					}
 					params.user_id=pwd->pw_uid;
 				}
+				break;
+			case OPT_SI:
+				config.f.base=1000;
+				break;
+			case OPT_THR:
+				v=atoi(optarg);
+				if (v<1||v>10) {
+					fprintf(stderr,"%s: threshold %s is not between 1 and 10\n",progname,optarg);
+					exit(EXIT_FAILURE);
+				}
+				config.f.threshold=v;
+				break;
+			case OPT_ASCII:
+				config.f.unicode=0;
 				break;
 			default:
 				exit(EXIT_FAILURE);

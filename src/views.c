@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020-2022  Boian Bonev
+Copyright (C) 2020-2023  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -33,8 +33,21 @@ inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write) {
 	}
 }
 
-#define RRV(to,from) (((to)<(from))?(~0ULL)-(to)+(from):(to)-(from))
-#define RRVf(pto,pfrom,fld) RRV(pto->fld,pfrom->fld)
+static inline uint64_t rrv(uint64_t to,uint64_t from) {
+	uint64_t result;
+
+	if (to<from) {
+		result=0;
+		result=~result;
+		result-=to;
+		result+=from;
+	} else {
+		result=0;
+		result+=to;
+		result-=from;
+	}
+	return result;
+}
 
 inline void calc_a_total(struct act_stats *act,double *read,double *write,double time_s) {
 	*read=*write=0;
@@ -43,8 +56,8 @@ inline void calc_a_total(struct act_stats *act,double *read,double *write,double
 		uint64_t r=act->read_bytes;
 		uint64_t w=act->write_bytes;
 
-		r=RRV(r,act->read_bytes_o);
-		w=RRV(w,act->write_bytes_o);
+		r=rrv(r,act->read_bytes_o);
+		w=rrv(w,act->write_bytes_o);
 		*read=(double)r/time_s;
 		*write=(double)w/time_s;
 	}
@@ -92,16 +105,16 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 		}
 
 		// round robin value
-		c->blkio_val=(double)RRVf(c,p,blkio_delay_total)/(time_s*10000000.0);
+		c->blkio_val=(double)rrv(c->blkio_delay_total,p->blkio_delay_total)/(time_s*10000000.0);
 		if (c->blkio_val>100)
 			c->blkio_val=100;
 
-		c->swapin_val=(double)RRVf(c,p,swapin_delay_total)/(time_s*10000000.0);
+		c->swapin_val=(double)rrv(c->swapin_delay_total,p->swapin_delay_total)/(time_s*10000000.0);
 		if (c->swapin_val>100)
 			c->swapin_val=100;
 
-		rv=(double)RRVf(c,p,read_bytes);
-		wv=(double)RRVf(c,p,write_bytes);
+		rv=(double)rrv(c->read_bytes,p->read_bytes);
+		wv=(double)rrv(c->write_bytes,p->write_bytes);
 
 		c->read_val=rv/time_s;
 		c->write_val=wv/time_s;
@@ -199,11 +212,11 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 
 	if (config.f.kilobytes) {
 		p=1;
-		*value/=1000.0;
+		*value/=(double)config.f.base;
 	} else {
-		while (*value>10000) {
+		while (*value>config.f.base*config.f.threshold) {
 			if (p+1<strlen(u)) {
-				*value/=1000.0;
+				*value/=(double)config.f.base;
 				p++;
 			} else
 				break;

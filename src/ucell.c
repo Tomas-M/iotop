@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
-Copyright (C) 2020-2022  Boian Bonev
+Copyright (C) 2020-2023  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -130,7 +130,7 @@ inline int ucell_resize(ucell *uc,int newsz) { // {{{
 				uc->cells[i].flags=0;
 				uc->cells[i].d[0]=0;
 			}
-		nc=reallocarray(uc->cells,newsz,sizeof *uc->cells);
+		nc=realloc(uc->cells,newsz*sizeof *uc->cells);
 		if (uc->len>newsz)
 			uc->len=newsz;
 		if (nc) {
@@ -144,7 +144,7 @@ inline int ucell_resize(ucell *uc,int newsz) { // {{{
 		cell *nc;
 		int i;
 
-		nc=reallocarray(uc->cells,newsz,sizeof *uc->cells);
+		nc=realloc(uc->cells,newsz*sizeof *uc->cells);
 		if (!nc)
 			return -ENOMEM;
 
@@ -271,7 +271,8 @@ inline void ucell_utf_feed_s(ucell *uc,const char *s) { // {{{
 
 	*d=0;
 	sl=strlen(s);
-	mbtowc(NULL,NULL,0);
+	if (mbtowc(NULL,NULL,0)) {
+	}
 	for (;;) {
 		int cl;
 		int tw;
@@ -694,7 +695,8 @@ inline int ucell_isalnum(const char *s) { // {{{
 	if (!s)
 		return 0;
 
-	mbtowc(NULL,NULL,0); // reset state
+	if (mbtowc(NULL,NULL,0)) { // reset state
+	}
 	l=strlen(s);
 	while (p<l&&(c=mbtowc(ws,s+p,l-p))>0) {
 		if (!iswalnum(ws[0]))

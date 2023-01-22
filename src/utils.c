@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020-2022  Boian Bonev
+Copyright (C) 2020-2023  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -266,7 +266,8 @@ inline char *u8strpadt(const char *s,ssize_t rlen) {
 		s="(null)";
 
 	sl=strlen(s);
-	mbtowc(NULL,NULL,0);
+	if (mbtowc(NULL,NULL,0)) {
+	}
 	for (;;) {
 		int cl;
 		int tw;

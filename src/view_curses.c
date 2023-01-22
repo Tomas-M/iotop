@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020-2022  Boian Bonev
+Copyright (C) 2020-2023  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -65,6 +65,9 @@ You should have received a copy of the GNU General Public License along with thi
 #ifndef KEY_RET
 #define KEY_RET KEY_CTRL_M
 #endif
+#ifndef KEY_CTRL_R
+#define KEY_CTRL_R 0x12
+#endif
 #ifndef KEY_CTRL_T
 #define KEY_CTRL_T 0x14
 #endif
@@ -76,6 +79,11 @@ You should have received a copy of the GNU General Public License along with thi
 #endif
 #ifndef KEY_ESCAPE
 #define KEY_ESCAPE 0x1b
+#endif
+
+// fix for old ncurses that does not implement A_ITALIC
+#ifndef A_ITALIC
+#define A_ITALIC A_BOLD
 #endif
 
 #define HEADER_XXS_FORMAT "%4.0f%s%s/%4.0f%s%s|%4.0f%s%s/%4.0f%s%s"
@@ -112,7 +120,6 @@ static int search_regx_ok=0; // search regex compiles ok
 static ucell *search_uc=NULL; // utf cell array
 static struct xxxid_stats *ionice_pos_data=NULL;
 static int has_unicode=0;
-static int unicode=1; // enable unicode (only valid if unicode is available)
 static double hist_t_r[HISTORY_CNT]={0};
 static double hist_t_w[HISTORY_CNT]={0};
 static double hist_a_r[HISTORY_CNT]={0};
@@ -127,6 +134,7 @@ static int has_tda=1; // flag if delayacct kernel support is enabled
 static WINDOW *whelp; // pop-up help window
 static int hx=1,hy=1,hw=2+2+3,hh=2; // help window size and position
 static size_t c1w=0,c2w=0,c3w=0,cdw=0; // help window column widths
+static int helppos=0; // help window scroll position
 static WINDOW *wtda; // pop-up warning window
 static int whx=1,why=1,whw=2+2+20,whh=6; // warning window size and position
 static int dontrefresh=0; // flag to inhibit refresh of data
@@ -139,9 +147,12 @@ typedef struct {
 	const char *k3;
 } s_helpitem;
 
+static char units[100]="";
+static char unitt[100]="";
+
 const s_helpitem thelp[]={
 	{.descr="Exit",.k2="q",.k3="Q"},
-	{.descr="Toggle sort order",.k1="<space>",.k2="r",.k3="R"},
+	{.descr="Toggle sort order",.k1="<space>",.k2="r"},
 	{.descr="Scroll to the top of the list",.k1="<home>"},
 	{.descr="Scroll to the bottom of the list",.k1="<end>"},
 	{.descr="Scroll one screen up",.k1="<page-up>"},
@@ -166,6 +177,7 @@ const s_helpitem thelp[]={
 	{.descr="Toggle showing COMMAND",.k2="9"},
 	{.descr="Show all columns",.k2="0"},
 	{.descr="Cycle GRAPH source (IO, R, W, R+W, SW)",.k2="g",.k3="G"},
+	{.descr="Toggle reverse GRAPH direction",.k2="R"},
 	{.descr="Toggle showing inline help",.k2="?"},
 	{.descr="Toggle showing this help",.k2="h",.k3="H"},
 	{.descr="IOnice a process/thread",.k2="i",.k3="I"},
@@ -176,6 +188,8 @@ const s_helpitem thelp[]={
 	{.descr="Toggle exited processes xxx/inverse",.k2="x",.k3="X"},
 	{.descr="Toggle showing exited processes",.k2="e",.k3="E"},
 	{.descr="Toggle data freeze",.k2="s",.k3="S"},
+	{.descr=units,.k1="<Ctrl-B>",.k2="",.k3=""},
+	{.descr=unitt,.k1="<Ctrl-R>",.k2="",.k3=""},
 	{.descr="Toggle task_delayacct (if available)",.k1="<Ctrl-T>",.k2="",.k3=""},
 	{.descr="Redraw screen",.k1="<Ctrl-L>",.k2="",.k3=""},
 	{.descr=NULL},
@@ -243,7 +257,7 @@ static const int column_width[]={
 #define COLUMN_L(i) COLUMN_NAME((i)-1)
 #define COLUMN_R(i) COLUMN_NAME((i)+1)
 #define SORT_CHAR_IND(x) ((masked_sort_by(0)==x)?(config.f.sort_order==SORT_ASC?1:2):0)
-#define SORT_CHAR(x) (((has_unicode&&unicode)?sort_dir_u:sort_dir_a)[SORT_CHAR_IND(x)])
+#define SORT_CHAR(x) (((has_unicode&&config.f.unicode)?sort_dir_u:sort_dir_a)[SORT_CHAR_IND(x)])
 
 #define TIMEDIFF_IN_S(sta,end) ((((sta)==(end))||(sta)==0)?0.0001:(((end)-(sta))/1000.0))
 
@@ -335,7 +349,7 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 
 	attron(A_REVERSE);
 	if (from==to) {
-		if (unicode&&has_unicode) {
+		if (config.f.unicode&&has_unicode) {
 			mvprintw(from,xpos,"%s",scroll_u[3]);
 		} else {
 			attron(A_REVERSE);
@@ -352,7 +366,7 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 			begpos=from;
 			endpos=to;
 		} else {
-			int u=unicode&&has_unicode;
+			int u=config.f.unicode&&has_unicode;
 			int linecnt=visible-2; // count of lines usable by scroller
 			int drscale=u?8:1; // draw scale
 			int y=drscale*linecnt; // all scroll space
@@ -368,11 +382,11 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 		for (i=from;i<=to;i++) {
 			if (i==from||i==to) {
 				attron(A_REVERSE);
-				mvprintw(i,xpos,"%s",(unicode&&has_unicode)?scroll_u[i==from?1:2]:scroll_a[i==from?1:2]);
+				mvprintw(i,xpos,"%s",(config.f.unicode&&has_unicode)?scroll_u[i==from?1:2]:scroll_a[i==from?1:2]);
 				attroff(A_REVERSE);
 			}
 			if (i!=from&&i!=to) {
-				if (unicode&&has_unicode) {
+				if (config.f.unicode&&has_unicode) {
 					if (items<=to-from+1)
 						mvprintw(i,xpos,"%s",scroll_u[11]);
 					else {
@@ -410,43 +424,78 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 
 static inline void view_help(void) {
 	int i,a=c1w,b=c2w,c=c3w,d=cdw;
+	int hh=getmaxy(whelp);
+	int hw=getmaxx(whelp);
+	static int helpcnt=0;
 	const s_helpitem *p;
+	int can_scroll;
 
-	mvwprintw(whelp,0,0,"%s",(has_unicode&&unicode)?"─":"_");
+	if (!helpcnt) // count thelp items once
+		for (p=thelp;p->descr;p++)
+			helpcnt++;
+
+	// adjust scroll position
+	if (hh-2>=helpcnt) { // all fits, no scroll
+		can_scroll=0;
+		helppos=0;
+	} else
+		can_scroll=1;
+	if (helpcnt-helppos<hh-2)
+		helppos=helpcnt-(hh-2);
+	if (helppos<0) // can't go before start
+		helppos=0;
+
+	snprintf(units,sizeof units,"Toggle SI units [now: %d]",config.f.base);
+	snprintf(unitt,sizeof unitt,"Cycle unit threshold [now: %d]",config.f.threshold);
+
+	mvwprintw(whelp,0,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	wattron(whelp,A_REVERSE);
 	wprintw(whelp," help ");
 	wattroff(whelp,A_REVERSE);
 	for (i=1+strlen(" help ");i<hw;i++)
-		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
-	for (p=thelp,i=1;i<hh-1;i++,p++)
+		wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
+	for (p=thelp+helppos,i=1;i<hh-1&&p->descr;i++,p++)
 		mvwprintw(whelp,i,0," %-*.*s %-*.*s %-*.*s - %-*.*s ",a,a,p->k1?p->k1:"",b,b,p->k2?p->k2:"",c,c,p->k3?p->k3:"",d,d,p->descr);
-	mvwprintw(whelp,hh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
+	mvwprintw(whelp,hh-1,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	wattron(whelp,A_REVERSE|A_DIM);
-	for (i=1;i<hw&&i<(int)strlen(" iotop "VERSION" ");i++)
-		mvwprintw(whelp,hh-1,i,"%c",(" iotop "VERSION" ")[i]);
+	for (i=1;i<hw&&i<1+(int)strlen(" iotop "VERSION" ");i++)
+		mvwprintw(whelp,hh-1,i,"%c",(" iotop "VERSION" ")[i-1]);
 	wattroff(whelp,A_REVERSE|A_DIM);
-	for (i=1+strlen(" iotop "VERSION" ");i<hw;i++)
-		wprintw(whelp,"%s",(has_unicode&&unicode)?"─":"_");
+	if (can_scroll) {
+		int vp=1+strlen(" iotop "VERSION" ");
+
+		for (i=vp;i<hw&&i<vp+2;i++)
+			wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
+		wattron(whelp,A_REVERSE);
+		for (i=vp+2;i<hw&&i<vp+2+(int)strlen(" < > scroll ");i++)
+			mvwprintw(whelp,hh-1,i,"%c",(" < > scroll ")[i-vp-2]);
+		wattroff(whelp,A_REVERSE);
+		vp+=strlen(" < > scroll ");
+		for (i=vp;i<hw;i++)
+			wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
+	} else
+		for (i=1+strlen(" iotop "VERSION" ");i<hw;i++)
+			wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 }
 
 static inline void view_warning(void) {
 	int i;
 
-	mvwprintw(wtda,0,0,"%s",(has_unicode&&unicode)?"─":"_");
+	mvwprintw(wtda,0,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	wattron(wtda,A_REVERSE);
 	wattron(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 	wprintw(wtda," warning ");
 	wattroff(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 	wattroff(wtda,A_REVERSE);
 	for (i=1+strlen(" warning ");i<whw;i++)
-		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
+		wprintw(wtda,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	mvwprintw(wtda,1,0,"%*.*s",whw,whw,"");
 	mvwprintw(wtda,2,0," task_delayacct is %s ",read_task_delayacct()?"ON ":"OFF");
 	mvwprintw(wtda,3,0," press Ctrl-T to toggle ");
 	mvwprintw(wtda,4,0,"%*.*s",whw,whw,"");
-	mvwprintw(wtda,whh-1,0,"%s",(has_unicode&&unicode)?"─":"_");
+	mvwprintw(wtda,whh-1,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	for (i=1;i<whw;i++)
-		wprintw(wtda,"%s",(has_unicode&&unicode)?"─":"_");
+		wprintw(wtda,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	wattron(wtda,A_REVERSE|A_DIM);
 	mvwprintw(wtda,whh-1,1," press a key to hide ");
 	wattroff(wtda,A_REVERSE|A_DIM);
@@ -496,6 +545,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	int gr_width;
 	int diff_len;
 	int saveskip;
+	int gs,ge,gi;
 	int i,j,k;
 	int maxy;
 	int maxx;
@@ -531,7 +581,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	if (maxcmdline<0)
 		maxcmdline=0;
 
-	diff_len=create_diff(cs,ps,time_s,filter_view,(has_unicode&&unicode)?gr_width*2:gr_width,&dispcount);
+	diff_len=create_diff(cs,ps,time_s,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width,&dispcount);
 
 	calc_total(cs,&total_read,&total_write);
 	calc_a_total(act,&total_a_read,&total_a_write,time_s);
@@ -594,7 +644,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			}
 	}
 
-	for (i=0;i<((has_unicode&&unicode)?gr_width_h*2:gr_width_h);i++) {
+	for (i=0;i<((has_unicode&&config.f.unicode)?gr_width_h*2:gr_width_h);i++) {
 		if (mx_t_r<hist_t_r[i])
 			mx_t_r=hist_t_r[i];
 		if (mx_t_w<hist_t_w[i])
@@ -608,12 +658,15 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	strcpy(pg_t_w," ");
 	strcpy(pg_a_r," ");
 	strcpy(pg_a_w," ");
-	for (j=0;j<gr_width_h;j++) {
-		if (has_unicode&&unicode) {
-			strcat(pg_t_r,br_graph[value2scale(hist_t_r[j*2],mx_t_r)][value2scale(hist_t_r[j*2+1],mx_t_r)]);
-			strcat(pg_t_w,br_graph[value2scale(hist_t_w[j*2],mx_t_w)][value2scale(hist_t_w[j*2+1],mx_t_w)]);
-			strcat(pg_a_r,br_graph[value2scale(hist_a_r[j*2],mx_a_r)][value2scale(hist_a_r[j*2+1],mx_a_r)]);
-			strcat(pg_a_w,br_graph[value2scale(hist_a_w[j*2],mx_a_w)][value2scale(hist_a_w[j*2+1],mx_a_w)]);
+	gs=config.f.reverse_graph?gr_width_h-1:0;
+	ge=config.f.reverse_graph?0:gr_width_h-1;
+	gi=config.f.reverse_graph?-1:1;
+	for (j=gs;ge<gs?j>=ge:j<=ge;j+=gi) {
+		if (has_unicode&&config.f.unicode) {
+			strcat(pg_t_r,br_graph[value2scale(hist_t_r[j*2],mx_t_r)][value2scale(hist_t_r[j*2+gi],mx_t_r)]);
+			strcat(pg_t_w,br_graph[value2scale(hist_t_w[j*2],mx_t_w)][value2scale(hist_t_w[j*2+gi],mx_t_w)]);
+			strcat(pg_a_r,br_graph[value2scale(hist_a_r[j*2],mx_a_r)][value2scale(hist_a_r[j*2+gi],mx_a_r)]);
+			strcat(pg_a_w,br_graph[value2scale(hist_a_w[j*2],mx_a_w)][value2scale(hist_a_w[j*2+gi],mx_a_w)]);
 		} else {
 			strcat(pg_t_r,as_graph[value2scale(hist_t_r[j],mx_t_r)]);
 			strcat(pg_t_w,as_graph[value2scale(hist_t_w[j],mx_t_w)]);
@@ -714,11 +767,13 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 	maxcmdline--; // vertical scroller
 
-	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&unicode)?gr_width*2:gr_width));
+	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&config.f.unicode)?gr_width*2:gr_width));
 	arr_sort(cs,iotop_sort_cb);
 
 	if (maxy<10)
 		noinlinehelp=1;
+	else
+		noinlinehelp=0;
 	line=ionice_line+2;
 	lastline=line;
 	viewsizey=maxy-1-ionice_line-(noinlinehelp==0&&config.f.helptype==2?2:0);
@@ -757,7 +812,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					s=ms->threads->sor[k];
 				}
 				// apply filters
-				if (filter_view(s,(has_unicode&&unicode)?gr_width*2:gr_width))
+				if (filter_view(s,(has_unicode&&config.f.unicode)?gr_width*2:gr_width))
 					continue;
 				if (skip) {
 					skip--;
@@ -766,21 +821,21 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 				for (j=0;j<gr_width;j++) {
 					if (masked_grtype(0)==E_GR_R) {
-						if (has_unicode&&unicode) {
+						if (has_unicode&&config.f.unicode) {
 							maxvisible=mymax(maxvisible,s->readhist[j*2]);
 							maxvisible=mymax(maxvisible,s->readhist[j*2+1]);
 						} else
 							maxvisible=mymax(maxvisible,s->readhist[j]);
 					}
 					if (masked_grtype(0)==E_GR_W) {
-						if (has_unicode&&unicode) {
+						if (has_unicode&&config.f.unicode) {
 							maxvisible=mymax(maxvisible,s->writehist[j*2]);
 							maxvisible=mymax(maxvisible,s->writehist[j*2+1]);
 						} else
 							maxvisible=mymax(maxvisible,s->writehist[j]);
 					}
 					if (masked_grtype(0)==E_GR_RW) {
-						if (has_unicode&&unicode) {
+						if (has_unicode&&config.f.unicode) {
 							maxvisible=mymax(maxvisible,s->readhist[j*2]+s->writehist[j*2]);
 							maxvisible=mymax(maxvisible,s->readhist[j*2+1]+s->writehist[j*2+1]);
 						} else
@@ -832,7 +887,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				}
 			}
 			if (!config.f.processes) {
-				int fres=filter_view(s,(has_unicode&&unicode)?gr_width*2:gr_width);
+				int fres=filter_view(s,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 
 				if (fres==2) // exited process that is no longer visible; do not count as filtered
 					continue;
@@ -857,7 +912,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				s=ms->threads->sor[k];
 			}
 			// apply filters
-			if (filter_view(s,(has_unicode&&unicode)?gr_width*2:gr_width))
+			if (filter_view(s,(has_unicode&&config.f.unicode)?gr_width*2:gr_width))
 				continue;
 			if (skip) {
 				skip--;
@@ -882,64 +937,72 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			hrevpos=-1;
 			if (!config.f.hidegraph) {
 				*graphstr=0;
-				for (j=0;j<gr_width;j++) {
+				gs=config.f.reverse_graph?gr_width-1:0;
+				ge=config.f.reverse_graph?0:gr_width-1;
+				gi=config.f.reverse_graph?-1:1;
+				for (j=gs;ge<gs?j>=ge:j<=ge;j+=gi) {
 					uint8_t v1=0,v2=0;
 
 					switch (masked_grtype(0)) {
 						case E_GR_IO:
-							if (has_unicode&&unicode) {
+							if (has_unicode&&config.f.unicode) {
 								v1=s->iohist[j*2];
-								v2=s->iohist[j*2+1];
+								v2=s->iohist[j*2+gi];
 							} else
 								v1=s->iohist[j];
 							break;
 						case E_GR_R:
-							if (has_unicode&&unicode) {
+							if (has_unicode&&config.f.unicode) {
 								v1=value2scale(s->readhist[j*2],maxvisible);
-								v2=value2scale(s->readhist[j*2+1],maxvisible);
+								v2=value2scale(s->readhist[j*2+gi],maxvisible);
 							} else
 								v1=value2scale(s->readhist[j*2],maxvisible);
 							break;
 						case E_GR_W:
-							if (has_unicode&&unicode) {
+							if (has_unicode&&config.f.unicode) {
 								v1=value2scale(s->writehist[j*2],maxvisible);
-								v2=value2scale(s->writehist[j*2+1],maxvisible);
+								v2=value2scale(s->writehist[j*2+gi],maxvisible);
 							} else
 								v1=value2scale(s->writehist[j*2],maxvisible);
 							break;
 						case E_GR_RW:
-							if (has_unicode&&unicode) {
+							if (has_unicode&&config.f.unicode) {
 								v1=value2scale(s->readhist[j*2]+s->writehist[j*2],maxvisible);
-								v2=value2scale(s->readhist[j*2+1]+s->writehist[j*2+1],maxvisible);
+								v2=value2scale(s->readhist[j*2+gi]+s->writehist[j*2+gi],maxvisible);
 							} else
 								v1=value2scale(s->readhist[j*2]+s->writehist[j*2],maxvisible);
 							break;
 						case E_GR_SW:
-							if (has_unicode&&unicode) {
+							if (has_unicode&&config.f.unicode) {
 								v1=s->sihist[j*2];
-								v2=s->sihist[j*2+1];
+								v2=s->sihist[j*2+gi];
 							} else
 								v1=s->sihist[j];
 							break;
 					}
 					if (config.f.deadx) {
 						// +1 avoids stepping on a char with one valid and one invalid value
-						if (((has_unicode&&unicode)?j*2+1:j)<s->exited)
+						if (((has_unicode&&config.f.unicode)?j*2+1:j)<s->exited)
 							strcat(graphstr,"x");
 						else {
-							if (has_unicode&&unicode)
+							if (has_unicode&&config.f.unicode)
 								strcat(graphstr,br_graph[v1][v2]);
 							else
 								strcat(graphstr,as_graph[v1]);
 						}
 					} else {
 						// stepping on a char with one valid and one invalid value is not a problem with background
-						if (has_unicode&&unicode)
+						if (has_unicode&&config.f.unicode)
 							strcat(graphstr,br_graph[v1][v2]);
 						else
 							strcat(graphstr,as_graph[v1]);
-						if (((has_unicode&&unicode)?j*2:j)<s->exited)
-							hrevpos=strlen(graphstr);
+						if (config.f.reverse_graph) {
+							if (((has_unicode&&config.f.unicode)?j*2:j)>=s->exited&&s->exited)
+								hrevpos=strlen(graphstr);
+						} else {
+							if (((has_unicode&&config.f.unicode)?j*2:j)<s->exited&&s->exited)
+								hrevpos=strlen(graphstr);
+						}
 					}
 				}
 				strcat(graphstr," ");
@@ -1002,27 +1065,36 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					color_print_pc(s->blkio_val);
 			}
 			if (!config.f.hidegraph&&hrevpos>0) {
-				attron(A_REVERSE);
-				printw("%*.*s",hrevpos,hrevpos,graphstr);
-				attroff(A_REVERSE);
-				printw("%s",graphstr+hrevpos);
+				if (config.f.reverse_graph) {
+					graphstr[strlen(graphstr)-1]=0; // remove last space
+					printw("%*.*s",hrevpos,hrevpos,graphstr);
+					attron(A_REVERSE);
+					printw("%s",graphstr+hrevpos);
+					attroff(A_REVERSE);
+					printw(" ");
+				} else {
+					attron(A_REVERSE);
+					printw("%*.*s",hrevpos,hrevpos,graphstr);
+					attroff(A_REVERSE);
+					printw("%s",graphstr+hrevpos);
+				}
 			} else
 				printw("%s",!config.f.hidegraph?graphstr:"");
 			if (!config.f.hidecmd) {
-				const char *ss=(has_unicode&&unicode)?th_lines_u[0]:th_lines_a[0];
+				const char *ss=(has_unicode&&config.f.unicode)?th_lines_u[0]:th_lines_a[0];
 
 				if (ms->threads) {
 					if (config.f.processes) {
 						if (k==-1&&ms->threads->length)
-							ss=(has_unicode&&unicode)?th_lines_u[1]:th_lines_a[1];
+							ss=(has_unicode&&config.f.unicode)?th_lines_u[1]:th_lines_a[1];
 					} else
 						if (th_first_id!=th_last_id) {
 							if (k==th_first_id)
-								ss=(has_unicode&&unicode)?th_lines_u[2+3*th_have_filtered]:th_lines_a[2+3*th_have_filtered];
+								ss=(has_unicode&&config.f.unicode)?th_lines_u[2+3*th_have_filtered]:th_lines_a[2+3*th_have_filtered];
 							if (k!=th_first_id&&k!=th_last_id)
-								ss=(has_unicode&&unicode)?th_lines_u[3+3*th_have_filtered]:th_lines_a[3+3*th_have_filtered];
+								ss=(has_unicode&&config.f.unicode)?th_lines_u[3+3*th_have_filtered]:th_lines_a[3+3*th_have_filtered];
 							if (k==th_last_id)
-								ss=(has_unicode&&unicode)?th_lines_u[4+3*th_have_filtered]:th_lines_a[4+3*th_have_filtered];
+								ss=(has_unicode&&config.f.unicode)?th_lines_u[4+3*th_have_filtered]:th_lines_a[4+3*th_have_filtered];
 						}
 				}
 				printw("%s%s",ss,cmdline?cmdline:"(null)");
@@ -1293,7 +1365,7 @@ donedraw:
 			printw("u");
 			attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 			attroff(A_UNDERLINE);
-			printw(": %s ",unicode?"ASCII":"UTF");
+			printw(": %s ",config.f.unicode?"ASCII":"UTF");
 		}
 
 		attron(A_UNDERLINE);
@@ -1647,8 +1719,10 @@ static inline int curses_key(int ch) {
 			return 1;
 		case ' ':
 		case 'r':
-		case 'R':
 			config.f.sort_order=(config.f.sort_order==SORT_ASC)?SORT_DESC:SORT_ASC;
+			break;
+		case 'R':
+			config.f.reverse_graph=!config.f.reverse_graph;
 			break;
 		case KEY_HOME:
 			scrollpos=0;
@@ -1810,10 +1884,19 @@ static inline int curses_key(int ch) {
 			break;
 		case 'h':
 		case 'H':
-			if (config.f.helptype!=1)
+			if (config.f.helptype!=1) {
 				config.f.helptype=1;
-			else
+				helppos=0;
+			} else
 				config.f.helptype=0;
+			break;
+		case '<':
+			if (config.f.helptype==1) // out of bounds checks are in view_help
+				helppos--;
+			break;
+		case '>':
+			if (config.f.helptype==1)
+				helppos++;
 			break;
 		case 'c':
 		case 'C':
@@ -1869,7 +1952,7 @@ static inline int curses_key(int ch) {
 			break;
 		case 'u':
 		case 'U':
-			unicode=!unicode;
+			config.f.unicode=!config.f.unicode;
 			break;
 		case 'x':
 		case 'X':
@@ -2022,6 +2105,14 @@ static inline int curses_key(int ch) {
 					in_search=0;
 				update_search();
 			}
+			break;
+		case KEY_CTRL_B:
+			config.f.base=config.f.base==1000?1024:1000;
+			break;
+		case KEY_CTRL_R:
+			config.f.threshold++;
+			if (config.f.threshold>10)
+				config.f.threshold=1;
 			break;
 		case KEY_CTRL_T:
 			write_task_delayacct(!read_task_delayacct());
