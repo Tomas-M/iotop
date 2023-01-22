@@ -212,11 +212,11 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 
 	if (config.f.kilobytes) {
 		p=1;
-		*value/=1000.0;
+		*value/=(double)config.f.base;
 	} else {
-		while (*value>10000) {
+		while (*value>config.f.base*config.f.threshold) {
 			if (p+1<strlen(u)) {
-				*value/=1000.0;
+				*value/=(double)config.f.base;
 				p++;
 			} else
 				break;

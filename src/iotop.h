@@ -66,6 +66,8 @@ typedef union {
 		int helptype;
 		int sort_by;
 		int sort_order;
+		int base; // 1000 or 1024
+		int threshold; // 1..10
 	} f;
 	int opts[21];
 } config_t;

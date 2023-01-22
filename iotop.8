@@ -215,6 +215,13 @@ Hide exited processes
 .TP
 \fB\-l\fR, \fB\-\-no\-color\fR
 Do not colorize values
+.TP
+\fB\-\-si\fR
+Use SI units of \fB1000\fR when printing values. The default is non\-SI
+\fB1024\fR
+.TP
+\fB\-\-threshold=1..10\fR
+Set the threshold to switch to next unit. The default value is \fB2\fR
 .PD 1
 .SH KEYBOARD SHORTCUTS
 .TP
@@ -305,6 +312,12 @@ Toggle the display of exited processes
 .TP
 \fBs\fR, \fBS\fR
 Toggle freeze of data collection
+.TP
+\fBCtrl\-B\fR
+Toggle SI units
+.TP
+\fBCtrl\-R\fR
+Cycle unit threshold
 .TP
 \fBCtrl\-T\fR
 Toggle task_delayacct kernel sysctl

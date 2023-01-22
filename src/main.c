@@ -23,6 +23,9 @@ You should have received a copy of the GNU General Public License along with thi
 #include <string.h>
 #include <sys/types.h>
 
+#define OPT_SI 0x100
+#define OPT_THR 0x101
+
 static const char *progname=NULL;
 int maxpidlen=5;
 
@@ -82,18 +85,23 @@ static inline void print_help(void) {
 		"  -q, --quiet            suppress some lines of header (implies --batch)\n"
 		"  -x, --dead-x           show exited processes/threads with letter x\n"
 		"  -e, --hide-exited      hide exited processes\n"
-		"  -l, --no-color         do not colorize values\n",
+		"  -l, --no-color         do not colorize values\n"
+		"      --si               use SI units of 1000 when printing values\n"
+		"      --threshold=1..10  threshold to switch to next unit\n",
 		progname
 	);
 }
 
 static inline void parse_args(int argc,char *argv[]) {
 	char *no_color=getenv("NO_COLOR");
+	int v;
 
 	init_params();
 	memset(&config,0,sizeof(config));
 	config.f.sort_by=SORT_BY_GRAPH;
 	config.f.sort_order=SORT_DESC;
+	config.f.base=1024; // use SI units by default
+	config.f.threshold=2; // default threshold is 2*base
 
 	// implement https://no-color.org/ proposal
 	if (no_color&&*no_color)
@@ -130,6 +138,8 @@ static inline void parse_args(int argc,char *argv[]) {
 			{"no-color",no_argument,NULL,'l'},
 			{"reverse-graph",no_argument,NULL,'R'},
 			{"grtype",required_argument,NULL,'g'},
+			{"si",no_argument,NULL,OPT_SI},
+			{"threshold",required_argument,NULL,OPT_THR},
 			{NULL,0,NULL,0}
 		};
 
@@ -223,6 +233,17 @@ static inline void parse_args(int argc,char *argv[]) {
 					}
 					params.user_id=pwd->pw_uid;
 				}
+				break;
+			case OPT_SI:
+				config.f.base=1000;
+				break;
+			case OPT_THR:
+				v=atoi(optarg);
+				if (v<1||v>10) {
+					fprintf(stderr,"%s: threshold %s is not between 1 and 10\n",progname,optarg);
+					exit(EXIT_FAILURE);
+				}
+				config.f.threshold=v;
 				break;
 			default:
 				exit(EXIT_FAILURE);

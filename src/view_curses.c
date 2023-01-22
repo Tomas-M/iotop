@@ -65,6 +65,9 @@ You should have received a copy of the GNU General Public License along with thi
 #ifndef KEY_RET
 #define KEY_RET KEY_CTRL_M
 #endif
+#ifndef KEY_CTRL_R
+#define KEY_CTRL_R 0x12
+#endif
 #ifndef KEY_CTRL_T
 #define KEY_CTRL_T 0x14
 #endif
@@ -144,6 +147,9 @@ typedef struct {
 	const char *k3;
 } s_helpitem;
 
+static char units[100]="";
+static char unitt[100]="";
+
 const s_helpitem thelp[]={
 	{.descr="Exit",.k2="q",.k3="Q"},
 	{.descr="Toggle sort order",.k1="<space>",.k2="r"},
@@ -182,6 +188,8 @@ const s_helpitem thelp[]={
 	{.descr="Toggle exited processes xxx/inverse",.k2="x",.k3="X"},
 	{.descr="Toggle showing exited processes",.k2="e",.k3="E"},
 	{.descr="Toggle data freeze",.k2="s",.k3="S"},
+	{.descr=units,.k1="<Ctrl-B>",.k2="",.k3=""},
+	{.descr=unitt,.k1="<Ctrl-R>",.k2="",.k3=""},
 	{.descr="Toggle task_delayacct (if available)",.k1="<Ctrl-T>",.k2="",.k3=""},
 	{.descr="Redraw screen",.k1="<Ctrl-L>",.k2="",.k3=""},
 	{.descr=NULL},
@@ -417,6 +425,9 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 static inline void view_help(void) {
 	int i,a=c1w,b=c2w,c=c3w,d=cdw;
 	const s_helpitem *p;
+
+	snprintf(units,sizeof units,"Toggle SI units [now: %d]",config.f.base);
+	snprintf(unitt,sizeof unitt,"Cycle unit threshold [now: %d]",config.f.threshold);
 
 	mvwprintw(whelp,0,0,"%s",(has_unicode&&unicode)?"─":"_");
 	wattron(whelp,A_REVERSE);
@@ -2051,6 +2062,14 @@ static inline int curses_key(int ch) {
 					in_search=0;
 				update_search();
 			}
+			break;
+		case KEY_CTRL_B:
+			config.f.base=config.f.base==1000?1024:1000;
+			break;
+		case KEY_CTRL_R:
+			config.f.threshold++;
+			if (config.f.threshold>10)
+				config.f.threshold=1;
 			break;
 		case KEY_CTRL_T:
 			write_task_delayacct(!read_task_delayacct());
