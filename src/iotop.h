@@ -62,6 +62,7 @@ typedef union {
 		int hideexited;
 		int nocolor;
 		int reverse_graph;
+		int unicode; // this and below are not part of opts
 		e_grtype grtype;
 		int helptype;
 		int sort_by;

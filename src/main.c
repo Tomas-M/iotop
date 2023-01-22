@@ -25,6 +25,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 #define OPT_SI 0x100
 #define OPT_THR 0x101
+#define OPT_ASCII 0x102
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -87,7 +88,8 @@ static inline void print_help(void) {
 		"  -e, --hide-exited      hide exited processes\n"
 		"  -l, --no-color         do not colorize values\n"
 		"      --si               use SI units of 1000 when printing values\n"
-		"      --threshold=1..10  threshold to switch to next unit\n",
+		"      --threshold=1..10  threshold to switch to next unit\n"
+		"      --ascii            disable using Unicode\n",
 		progname
 	);
 }
@@ -102,6 +104,7 @@ static inline void parse_args(int argc,char *argv[]) {
 	config.f.sort_order=SORT_DESC;
 	config.f.base=1024; // use SI units by default
 	config.f.threshold=2; // default threshold is 2*base
+	config.f.unicode=1; // default is unicode
 
 	// implement https://no-color.org/ proposal
 	if (no_color&&*no_color)
@@ -140,6 +143,7 @@ static inline void parse_args(int argc,char *argv[]) {
 			{"grtype",required_argument,NULL,'g'},
 			{"si",no_argument,NULL,OPT_SI},
 			{"threshold",required_argument,NULL,OPT_THR},
+			{"ascii",no_argument,NULL,OPT_ASCII},
 			{NULL,0,NULL,0}
 		};
 
@@ -244,6 +248,9 @@ static inline void parse_args(int argc,char *argv[]) {
 					exit(EXIT_FAILURE);
 				}
 				config.f.threshold=v;
+				break;
+			case OPT_ASCII:
+				config.f.unicode=0;
 				break;
 			default:
 				exit(EXIT_FAILURE);
