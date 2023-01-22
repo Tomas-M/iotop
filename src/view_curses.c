@@ -424,6 +424,8 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 
 static inline void view_help(void) {
 	int i,a=c1w,b=c2w,c=c3w,d=cdw;
+	int hh=getmaxy(whelp);
+	int hw=getmaxx(whelp);
 	const s_helpitem *p;
 
 	snprintf(units,sizeof units,"Toggle SI units [now: %d]",config.f.base);
