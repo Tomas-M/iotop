@@ -1,4 +1,4 @@
-.TH IOTOP "8" "Jan 21, 2023"
+.TH IOTOP "8" "January 22, 2023"
 .SH NAME
 iotop \- simple top\-like I/O monitor
 .SH SYNOPSIS
@@ -309,6 +309,9 @@ Toggle freeze of data collection
 \fBCtrl\-T\fR
 Toggle task_delayacct kernel sysctl
 .TP
+\fBCtrl\-L\fR
+Redraw screen
+.TP
 \fB/\fR
 Change search regular expression. While the search regular expression is being
 edited, there is an indicator next to it that shows if the expression is valid.
@@ -367,7 +370,7 @@ as a single character. Unicode combining characters will be appended to the
 character under the cursor.
 .RE
 .SH ENVIRONMENT
-As per the recommendation of \fBhttps://www.no-color.org/\fR iotop honors the
+As per the recommendation of \fBhttps://www.no\-color.org/\fR iotop honors the
 contents of the environment variable \fBNO_COLOR\fR and when it is set to a non
 empty string, all color output is suppressed.
 .SH SEE ALSO
