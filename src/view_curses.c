@@ -740,6 +740,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 	if (maxy<10)
 		noinlinehelp=1;
+	else
+		noinlinehelp=0;
 	line=ionice_line+2;
 	lastline=line;
 	viewsizey=maxy-1-ionice_line-(noinlinehelp==0&&config.f.helptype==2?2:0);
