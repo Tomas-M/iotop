@@ -68,6 +68,8 @@ inline int config_file_load(int *pac,char ***pav) {
 	char *s;
 	char *e;
 
+	if (!cf)
+		return -1;
 	if (fseek(cf,0,SEEK_END)) {
 		fclose(cf);
 		return -1;
