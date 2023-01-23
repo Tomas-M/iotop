@@ -192,6 +192,7 @@ const s_helpitem thelp[]={
 	{.descr=unitt,.k1="<Ctrl-R>",.k2="",.k3=""},
 	{.descr="Toggle task_delayacct (if available)",.k1="<Ctrl-T>",.k2="",.k3=""},
 	{.descr="Redraw screen",.k1="<Ctrl-L>",.k2="",.k3=""},
+	{.descr="Reset all settings to their defaults",.k2="D"},
 	{.descr="Save current setting in config file",.k2="W"},
 	{.descr=NULL},
 };
@@ -1703,6 +1704,15 @@ static inline int curses_key(int ch) {
 	if (in_search)
 		return curses_key_search(ch);
 	switch (ch) {
+		case 'D':
+			params.delay=1;
+			memset(&config,0,sizeof(config));
+			config.f.sort_by=SORT_BY_GRAPH;
+			config.f.sort_order=SORT_DESC;
+			config.f.base=1024; // use non-SI units by default
+			config.f.threshold=2; // default threshold is 2*base
+			config.f.unicode=1; // default is unicode
+			break;
 		case 'W':
 			config_file_save();
 			break;
