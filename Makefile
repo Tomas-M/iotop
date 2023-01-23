@@ -121,8 +121,8 @@ mkotar:
 	cp -fa ../iotop-c_$(VER).orig.tar.xz.asc ../iotop-$(VER).tar.xz.asc
 
 re:
-	$(MAKE) clean
-	$(MAKE) -j
+	$(Q)$(MAKE) --no-print-directory clean
+	$(Q)$(MAKE) --no-print-directory -j
 
 -include $(DEPS)
 
