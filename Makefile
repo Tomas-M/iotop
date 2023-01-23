@@ -24,7 +24,7 @@ DEPS:=$(OBJS:.o=.d)
 
 ifndef NO_FLTO
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
-CFLAGS+=-flto
+CFLAGS+=-flto=auto
 else
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
