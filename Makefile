@@ -120,6 +120,10 @@ mkotar:
 	cp -fa ../iotop-c_$(VER).orig.tar.xz ../iotop-$(VER).tar.xz
 	cp -fa ../iotop-c_$(VER).orig.tar.xz.asc ../iotop-$(VER).tar.xz.asc
 
+re:
+	$(MAKE) clean
+	$(MAKE) -j
+
 -include $(DEPS)
 
-.PHONY: all clean install uninstall mkotar
+.PHONY: all clean install uninstall mkotar re
