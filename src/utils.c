@@ -338,3 +338,8 @@ inline int is_a_process(pid_t tid) {
 	return is_a_dir(path);
 }
 
+inline double timediff_in_s(uint64_t sta,uint64_t end) {
+	if (sta==end||sta==0)
+		return 0.0001;
+	return (end-sta)/1000.0;
+}

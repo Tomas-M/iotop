@@ -46,6 +46,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_NO_SI 0x114
 #define OPT_UNICODE 0x115
 #define OPT_COLOR 0x116
+#define OPT_NO_ACCUM_BW 0x117
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -64,7 +65,7 @@ inline void init_params(void) {
 	params.user_id=-1;
 }
 
-static const char str_opt[]="boPaktqc123456789xelR";
+static const char str_opt[]="boPaktqc123456789xelRA";
 
 static inline void print_help(void) {
 	printf(
@@ -92,6 +93,8 @@ static inline void print_help(void) {
 		"      --threads          show all threads\n"
 		"  -a, --accumulated      show accumulated I/O instead of bandwidth\n"
 		"      --no-accumulated   show bandwidth\n"
+		"  -A, --accum-bw         show accumulated bandwidth\n"
+		"      --no-accum-bw      show last iteration bandwidth\n"
 		"  -k, --kilobytes        use kilobytes instead of a human friendly unit\n"
 		"      --no-kilobytes     use human friendly unit\n"
 		"  -t, --time             add a timestamp on each line (implies --batch)\n"
@@ -182,6 +185,8 @@ static inline void parse_args(int clac,char **clav) {
 				{"threads",no_argument,NULL,OPT_THREADS},
 				{"accumulated",no_argument,NULL,'a'},
 				{"no-accumulated",no_argument,NULL,OPT_NO_ACCUMULATED},
+				{"accum-bw",no_argument,NULL,'A'},
+				{"no-accum-bw",no_argument,NULL,OPT_NO_ACCUM_BW},
 				{"kilobytes",no_argument,NULL,'k'},
 				{"no-kilobytes",no_argument,NULL,OPT_NO_KILOBYTES},
 				{"timestamp",no_argument,NULL,'t'},
@@ -224,7 +229,7 @@ static inline void parse_args(int clac,char **clav) {
 				{NULL,0,NULL,0}
 			};
 
-			int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xelRg:H:W",long_options,NULL);
+			int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xelRg:H:WA",long_options,NULL);
 
 			if (c==-1) {
 				if (optind<argc) {
@@ -259,10 +264,17 @@ static inline void parse_args(int clac,char **clav) {
 						exit(EXIT_FAILURE);
 					}
 					break;
+				case 'a':
+					if (config.f.accumbw)
+						config.f.accumbw=0;
+					goto case_opt;
+				case 'A':
+					if (config.f.accumulated)
+						config.f.accumulated=0;
+					goto case_opt;
 				case 'o':
 				case 'b':
 				case 'P':
-				case 'a':
 				case 'k':
 				case 't':
 				case 'q':
@@ -272,6 +284,7 @@ static inline void parse_args(int clac,char **clav) {
 				case 'e':
 				case 'l':
 				case 'R':
+				case_opt:
 					config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
 					break;
 				case 'n':
@@ -391,6 +404,9 @@ static inline void parse_args(int clac,char **clav) {
 					break;
 				case OPT_COLOR:
 					config.f.nocolor=0;
+					break;
+				case OPT_NO_ACCUM_BW:
+					config.f.accumbw=0;
 					break;
 				default:
 					exit(EXIT_FAILURE);

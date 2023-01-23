@@ -178,6 +178,9 @@ inline int config_file_save(void) {
 	// --accumulated
 	if (config.f.accumulated)
 		fprintf(cf,"--accumulated\n");
+	// --accum-bw
+	if (config.f.accumbw)
+		fprintf(cf,"--accum-bw\n");
 	// --kilobytes
 	if (config.f.kilobytes)
 		fprintf(cf,"--kilobytes\n");

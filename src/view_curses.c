@@ -164,7 +164,7 @@ const s_helpitem thelp[]={
 	{.descr="Cancel ionice/filter/search or close help window",.k1="<esc>"},
 	{.descr="Toggle showing only processes with IO activity",.k2="o",.k3="O"},
 	{.descr="Toggle showing processes/threads",.k2="p",.k3="P"},
-	{.descr="Toggle showing accumulated/current values",.k2="a",.k3="A"},
+	{.descr="Cycle accumulated/accum-bw/current values",.k2="a",.k3="A"},
 	{.descr="Toggle showing full command line",.k2="c",.k3="C"},
 	{.descr="Toggle showing TID",.k2="1"},
 	{.descr="Toggle showing PRIO",.k2="2"},
@@ -260,8 +260,6 @@ static const int column_width[]={
 #define COLUMN_R(i) COLUMN_NAME((i)+1)
 #define SORT_CHAR_IND(x) ((masked_sort_by(0)==x)?(config.f.sort_order==SORT_ASC?1:2):0)
 #define SORT_CHAR(x) (((has_unicode&&config.f.unicode)?sort_dir_u:sort_dir_a)[SORT_CHAR_IND(x)])
-
-#define TIMEDIFF_IN_S(sta,end) ((((sta)==(end))||(sta)==0)?0.0001:(((end)-(sta))/1000.0))
 
 inline e_grtype masked_grtype(int isforward) {
 	if (!has_tda)
@@ -523,7 +521,7 @@ static inline void color_print_pc(double v) {
 }
 
 static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
-	double time_s=TIMEDIFF_IN_S(act->ts_o,act->ts_c);
+	double time_s=timediff_in_s(act->ts_o,act->ts_c);
 	double total_read,total_write;
 	double total_a_read,total_a_write;
 	char pg_t_r[HISTORY_POS*5]={0};
@@ -583,7 +581,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	if (maxcmdline<0)
 		maxcmdline=0;
 
-	diff_len=create_diff(cs,ps,time_s,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width,&dispcount);
+	diff_len=create_diff(cs,ps,time_s,act->ts_c,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width,&dispcount);
 
 	calc_total(cs,&total_read,&total_write);
 	calc_a_total(act,&total_a_read,&total_a_write,time_s);
@@ -921,8 +919,16 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				continue;
 			}
 
-			read_val=config.f.accumulated?s->read_val_acc:s->read_val;
-			write_val=config.f.accumulated?s->write_val_acc:s->write_val;
+			if (config.f.accumbw) {
+				read_val=s->read_val_abw;
+				write_val=s->write_val_abw;
+			} else if (config.f.accumulated) {
+				read_val=s->read_val_acc;
+				write_val=s->write_val_acc;
+			} else {
+				read_val=s->read_val;
+				write_val=s->write_val;
+			}
 
 			humanize_val(&read_val,read_str,1);
 			humanize_val(&write_val,write_str,1);
@@ -1352,7 +1358,7 @@ donedraw:
 		printw("a");
 		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
-		printw(": %s ",config.f.accumulated?"bandwidth":"accum");
+		printw(": %s ",config.f.accumbw?"bandwidth":config.f.accumulated?"accum-bw":"accum");
 
 		attron(A_UNDERLINE);
 		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
@@ -1882,7 +1888,15 @@ static inline int curses_key(int ch) {
 			break;
 		case 'a':
 		case 'A':
-			config.f.accumulated=!config.f.accumulated;
+			if (!config.f.accumbw&&!config.f.accumulated)
+				config.f.accumulated=1;
+			else if (!config.f.accumbw&&config.f.accumulated) {
+				config.f.accumulated=0;
+				config.f.accumbw=1;
+			} else {
+				config.f.accumulated=0;
+				config.f.accumbw=0;
+			}
 			break;
 		case 'l':
 		case 'L':

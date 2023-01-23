@@ -42,8 +42,9 @@ Use the \fBleft\fR and \fBright\fR arrows to select the sort column, \fBr\fR or
 \fBspace\fR to reverse the sorting order, \fBo\fR to toggle the \fB\-\-only\fR
 option (this uses the visible values from the \fBGRAPH\fR column or the
 \fBIO\fR column in case the \fBGRAPH\fR column is hidden), \fBp\fR to toggle
-the \fB\-\-processes\fR option, \fBa\fR to toggle the \fB\-\-accumulated\fR
-option, \fBi\fR to change the priority of a thread or a process's thread,
+the \fB\-\-processes\fR option, \fBa\fR to cycle between the
+\fB\-\-accumulated\fR, \fB\-\-accum\-bw\fR and normal operation,
+\fBi\fR to change the priority of a thread or a process's thread,
 \fBf\fR to change filtering by \fBUID\fR/\fBPID\fR (\fB\-\-user\fR and
 \fB\-\-pid\fR options), \fB1\-9\fR to toggle the visibility of the respective
 column, \fB0\fR to show all columns, \fBup\fR/\fBdown\fR arrows,
@@ -147,10 +148,22 @@ Show processes and all threads
 .TP
 \fB\-a\fR, \fB\-\-accumulated\fR
 Show accumulated I/O instead of bandwidth. In this mode, \fBiotop\fR shows the
-amount of I/O processes have done since the process or \fBiotop\fR started
+amount of I/O processes have done since the process or \fBiotop\fR started.
+Note that this option and \-\-accum\-bw are exclusive and they will turn each
+other off
 .TP
 \fB\-\-no\-accumulated\fR
-Show bandwidth
+Show bandwidth (useful when changing config file with \fB\-\-write\fR)
+.TP
+\fB\-A\fR, \fB\-\-accum-bw\fR
+Show accumulated I/O as bandwidth for the whole sampling period. In this mode,
+\fBiotop\fR shows the amount of I/O per second for the whole period since the
+process or \fBiotop\fR started
+Note that this option and \-\-accumulated are exclusive and they will turn each
+other off
+.TP
+\fB\-\-no\-accum-bw\fR
+Show bandwidth (useful when changing config file with \fB\-\-write\fR)
 .TP
 \fB\-k\fR, \fB\-\-kilobytes\fR
 Use kilobytes instead of a human friendly unit.
@@ -341,7 +354,7 @@ Toggle showing only processes with IO activity
 Toggle showing processes/threads
 .TP
 \fBa\fR, \fBA\fR
-Toggle showing accumulated/current values
+Cycle showing accumulated/accum-bw/current values
 .TP
 \fB?\fR
 Toggle showing inline help

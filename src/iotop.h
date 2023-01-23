@@ -62,6 +62,7 @@ typedef union {
 		int hideexited;
 		int nocolor;
 		int reverse_graph;
+		int accumbw;
 		int unicode; // this and below are not part of opts
 		e_grtype grtype;
 		int helptype;
@@ -70,7 +71,7 @@ typedef union {
 		int base; // 1000 or 1024
 		int threshold; // 1..10
 	} f;
-	int opts[21];
+	int opts[22];
 } config_t;
 
 typedef struct {
@@ -102,6 +103,8 @@ struct xxxid_stats {
 	uint64_t blkio_delay_total; // nanoseconds
 	uint64_t read_bytes;
 	uint64_t write_bytes;
+	uint64_t ts_s; // start timestamp for accum-bw
+	uint64_t ts_e; // end timestamp for accum-bw
 
 	double blkio_val;
 	double swapin_val;
@@ -109,6 +112,8 @@ struct xxxid_stats {
 	double write_val;
 	double read_val_acc;
 	double write_val_acc;
+	double read_val_abw;
+	double write_val_abw;
 
 	int io_prio;
 
@@ -188,6 +193,8 @@ inline void pidgen_cb(pg_cb cb,void *hint1,void *hint2);
 inline int is_a_dir(const char *p);
 inline int is_a_process(pid_t tid);
 
+inline double timediff_in_s(uint64_t sta,uint64_t end);
+
 /* ioprio.c */
 
 enum {
@@ -256,7 +263,7 @@ inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write);
 inline void calc_a_total(struct act_stats *act,double *read,double *write,double time_s);
 inline void humanize_val(double *value,char *str,int allow_accum);
 inline int iotop_sort_cb(const void *a,const void *b);
-inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,filter_callback_w cb,int width,int *cnt);
+inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,filter_callback_w cb,int width,int *cnt);
 inline int value2scale(double val,double mx);
 inline int filter1(struct xxxid_stats *s);
 

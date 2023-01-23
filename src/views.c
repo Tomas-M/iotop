@@ -77,7 +77,7 @@ inline int value2scale(double val,double mx) {
 	return 0;
 }
 
-inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,filter_callback_w cb,int width,int *cnt) {
+inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,filter_callback_w cb,int width,int *cnt) {
 	int n=0;
 
 	if (cnt)
@@ -98,11 +98,17 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 			c->write_val=0;
 			c->read_val_acc=0;
 			c->write_val_acc=0;
+			c->read_val_abw=0;
+			c->write_val_abw=0;
+			c->ts_s=ts_c; // keep start ts
+			c->ts_e=ts_c; // keep end ts
 
 			snprintf(temp,sizeof temp,"%i",c->tid);
 			maxpidlen=maxpidlen<(int)strlen(temp)?(int)strlen(temp):maxpidlen;
 			continue;
 		}
+		c->ts_s=p->ts_s; // update end ts
+		c->ts_e=ts_c; // update end ts
 
 		// round robin value
 		c->blkio_val=(double)rrv(c->blkio_delay_total,p->blkio_delay_total)/(time_s*10000000.0);
@@ -121,6 +127,9 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 
 		c->read_val_acc=p->read_val_acc+rv;
 		c->write_val_acc=p->write_val_acc+wv;
+
+		c->read_val_abw=c->read_val_acc/timediff_in_s(c->ts_s,c->ts_e);
+		c->write_val_abw=c->write_val_acc/timediff_in_s(c->ts_s,c->ts_e);
 
 		memcpy(c->iohist+1,p->iohist,sizeof c->iohist-sizeof *c->iohist);
 		c->iohist[0]=value2scale(c->blkio_val,100.0);
@@ -146,8 +155,6 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 			ps->arr[n]->swapin_val=0;
 			ps->arr[n]->read_val=0;
 			ps->arr[n]->write_val=0;
-			ps->arr[n]->read_val_acc=0;
-			ps->arr[n]->write_val_acc=0;
 			// copy process data to cs
 			p=malloc(sizeof *p);
 			if (p) {
@@ -327,13 +334,17 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 			res=strcmp(pa->pw_name,pb->pw_name);
 			break;
 		case SORT_BY_READ:
-			if (config.f.accumulated)
+			if (config.f.accumbw)
+				res=pa->read_val_abw>pb->read_val_abw?1:pa->read_val_abw<pb->read_val_abw?-1:0;
+			else if (config.f.accumulated)
 				res=pa->read_val_acc>pb->read_val_acc?1:pa->read_val_acc<pb->read_val_acc?-1:0;
 			else
 				res=pa->read_val>pb->read_val?1:pa->read_val<pb->read_val?-1:0;
 			break;
 		case SORT_BY_WRITE:
-			if (config.f.accumulated)
+			if (config.f.accumbw)
+				res=pa->write_val_abw>pb->write_val_abw?1:pa->write_val_abw<pb->write_val_abw?-1:0;
+			else if (config.f.accumulated)
 				res=pa->write_val_acc>pb->write_val_acc?1:pa->write_val_acc<pb->write_val_acc?-1:0;
 			else
 				res=pa->write_val>pb->write_val?1:pa->write_val<pb->write_val?-1:0;
