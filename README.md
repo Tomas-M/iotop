@@ -162,6 +162,8 @@ cd iotop && git checkout master && git pull && make clean && make -j
         --threads          show all threads
     -a, --accumulated      show accumulated I/O instead of bandwidth
         --no-accumulated   show bandwidth
+    -A, --accum-bw         show accumulated bandwidth
+        --no-accum-bw      show last iteration bandwidth
     -k, --kilobytes        use kilobytes instead of a human friendly unit
         --no-kilobytes     use human friendly unit
     -t, --time             add a timestamp on each line (implies --batch)
