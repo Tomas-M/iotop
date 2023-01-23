@@ -192,6 +192,7 @@ const s_helpitem thelp[]={
 	{.descr=unitt,.k1="<Ctrl-R>",.k2="",.k3=""},
 	{.descr="Toggle task_delayacct (if available)",.k1="<Ctrl-T>",.k2="",.k3=""},
 	{.descr="Redraw screen",.k1="<Ctrl-L>",.k2="",.k3=""},
+	{.descr="Save current setting in config file",.k2="W"},
 	{.descr=NULL},
 };
 
@@ -1702,6 +1703,9 @@ static inline int curses_key(int ch) {
 	if (in_search)
 		return curses_key_search(ch);
 	switch (ch) {
+		case 'W':
+			config_file_save();
+			break;
 		case 's':
 		case 'S':
 			dontrefresh^=1;

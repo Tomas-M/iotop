@@ -94,15 +94,16 @@ static inline void print_help(void) {
 	);
 }
 
-static inline void parse_args(int argc,char *argv[]) {
+static inline void parse_args(int clac,char **clav) {
 	char *no_color=getenv("NO_COLOR");
 	int v;
+	int i;
 
 	init_params();
 	memset(&config,0,sizeof(config));
 	config.f.sort_by=SORT_BY_GRAPH;
 	config.f.sort_order=SORT_DESC;
-	config.f.base=1024; // use SI units by default
+	config.f.base=1024; // use non-SI units by default
 	config.f.threshold=2; // default threshold is 2*base
 	config.f.unicode=1; // default is unicode
 
@@ -110,150 +111,165 @@ static inline void parse_args(int argc,char *argv[]) {
 	if (no_color&&*no_color)
 		config.f.nocolor=1;
 
-	while (1) {
-		static struct option long_options[]={
-			{"version",no_argument,NULL,'v'},
-			{"help",no_argument,NULL,'h'},
-			{"help-type",required_argument,NULL,'H'},
-			{"batch",no_argument,NULL,'b'},
-			{"only",no_argument,NULL,'o'},
-			{"iter",required_argument,NULL,'n'},
-			{"delay",required_argument,NULL,'d'},
-			{"pid",required_argument,NULL,'p'},
-			{"user",required_argument,NULL,'u'},
-			{"processes",no_argument,NULL,'P'},
-			{"accumulated",no_argument,NULL,'a'},
-			{"kilobytes",no_argument,NULL,'k'},
-			{"timestamp",no_argument,NULL,'t'},
-			{"quiet",no_argument,NULL,'q'},
-			{"fullcmdline",no_argument,NULL,'c'},
-			{"hide-pid",no_argument,NULL,'1'},
-			{"hide-prio",no_argument,NULL,'2'},
-			{"hide-user",no_argument,NULL,'3'},
-			{"hide-read",no_argument,NULL,'4'},
-			{"hide-write",no_argument,NULL,'5'},
-			{"hide-swapin",no_argument,NULL,'6'},
-			{"hide-io",no_argument,NULL,'7'},
-			{"hide-graph",no_argument,NULL,'8'},
-			{"hide-command",no_argument,NULL,'9'},
-			{"dead-x",no_argument,NULL,'x'},
-			{"hide-exited",no_argument,NULL,'e'},
-			{"no-color",no_argument,NULL,'l'},
-			{"reverse-graph",no_argument,NULL,'R'},
-			{"grtype",required_argument,NULL,'g'},
-			{"si",no_argument,NULL,OPT_SI},
-			{"threshold",required_argument,NULL,OPT_THR},
-			{"ascii",no_argument,NULL,OPT_ASCII},
-			{NULL,0,NULL,0}
-		};
+	for (i=0;i<2;i++) {
+		char **argv;
+		int argc;
 
-		int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xelRg:H:",long_options,NULL);
-
-		if (c==-1) {
-			if (optind<argc) {
-				int i;
-
-				for (i=optind;i<argc;i++)
-					fprintf(stderr,"%s: unknown argument: %s\n",progname,argv[i]);
-				exit(EXIT_FAILURE);
-			}
-			break;
+		if (i==0) { // process config file
+			if (config_file_load(&argc,&argv))
+				continue; // did not load, ignore
+			optind=1;
+		} else { // process command line options
+			config_file_free();
+			argc=clac;
+			argv=clav;
+			optind=1;
 		}
+		for (;;) {
+			static struct option long_options[]={
+				{"version",no_argument,NULL,'v'},
+				{"help",no_argument,NULL,'h'},
+				{"help-type",required_argument,NULL,'H'},
+				{"batch",no_argument,NULL,'b'},
+				{"only",no_argument,NULL,'o'},
+				{"iter",required_argument,NULL,'n'},
+				{"delay",required_argument,NULL,'d'},
+				{"pid",required_argument,NULL,'p'},
+				{"user",required_argument,NULL,'u'},
+				{"processes",no_argument,NULL,'P'},
+				{"accumulated",no_argument,NULL,'a'},
+				{"kilobytes",no_argument,NULL,'k'},
+				{"timestamp",no_argument,NULL,'t'},
+				{"quiet",no_argument,NULL,'q'},
+				{"fullcmdline",no_argument,NULL,'c'},
+				{"hide-pid",no_argument,NULL,'1'},
+				{"hide-prio",no_argument,NULL,'2'},
+				{"hide-user",no_argument,NULL,'3'},
+				{"hide-read",no_argument,NULL,'4'},
+				{"hide-write",no_argument,NULL,'5'},
+				{"hide-swapin",no_argument,NULL,'6'},
+				{"hide-io",no_argument,NULL,'7'},
+				{"hide-graph",no_argument,NULL,'8'},
+				{"hide-command",no_argument,NULL,'9'},
+				{"dead-x",no_argument,NULL,'x'},
+				{"hide-exited",no_argument,NULL,'e'},
+				{"no-color",no_argument,NULL,'l'},
+				{"reverse-graph",no_argument,NULL,'R'},
+				{"grtype",required_argument,NULL,'g'},
+				{"si",no_argument,NULL,OPT_SI},
+				{"threshold",required_argument,NULL,OPT_THR},
+				{"ascii",no_argument,NULL,OPT_ASCII},
+				{NULL,0,NULL,0}
+			};
 
-		switch (c) {
-			case 'v':
-				printf("%s %s\n",argv[0],VERSION);
-				exit(EXIT_SUCCESS);
-			case 'h':
-				print_help();
-				exit(EXIT_SUCCESS);
-			case 'H': // below values are not partial prefixes of each other, do a relaxed match
-				if (!strncmp(optarg,"none",strlen(optarg)))
-					config.f.helptype=0;
-				else if (!strncmp(optarg,"win",strlen(optarg)))
-					config.f.helptype=1;
-				else if (!strncmp(optarg,"inline",strlen(optarg)))
-					config.f.helptype=2;
-				else {
-					fprintf(stderr,"%s: invalid value %s for interactive help type\n",progname,optarg);
+			int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xelRg:H:",long_options,NULL);
+
+			if (c==-1) {
+				if (optind<argc) {
+					int i;
+
+					for (i=optind;i<argc;i++)
+						fprintf(stderr,"%s: unknown argument: %s\n",progname,argv[i]);
 					exit(EXIT_FAILURE);
 				}
 				break;
-			case 'o':
-			case 'b':
-			case 'P':
-			case 'a':
-			case 'k':
-			case 't':
-			case 'q':
-			case 'c':
-			case '1' ... '9':
-			case 'x':
-			case 'e':
-			case 'l':
-			case 'R':
-				config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
-				break;
-			case 'n':
-				params.iter=atoi(optarg);
-				break;
-			case 'd':
-				params.delay=atoi(optarg);
-				break;
-			case 'p':
-				params.pid=atoi(optarg);
-				break;
-			case 'g': // below values are not partial prefixes of each other, do a relaxed match
-				// except r is a prefix of rw, but r is matched first
-				// do an exact match for r and w - there is no point in relaxed match for single letter values
-				if (!strncmp(optarg,"io",strlen(optarg)))
-					config.f.grtype=E_GR_IO;
-				else if (!strcmp(optarg,"r"))
-					config.f.grtype=E_GR_R;
-				else if (!strcmp(optarg,"w"))
-					config.f.grtype=E_GR_W;
-				else if (!strcmp(optarg,"rw"))
-					config.f.grtype=E_GR_RW;
-				else if (!strncmp(optarg,"sw",strlen(optarg)))
-					config.f.grtype=E_GR_SW;
-				else {
-					fprintf(stderr,"%s: invalid value %s for graph type\n",progname,optarg);
-					exit(EXIT_FAILURE);
-				}
-				break;
-			case 'u':
-				if (optarg[0]=='+') // always interpret as numeric uid
-					params.user_id=atoi(optarg+1);
-				else {
-					struct passwd *pwd=getpwnam(optarg);
+			}
 
-					if (!pwd) {
-						if (isdigit(optarg[0])) { // fallback to numeric uid
-							params.user_id=atoi(optarg);
-							break;
-						}
-						fprintf(stderr,"%s: user %s not found\n",progname,optarg);
+			switch (c) {
+				case 'v':
+					printf("%s %s\n",argv[0],VERSION);
+					exit(EXIT_SUCCESS);
+				case 'h':
+					print_help();
+					exit(EXIT_SUCCESS);
+				case 'H': // below values are not partial prefixes of each other, do a relaxed match
+					if (!strncmp(optarg,"none",strlen(optarg)))
+						config.f.helptype=0;
+					else if (!strncmp(optarg,"win",strlen(optarg)))
+						config.f.helptype=1;
+					else if (!strncmp(optarg,"inline",strlen(optarg)))
+						config.f.helptype=2;
+					else {
+						fprintf(stderr,"%s: invalid value %s for interactive help type\n",progname,optarg);
 						exit(EXIT_FAILURE);
 					}
-					params.user_id=pwd->pw_uid;
-				}
-				break;
-			case OPT_SI:
-				config.f.base=1000;
-				break;
-			case OPT_THR:
-				v=atoi(optarg);
-				if (v<1||v>10) {
-					fprintf(stderr,"%s: threshold %s is not between 1 and 10\n",progname,optarg);
+					break;
+				case 'o':
+				case 'b':
+				case 'P':
+				case 'a':
+				case 'k':
+				case 't':
+				case 'q':
+				case 'c':
+				case '1' ... '9':
+				case 'x':
+				case 'e':
+				case 'l':
+				case 'R':
+					config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
+					break;
+				case 'n':
+					params.iter=atoi(optarg);
+					break;
+				case 'd':
+					params.delay=atoi(optarg);
+					break;
+				case 'p':
+					params.pid=atoi(optarg);
+					break;
+				case 'g': // below values are not partial prefixes of each other, do a relaxed match
+					// except r is a prefix of rw, but r is matched first
+					// do an exact match for r and w - there is no point in relaxed match for single letter values
+					if (!strncmp(optarg,"io",strlen(optarg)))
+						config.f.grtype=E_GR_IO;
+					else if (!strcmp(optarg,"r"))
+						config.f.grtype=E_GR_R;
+					else if (!strcmp(optarg,"w"))
+						config.f.grtype=E_GR_W;
+					else if (!strcmp(optarg,"rw"))
+						config.f.grtype=E_GR_RW;
+					else if (!strncmp(optarg,"sw",strlen(optarg)))
+						config.f.grtype=E_GR_SW;
+					else {
+						fprintf(stderr,"%s: invalid value %s for graph type\n",progname,optarg);
+						exit(EXIT_FAILURE);
+					}
+					break;
+				case 'u':
+					if (optarg[0]=='+') // always interpret as numeric uid
+						params.user_id=atoi(optarg+1);
+					else {
+						struct passwd *pwd=getpwnam(optarg);
+
+						if (!pwd) {
+							if (isdigit(optarg[0])) { // fallback to numeric uid
+								params.user_id=atoi(optarg);
+								break;
+							}
+							fprintf(stderr,"%s: user %s not found\n",progname,optarg);
+							exit(EXIT_FAILURE);
+						}
+						params.user_id=pwd->pw_uid;
+					}
+					break;
+				case OPT_SI:
+					config.f.base=1000;
+					break;
+				case OPT_THR:
+					v=atoi(optarg);
+					if (v<1||v>10) {
+						fprintf(stderr,"%s: threshold %s is not between 1 and 10\n",progname,optarg);
+						exit(EXIT_FAILURE);
+					}
+					config.f.threshold=v;
+					break;
+				case OPT_ASCII:
+					config.f.unicode=0;
+					break;
+				default:
 					exit(EXIT_FAILURE);
-				}
-				config.f.threshold=v;
-				break;
-			case OPT_ASCII:
-				config.f.unicode=0;
-				break;
-			default:
-				exit(EXIT_FAILURE);
+			}
 		}
 	}
 }

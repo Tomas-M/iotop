@@ -266,5 +266,11 @@ inline int has_task_delayacct(void);
 inline int read_task_delayacct(void);
 inline int write_task_delayacct(int da);
 
+/* configfile.c */
+
+inline int config_file_load(int *pac,char ***pav);
+inline void config_file_free(void);
+inline int config_file_save(void);
+
 #endif // __IOTOP_H__
 
