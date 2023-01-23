@@ -1,4 +1,4 @@
-iotop-c (1.23-1) UNRELEASED; urgency=medium
+iotop-c (1.23-1) unstable; urgency=medium
 
   [ Debian Janitor ]
   * Re-export upstream signing key without extra signatures.
@@ -10,7 +10,7 @@ iotop-c (1.23-1) UNRELEASED; urgency=medium
   * Update to new upstream release of 1.23
   * Fix d/watch
 
- -- Boian Bonev <bbonev@ipacct.com>  Sun, 22 Jan 2023 04:13:16 +0000
+ -- Boian Bonev <bbonev@ipacct.com>  Tue, 24 Jan 2023 00:00:31 +0000
 
 iotop-c (1.22-1) unstable; urgency=medium
 

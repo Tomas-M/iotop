@@ -1,6 +1,6 @@
 Name:           iotop-c
-Version:        1.22
-Release:        3%{?dist}
+Version:        1.23
+Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
 License:        GPLv2+
@@ -52,6 +52,9 @@ mv %{buildroot}%{_mandir}/man8/iotop.8 %{buildroot}%{_mandir}/man8/iotop-c.8
 %{_mandir}/man8/iotop-c.8*
 
 %changelog
+* Tue Jan 24 2023 Boian Bonev <bbonev@ipacct.com> - 1.23-1
+- Update to latest ver 1.23
+
 * Thu Jan 19 2023 Fedora Release Engineering <releng@fedoraproject.org> - 1.22-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
 

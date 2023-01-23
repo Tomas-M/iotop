@@ -3,8 +3,8 @@
 # Maintainer: Boian Bonev <bbonev@ipacct.com>
 
 pkgname=iotop-c
-pkgver=1.22
-pkgrel=2
+pkgver=1.23
+pkgrel=1
 pkgdesc="simple top-like I/O monitor (implemented in C)"
 arch=('any')
 url="https://github.com/Tomas-M/iotop"
