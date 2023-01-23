@@ -110,8 +110,8 @@ inline int config_file_load(int *pac,char ***pav) {
 		av[ac]=s;
 		if (ac>=MAX_OPT-1) {
 			fprintf(stderr,"Too many options in config file\n");
-			free(s);
-			s=NULL;
+			free(ss);
+			ss=NULL;
 			fclose(cf);
 			return -1;
 		}
