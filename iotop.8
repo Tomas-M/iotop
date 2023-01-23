@@ -115,6 +115,9 @@ Set the type of interactive help shown. Accepted values for \fITYPE\fR are
 Only show processes or threads actually doing I/O, instead of showing all
 processes or threads. This can be dynamically toggled by pressing \fBo\fR
 .TP
+\fB\-\-no\-only\fR
+Show all processes or threads
+.TP
 \fB\-b\fR, \fB\-\-batch\fR
 Turn on non\-interactive mode.
 Useful for logging I/O usage over time
@@ -139,15 +142,24 @@ to be numeric are used as numeric
 \fB\-P\fR, \fB\-\-processes\fR
 Only show processes. Normally \fBiotop\fR shows processes and all threads
 .TP
+\fB\-\-no\-processes\fR
+Show processes and all threads
+.TP
 \fB\-a\fR, \fB\-\-accumulated\fR
 Show accumulated I/O instead of bandwidth. In this mode, \fBiotop\fR shows the
-amount of I/O processes have done since \fBiotop\fR started
+amount of I/O processes have done since the process or \fBiotop\fR started
+.TP
+\fB\-\-no\-accumulated\fR
+Show bandwidth
 .TP
 \fB\-k\fR, \fB\-\-kilobytes\fR
 Use kilobytes instead of a human friendly unit.
 This mode is useful when scripting the batch mode of \fBiotop\fR. Instead of
 choosing the most appropriate unit \fBiotop\fR will display all sizes in
 kilobytes
+.TP
+\fB\-\-no\-kilobytes\fR
+Use human friendly units
 .TP
 \fB\-t\fR, \fB\-\-time\fR
 Add a timestamp on each line (implies \-\-batch). Each line will be prefixed by
@@ -156,32 +168,62 @@ the current time
 \fB\-c\fR, \fB\-\-fullcmdline\fR
 Show processes' full file path and parameters
 .TP
+\fB\-\-no\-fullcmdline\fR
+Show processes' names only
+.TP
 \fB\-1\fR, \fB\-\-hide\-pid\fR
 Hide PID/TID column
+.TP
+\fB\-\-show\-pid\fR
+Show PID/TID column
 .TP
 \fB\-2\fR, \fB\-\-hide\-prio\fR
 Hide PRIO column
 .TP
+\fB\-\-show\-prio\fR
+Show PRIO column
+.TP
 \fB\-3\fR, \fB\-\-hide\-user\fR
 Hide USER column
+.TP
+\fB\-\-show\-user\fR
+Show USER column
 .TP
 \fB\-4\fR, \fB\-\-hide\-read\fR
 Hide DISK READ column
 .TP
+\fB\-\-show\-read\fR
+Show DISK READ column
+.TP
 \fB\-5\fR, \fB\-\-hide\-write\fR
 Hide DISK WRITE column
+.TP
+\fB\-\-show\-write\fR
+Show DISK WRITE column
 .TP
 \fB\-6\fR, \fB\-\-hide\-swapin\fR
 Hide SWAPIN column
 .TP
+\fB\-\-show\-swapin\fR
+Show SWAPIN column
+.TP
 \fB\-7\fR, \fB\-\-hide\-io\fR
 Hide IO column
+.TP
+\fB\-\-show\-io\fR
+Show IO column
 .TP
 \fB\-8\fR, \fB\-\-hide\-graph\fR
 Hide GRAPH column
 .TP
+\fB\-\-show\-graph\fR
+Show GRAPH column
+.TP
 \fB\-9\fR, \fB\-\-hide\-command\fR
 Hide COMMAND column
+.TP
+\fB\-\-show\-command\fR
+Show COMMAND column
 .TP
 \fB\-g\fR \fITYPE\fR, \fB\-\-grtype\fR=\fITYPE\fR
 Set GRAPH column data source. Accepted values for \fITYPE\fR are \fBio\fR,
@@ -189,6 +231,9 @@ Set GRAPH column data source. Accepted values for \fITYPE\fR are \fBio\fR,
 .TP
 \fB\-R\fR, \fB\-\-reverse\-graph\fR
 Reverse GRAPH direction \- show most recent values on the right side
+.TP
+\fB\-\-no\-reverse\-graph\fR
+Do not reverse GRAPH direction \- show most recent values on the left side
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress some lines of header (implies \-\-batch). This option can be specified
@@ -210,21 +255,41 @@ the I/O summary is never printed
 \fB\-x\fR, \fB\-\-dead\-x\fR
 Show exited processes/threads with letter x instead of inverse background
 .TP
+\fB\-\-no\-dead\-x\fR
+Show exited processes/threads with inverse background
+.TP
 \fB\-e\fR, \fB\-\-hide\-exited\fR
 Hide exited processes
+.TP
+\fB\-\-show\-exited\fR
+Show exited processes
 .TP
 \fB\-l\fR, \fB\-\-no\-color\fR
 Do not colorize values
 .TP
+\fB\-\-color\fR
+Colorize values. This will override the effect of the environment variable
+\fBNO_COLOR\fR when explicitly specified on the command line.
+.TP
 \fB\-\-si\fR
 Use SI units of \fB1000\fR when printing values. The default is non\-SI
 \fB1024\fR
+.TP
+\fB\-\-no\-si\fR
+Use non-SI units of \fB1024\fR when printing values
 .TP
 \fB\-\-threshold=1..10\fR
 Set the threshold to switch to next unit. The default value is \fB2\fR
 .TP
 \fB\-\-ascii\fR
 Disable using Unicode
+.TP
+\fB\-\-unicode\fR
+Use Unicode drawing chars
+.TP
+\fB\-W\fR, \fB\-\-write\fR
+Merge the preceding options to the current config, save the config and exit.
+Note that all options after this one will be ignored.
 .PD 1
 .SH KEYBOARD SHORTCUTS
 .TP

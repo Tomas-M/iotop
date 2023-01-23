@@ -152,34 +152,55 @@ cd iotop && git checkout master && git pull && make clean && make -j
     -h, --help             show this help message and exit
     -H, --help-type=TYPE   set type of interactive help (none, win or inline)
     -o, --only             only show processes or threads actually doing I/O
+        --no-only          show all processes or threads
     -b, --batch            non-interactive mode
     -n NUM, --iter=NUM     number of iterations before ending [infinite]
     -d SEC, --delay=SEC    delay between iterations [1 second]
     -p PID, --pid=PID      processes/threads to monitor [all]
     -u USER, --user=USER   users to monitor [all]
     -P, --processes        only show processes, not all threads
+        --threads          show all threads
     -a, --accumulated      show accumulated I/O instead of bandwidth
+        --no-accumulated   show bandwidth
     -k, --kilobytes        use kilobytes instead of a human friendly unit
+        --no-kilobytes     use human friendly unit
     -t, --time             add a timestamp on each line (implies --batch)
     -c, --fullcmdline      show full command line
+        --no-fullcmdline   show program names only
     -1, --hide-pid         hide PID/TID column
+        --show-pid         show PID/TID column
     -2, --hide-prio        hide PRIO column
+        --show-prio        show PRIO column
     -3, --hide-user        hide USER column
+        --show-user        show USER column
     -4, --hide-read        hide DISK READ column
+        --show-read        show DISK READ column
     -5, --hide-write       hide DISK WRITE column
+        --show-write       show DISK WRITE column
     -6, --hide-swapin      hide SWAPIN column
+        --show-swapin      show SWAPIN column
     -7, --hide-io          hide IO column
+        --show-io          show IO column
     -8, --hide-graph       hide GRAPH column
+        --show-graph       show GRAPH column
     -9, --hide-command     hide COMMAND column
+        --show-command     show COMMAND column
     -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)
     -R, --reverse-graph    reverse GRAPH column direction
+        --no-reverse-graph do not reverse GRAPH column direction
     -q, --quiet            suppress some lines of header (implies --batch)
     -x, --dead-x           show exited processes/threads with letter x
+        --no-dead-x        show exited processes/threads with background
     -e, --hide-exited      hide exited processes
+        --show-exited      show exited processes
     -l, --no-color         do not colorize values
+        --color            colorize values
         --si               use SI units of 1000 when printing values
+        --no-si            use non-SI units of 1024 when printing values
         --threshold=1..10  threshold to switch to next unit
         --ascii            disable using Unicode
+        --unicode          use Unicode drawing chars
+    -W, --write            write preceding options to the config and exit
 
 ## Contribute
 
