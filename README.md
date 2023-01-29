@@ -54,13 +54,22 @@ Use the following command (note that `-y` disables confirmation prompts):
 </details>
 
 <details>
-  <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+  <summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8/RHEL 9</summary>
 &nbsp;  
 
 Use the following commands (note that `-y` disables confirmation prompts):
     
     sudo yum install epel-release -y
     sudo yum install iotop-c -y
+</details>
+
+<details>
+  <summary>Void Linux</summary>
+&nbsp;  
+
+Use the following command:
+    
+    sudo xbps-install iotop-c
 </details>
 
 ## How to build from source
@@ -91,12 +100,39 @@ Use the following commands (note that `-y` disables confirmation prompts):
 </details>
 
 <details>
-<summary>CentOS 7/CentOS 8/RHEL 7/RHEL 8</summary>
+<summary>CentOS 8/RHEL 8/RHEL 9</summary>
 &nbsp;  
 
 Use the following commands (note that `-y` disables confirmation prompts):
 
     yum install git gcc make ncurses-devel pkgconfig -y
+    git clone https://github.com/Tomas-M/iotop
+    cd iotop
+    make -j
+</details>
+
+<details>
+<summary>CentOS 7/RHEL 7</summary>
+&nbsp;  
+
+*Note:* On CentOS 7/RHEL 7 `gcc` does not support `-Wdate-time` and needs a `-Wno-strict-overflow` to suppress a pile of bogus warnings.
+
+Use the following commands (note that `-y` disables confirmation prompts):
+
+    yum install git gcc make ncurses-devel pkgconfig -y
+    git clone https://github.com/Tomas-M/iotop
+    cd iotop
+    sed -i 's/-Wdate-time/-Wno-strict-overflow/' Makefile
+    make -j
+</details>
+
+<details>
+<summary>Void Linux</summary>
+&nbsp;  
+
+Use the following commands:
+
+    xbps-install git base-devel ncurses-devel
     git clone https://github.com/Tomas-M/iotop
     cd iotop
     make -j
@@ -116,30 +152,57 @@ cd iotop && git checkout master && git pull && make clean && make -j
     -h, --help             show this help message and exit
     -H, --help-type=TYPE   set type of interactive help (none, win or inline)
     -o, --only             only show processes or threads actually doing I/O
+        --no-only          show all processes or threads
     -b, --batch            non-interactive mode
     -n NUM, --iter=NUM     number of iterations before ending [infinite]
     -d SEC, --delay=SEC    delay between iterations [1 second]
     -p PID, --pid=PID      processes/threads to monitor [all]
     -u USER, --user=USER   users to monitor [all]
     -P, --processes        only show processes, not all threads
+        --threads          show all threads
     -a, --accumulated      show accumulated I/O instead of bandwidth
+        --no-accumulated   show bandwidth
+    -A, --accum-bw         show accumulated bandwidth
+        --no-accum-bw      show last iteration bandwidth
     -k, --kilobytes        use kilobytes instead of a human friendly unit
+        --no-kilobytes     use human friendly unit
     -t, --time             add a timestamp on each line (implies --batch)
     -c, --fullcmdline      show full command line
+        --no-fullcmdline   show program names only
     -1, --hide-pid         hide PID/TID column
+        --show-pid         show PID/TID column
     -2, --hide-prio        hide PRIO column
+        --show-prio        show PRIO column
     -3, --hide-user        hide USER column
+        --show-user        show USER column
     -4, --hide-read        hide DISK READ column
+        --show-read        show DISK READ column
     -5, --hide-write       hide DISK WRITE column
+        --show-write       show DISK WRITE column
     -6, --hide-swapin      hide SWAPIN column
+        --show-swapin      show SWAPIN column
     -7, --hide-io          hide IO column
+        --show-io          show IO column
     -8, --hide-graph       hide GRAPH column
+        --show-graph       show GRAPH column
     -9, --hide-command     hide COMMAND column
+        --show-command     show COMMAND column
     -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)
+    -R, --reverse-graph    reverse GRAPH column direction
+        --no-reverse-graph do not reverse GRAPH column direction
     -q, --quiet            suppress some lines of header (implies --batch)
     -x, --dead-x           show exited processes/threads with letter x
+        --no-dead-x        show exited processes/threads with background
     -e, --hide-exited      hide exited processes
+        --show-exited      show exited processes
     -l, --no-color         do not colorize values
+        --color            colorize values
+        --si               use SI units of 1000 when printing values
+        --no-si            use non-SI units of 1024 when printing values
+        --threshold=1..10  threshold to switch to next unit
+        --ascii            disable using Unicode
+        --unicode          use Unicode drawing chars
+    -W, --write            write preceding options to the config and exit
 
 ## Contribute
 
@@ -161,6 +224,10 @@ The iotop community gathers in #iotop on libera.chat:
 
 Notable contributions (ordered by time of last contribution):
 
+-   Leah Neukirchen &lt;[leah@vuxu.org](mailto:leah@vuxu.org)&gt; - Void Linux packaging and testing
+-   Vitaly Chikunov &lt;[vt@altlinux.org](mailto:vt@altlinux.org)&gt; - ALT Linux packaging and testing
+-   Matteo Bernardini &lt;[ponce@slackbuilds.org](mailto:ponce@slackbuilds.org)&gt; - SlackBuilds packaging and testing
+-   Jonathan Papineau &lt;[jonathan@jontech.app](mailto:jonathan@jontech.app)&gt; - OpenSUSE packaging and testing
 -   Vladi Belperchinov-Shabanski &lt;[cade@noxrun.com](mailto:cade@noxrun.com)&gt; - Scroller code improvement, multiple reviews and ideas
 -   Alexander Monakov &lt;[amonakov@ispras.ru](mailto:amonakov@ispras.ru)&gt; - Improvement of ncurses color handling
 -   Alexander Rezvov &lt;[alex@rezvov.ru](mailto:alex@rezvov.ru)&gt; - NixOS packaging and testing
@@ -170,8 +237,8 @@ Notable contributions (ordered by time of last contribution):
 -   Milan P. Stanić &lt;[mps@arvanta.net](mailto:mps@arvanta.net)&gt; - Alpine Linux packaging and testing
 -   Arthur Zamarin &lt;[arthurzam+gentoo@gmail.com](mailto:arthurzam+gentoo@gmail.com)&gt; - Gentoo packaging and testing
 -   Yuriy M. Kaminskiy &lt;[yumkam@gmail.com](mailto:yumkam@gmail.com)&gt; - Code fixes and improvements
--   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - Documentation imrpovements
--   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - Build system imrpovements
+-   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - Documentation improvements
+-   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - Build system improvements
 
 **Thanks!** This project is what it is now because the steam you have put into it
 

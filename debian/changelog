@@ -1,3 +1,19 @@
+ -- Boian Bonev <bbonev@ipacct.com>  Sun, 29 Jan 2023 20:51:49 +0000
+
+iotop-c (1.23-1) unstable; urgency=medium
+
+  [ Debian Janitor ]
+  * Re-export upstream signing key without extra signatures.
+  * Fix day-of-week for changelog entry 1.22-1.
+  * Update standards version to 4.6.1, no changes needed.
+
+  [ Boian Bonev ]
+  * Update standards version to 4.6.2, no changes needed.
+  * Update to new upstream release of 1.23
+  * Fix d/watch
+
+ -- Boian Bonev <bbonev@ipacct.com>  Tue, 24 Jan 2023 00:00:31 +0000
+
 iotop-c (1.22-1~bpo11+1) bullseye-backports; urgency=medium
 
   * Rebuild for bullseye-backports.

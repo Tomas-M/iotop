@@ -1,4 +1,4 @@
-.TH IOTOP "8" "July 8, 2022"
+.TH IOTOP "8" "January 22, 2023"
 .SH NAME
 iotop \- simple top\-like I/O monitor
 .SH SYNOPSIS
@@ -42,8 +42,9 @@ Use the \fBleft\fR and \fBright\fR arrows to select the sort column, \fBr\fR or
 \fBspace\fR to reverse the sorting order, \fBo\fR to toggle the \fB\-\-only\fR
 option (this uses the visible values from the \fBGRAPH\fR column or the
 \fBIO\fR column in case the \fBGRAPH\fR column is hidden), \fBp\fR to toggle
-the \fB\-\-processes\fR option, \fBa\fR to toggle the \fB\-\-accumulated\fR
-option, \fBi\fR to change the priority of a thread or a process's thread,
+the \fB\-\-processes\fR option, \fBa\fR to cycle between the
+\fB\-\-accumulated\fR, \fB\-\-accum\-bw\fR and normal operation,
+\fBi\fR to change the priority of a thread or a process's thread,
 \fBf\fR to change filtering by \fBUID\fR/\fBPID\fR (\fB\-\-user\fR and
 \fB\-\-pid\fR options), \fB1\-9\fR to toggle the visibility of the respective
 column, \fB0\fR to show all columns, \fBup\fR/\fBdown\fR arrows,
@@ -115,6 +116,9 @@ Set the type of interactive help shown. Accepted values for \fITYPE\fR are
 Only show processes or threads actually doing I/O, instead of showing all
 processes or threads. This can be dynamically toggled by pressing \fBo\fR
 .TP
+\fB\-\-no\-only\fR
+Show all processes or threads
+.TP
 \fB\-b\fR, \fB\-\-batch\fR
 Turn on non\-interactive mode.
 Useful for logging I/O usage over time
@@ -139,15 +143,36 @@ to be numeric are used as numeric
 \fB\-P\fR, \fB\-\-processes\fR
 Only show processes. Normally \fBiotop\fR shows processes and all threads
 .TP
+\fB\-\-no\-processes\fR
+Show processes and all threads
+.TP
 \fB\-a\fR, \fB\-\-accumulated\fR
 Show accumulated I/O instead of bandwidth. In this mode, \fBiotop\fR shows the
-amount of I/O processes have done since \fBiotop\fR started
+amount of I/O processes have done since the process or \fBiotop\fR started.
+Note that this option and \-\-accum\-bw are exclusive and they will turn each
+other off
+.TP
+\fB\-\-no\-accumulated\fR
+Show bandwidth (useful when changing config file with \fB\-\-write\fR)
+.TP
+\fB\-A\fR, \fB\-\-accum-bw\fR
+Show accumulated I/O as bandwidth for the whole sampling period. In this mode,
+\fBiotop\fR shows the amount of I/O per second for the whole period since the
+process or \fBiotop\fR started
+Note that this option and \-\-accumulated are exclusive and they will turn each
+other off
+.TP
+\fB\-\-no\-accum-bw\fR
+Show bandwidth (useful when changing config file with \fB\-\-write\fR)
 .TP
 \fB\-k\fR, \fB\-\-kilobytes\fR
 Use kilobytes instead of a human friendly unit.
 This mode is useful when scripting the batch mode of \fBiotop\fR. Instead of
 choosing the most appropriate unit \fBiotop\fR will display all sizes in
 kilobytes
+.TP
+\fB\-\-no\-kilobytes\fR
+Use human friendly units
 .TP
 \fB\-t\fR, \fB\-\-time\fR
 Add a timestamp on each line (implies \-\-batch). Each line will be prefixed by
@@ -156,36 +181,72 @@ the current time
 \fB\-c\fR, \fB\-\-fullcmdline\fR
 Show processes' full file path and parameters
 .TP
+\fB\-\-no\-fullcmdline\fR
+Show processes' names only
+.TP
 \fB\-1\fR, \fB\-\-hide\-pid\fR
 Hide PID/TID column
+.TP
+\fB\-\-show\-pid\fR
+Show PID/TID column
 .TP
 \fB\-2\fR, \fB\-\-hide\-prio\fR
 Hide PRIO column
 .TP
+\fB\-\-show\-prio\fR
+Show PRIO column
+.TP
 \fB\-3\fR, \fB\-\-hide\-user\fR
 Hide USER column
+.TP
+\fB\-\-show\-user\fR
+Show USER column
 .TP
 \fB\-4\fR, \fB\-\-hide\-read\fR
 Hide DISK READ column
 .TP
+\fB\-\-show\-read\fR
+Show DISK READ column
+.TP
 \fB\-5\fR, \fB\-\-hide\-write\fR
 Hide DISK WRITE column
+.TP
+\fB\-\-show\-write\fR
+Show DISK WRITE column
 .TP
 \fB\-6\fR, \fB\-\-hide\-swapin\fR
 Hide SWAPIN column
 .TP
+\fB\-\-show\-swapin\fR
+Show SWAPIN column
+.TP
 \fB\-7\fR, \fB\-\-hide\-io\fR
 Hide IO column
+.TP
+\fB\-\-show\-io\fR
+Show IO column
 .TP
 \fB\-8\fR, \fB\-\-hide\-graph\fR
 Hide GRAPH column
 .TP
+\fB\-\-show\-graph\fR
+Show GRAPH column
+.TP
 \fB\-9\fR, \fB\-\-hide\-command\fR
 Hide COMMAND column
+.TP
+\fB\-\-show\-command\fR
+Show COMMAND column
 .TP
 \fB\-g\fR \fITYPE\fR, \fB\-\-grtype\fR=\fITYPE\fR
 Set GRAPH column data source. Accepted values for \fITYPE\fR are \fBio\fR,
 \fBr\fR, \fBw\fR, \fBrw\fR and \fBsw\fR.
+.TP
+\fB\-R\fR, \fB\-\-reverse\-graph\fR
+Reverse GRAPH direction \- show most recent values on the right side
+.TP
+\fB\-\-no\-reverse\-graph\fR
+Do not reverse GRAPH direction \- show most recent values on the left side
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress some lines of header (implies \-\-batch). This option can be specified
@@ -207,18 +268,55 @@ the I/O summary is never printed
 \fB\-x\fR, \fB\-\-dead\-x\fR
 Show exited processes/threads with letter x instead of inverse background
 .TP
+\fB\-\-no\-dead\-x\fR
+Show exited processes/threads with inverse background
+.TP
 \fB\-e\fR, \fB\-\-hide\-exited\fR
 Hide exited processes
 .TP
+\fB\-\-show\-exited\fR
+Show exited processes
+.TP
 \fB\-l\fR, \fB\-\-no\-color\fR
 Do not colorize values
+.TP
+\fB\-\-color\fR
+Colorize values. This will override the effect of the environment variable
+\fBNO_COLOR\fR when explicitly specified on the command line.
+.TP
+\fB\-\-si\fR
+Use SI units of \fB1000\fR when printing values. The default is non\-SI
+\fB1024\fR
+.TP
+\fB\-\-no\-si\fR
+Use non-SI units of \fB1024\fR when printing values
+.TP
+\fB\-\-threshold=1..10\fR
+Set the threshold to switch to next unit. The default value is \fB2\fR
+.TP
+\fB\-\-ascii\fR
+Disable using Unicode
+.TP
+\fB\-\-unicode\fR
+Use Unicode drawing chars
+.TP
+\fB\-W\fR, \fB\-\-write\fR
+Merge the preceding options to the current config, save the config and exit.
+Note that all options after this one will be ignored.
 .PD 1
 .SH KEYBOARD SHORTCUTS
 .TP
 \fBq\fR, \fBQ\fR
 Exit
 .TP
-\fB<space>\fR, \fBr\fR, \fBR\fR
+\fBW\fR
+Save current settings to configuration file in
+\fB$HOME/.config/iotop/iotoprc\fR
+.TP
+\fBD\fR
+Reset all settings to their default values
+.TP
+\fB<space>\fR, \fBr\fR
 Toggle sort order
 .TP
 \fB<home>\fR
@@ -256,7 +354,7 @@ Toggle showing only processes with IO activity
 Toggle showing processes/threads
 .TP
 \fBa\fR, \fBA\fR
-Toggle showing accumulated/current values
+Cycle showing accumulated/accum-bw/current values
 .TP
 \fB?\fR
 Toggle showing inline help
@@ -277,6 +375,9 @@ Show all columns
 Cycle GRAPH source (\fBIO\fR=IO, \fBR\fR=DISK READ , \fBW\fR=DISK WRITE,
 \fBR+W\fR=DISK READ+DISK WRITE, \fBSW\fR=SWAPIN). Using \fBg\fR will cycle
 forward and \fBG\fR will cycle backward.
+.TP
+\fBR\fR
+Toggle reverse GRAPH direction
 .TP
 \fBi\fR, \fBI\fR
 IOnice a process/thread (depends on process/thread display mode)
@@ -300,8 +401,17 @@ Toggle the display of exited processes
 \fBs\fR, \fBS\fR
 Toggle freeze of data collection
 .TP
+\fBCtrl\-B\fR
+Toggle SI units
+.TP
+\fBCtrl\-R\fR
+Cycle unit threshold
+.TP
 \fBCtrl\-T\fR
 Toggle task_delayacct kernel sysctl
+.TP
+\fBCtrl\-L\fR
+Redraw screen
 .TP
 \fB/\fR
 Change search regular expression. While the search regular expression is being
@@ -361,7 +471,7 @@ as a single character. Unicode combining characters will be appended to the
 character under the cursor.
 .RE
 .SH ENVIRONMENT
-As per the recommendation of \fBhttps://www.no-color.org/\fR iotop honors the
+As per the recommendation of \fBhttps://www.no\-color.org/\fR iotop honors the
 contents of the environment variable \fBNO_COLOR\fR and when it is set to a non
 empty string, all color output is suppressed.
 .SH SEE ALSO
@@ -374,7 +484,7 @@ empty string, all color output is suppressed.
 The original Python iotop implementation was written by Guillaume Chazarain.
 This rewrite in C was started in 2014 by Vyacheslav Trushkin and reworked to
 include all missing features from the original Python code and several new ones
-from 2020 to 2022 by Boian Bonev.
+from 2020 to 2023 by Boian Bonev.
 .PP
 This manual page was started by Paul Wise for the Debian project and is placed
 in the public domain.

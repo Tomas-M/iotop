@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020-2022  Boian Bonev
+Copyright (C) 2020-2023  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -27,7 +27,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <sys/types.h>
 #include <stdint.h>
 
-#define VERSION "1.22"
+#define VERSION "1.23"
 
 typedef enum {
 	E_GR_IO,
@@ -61,10 +61,15 @@ typedef union {
 		int deadx;
 		int hideexited;
 		int nocolor;
+		int reverse_graph;
+		int accumbw;
+		int unicode; // this and below are not part of opts
 		e_grtype grtype;
 		int helptype;
 		int sort_by;
 		int sort_order;
+		int base; // 1000 or 1024
+		int threshold; // 1..10
 	} f;
 	int opts[22];
 } config_t;
@@ -98,6 +103,8 @@ struct xxxid_stats {
 	uint64_t blkio_delay_total; // nanoseconds
 	uint64_t read_bytes;
 	uint64_t write_bytes;
+	uint64_t ts_s; // start timestamp for accum-bw
+	uint64_t ts_e; // end timestamp for accum-bw
 
 	double blkio_val;
 	double swapin_val;
@@ -105,6 +112,8 @@ struct xxxid_stats {
 	double write_val;
 	double read_val_acc;
 	double write_val_acc;
+	double read_val_abw;
+	double write_val_abw;
 
 	int io_prio;
 
@@ -184,6 +193,8 @@ inline void pidgen_cb(pg_cb cb,void *hint1,void *hint2);
 inline int is_a_dir(const char *p);
 inline int is_a_process(pid_t tid);
 
+inline double timediff_in_s(uint64_t sta,uint64_t end);
+
 /* ioprio.c */
 
 enum {
@@ -252,7 +263,7 @@ inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write);
 inline void calc_a_total(struct act_stats *act,double *read,double *write,double time_s);
 inline void humanize_val(double *value,char *str,int allow_accum);
 inline int iotop_sort_cb(const void *a,const void *b);
-inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,filter_callback_w cb,int width,int *cnt);
+inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,filter_callback_w cb,int width,int *cnt);
 inline int value2scale(double val,double mx);
 inline int filter1(struct xxxid_stats *s);
 
@@ -261,6 +272,12 @@ inline int filter1(struct xxxid_stats *s);
 inline int has_task_delayacct(void);
 inline int read_task_delayacct(void);
 inline int write_task_delayacct(int da);
+
+/* configfile.c */
+
+inline int config_file_load(int *pac,char ***pav);
+inline void config_file_free(void);
+inline int config_file_save(void);
 
 #endif // __IOTOP_H__
 

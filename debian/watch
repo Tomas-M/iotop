@@ -1,7 +1,6 @@
 version=4
 
-opts=\
-	"pgpsigurlmangle=s/releases\/download\/v([0-9.]+)\/iotop-([0-9.]+)\.tar\.xz/releases\/download\/v$1\/iotop-$1\.tar\.xz\.asc/" \
-	https://github.com/Tomas-M/iotop/releases \
-	(?:.*?/)?iotop-?(\d[\d.]*)\.tar\.xz \
-	debian uupdate
+opts="searchmode=plain, \
+	pgpsigurlmangle=s/releases\/download\/v([0-9.]+)\/iotop-([0-9.]+)\.tar\.xz/releases\/download\/v$1\/iotop-$1\.tar\.xz\.asc/" \
+	https://api.github.com/repos/Tomas-M/iotop/releases \
+	https://github.com/Tomas-M/iotop/releases/download/v\d[\.\d]*/iotop-@ANY_VERSION@.tar.xz

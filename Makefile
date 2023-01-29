@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Copyright (C) 2014  Vyacheslav Trushkin
-# Copyright (C) 2020,2022  Boian Bonev
+# Copyright (C) 2020-2023  Boian Bonev
 #
 # This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 #
@@ -24,7 +24,7 @@ DEPS:=$(OBJS:.o=.d)
 
 ifndef NO_FLTO
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
-CFLAGS+=-flto
+CFLAGS+=-flto=auto
 else
 CFLAGS?=-O3 -fno-stack-protector -mno-stackrealign
 endif
@@ -120,6 +120,10 @@ mkotar:
 	cp -fa ../iotop-c_$(VER).orig.tar.xz ../iotop-$(VER).tar.xz
 	cp -fa ../iotop-c_$(VER).orig.tar.xz.asc ../iotop-$(VER).tar.xz.asc
 
+re:
+	$(Q)$(MAKE) --no-print-directory clean
+	$(Q)$(MAKE) --no-print-directory -j
+
 -include $(DEPS)
 
-.PHONY: clean install uninstall
+.PHONY: all clean install uninstall mkotar re

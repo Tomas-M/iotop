@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020-2022  Boian Bonev
+Copyright (C) 2020-2023  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -18,11 +18,9 @@ You should have received a copy of the GNU General Public License along with thi
 #include <stdlib.h>
 #include <unistd.h>
 
-#define TIMEDIFF_IN_S(sta,end) ((((sta)==(end))||(sta)==0)?0.0001:(((end)-(sta))/1000.0))
-
 static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act) {
-	double time_s=TIMEDIFF_IN_S(act->ts_o,act->ts_c);
-	int diff_len=create_diff(cs,ps,time_s,NULL,0,NULL);
+	double time_s=timediff_in_s(act->ts_o,act->ts_c);
+	int diff_len=create_diff(cs,ps,time_s,act->ts_c,NULL,0,NULL);
 	double total_a_read,total_a_write;
 	char str_a_read[4],str_a_write[4];
 	double total_read,total_write;
@@ -56,11 +54,21 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 	for (i=0;cs->sor&&i<diff_len;i++) {
 		struct xxxid_stats *s=cs->sor[i];
-		double read_val=config.f.accumulated?s->read_val_acc:s->read_val;
-		double write_val=config.f.accumulated?s->write_val_acc:s->write_val;
 		char read_str[4],write_str[4];
+		double write_val;
+		double read_val;
 		char *pw_name;
 
+		if (config.f.accumbw) {
+			read_val=s->read_val_abw;
+			write_val=s->write_val_abw;
+		} else if (config.f.accumulated) {
+			read_val=s->read_val_acc;
+			write_val=s->write_val_acc;
+		} else {
+			read_val=s->read_val;
+			write_val=s->write_val;
+		}
 		// show only processes, if configured
 		if (config.f.processes&&s->pid!=s->tid)
 			continue;
