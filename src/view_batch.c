@@ -100,7 +100,7 @@ inline void view_batch_fini(void) {
 inline void view_batch_loop(void) {
 	struct xxxid_stats_arr *ps=NULL;
 	struct xxxid_stats_arr *cs=NULL;
-	struct act_stats act={0};
+	struct act_stats act={0,0,0,0,0,0,0,};
 
 	for (;;) {
 		cs=fetch_data(filter1);

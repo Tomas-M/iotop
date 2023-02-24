@@ -35,11 +35,6 @@ endif
 
 INSTALL?=install
 
-HAVESREA:=$(shell if $(CC) -mno-stackrealign -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
-ifeq ("$(HAVESREA)","no")
-CFLAGS:=$(filter-out -mno-stackrealign,$(CFLAGS))
-endif
-
 PKG_CONFIG?=pkg-config
 NCCC?=$(shell $(PKG_CONFIG) --cflags ncursesw)
 NCLD?=$(shell $(PKG_CONFIG) --libs ncursesw)
@@ -54,8 +49,19 @@ endif
 
 # for glibc < 2.17, -lrt is required for clock_gettime
 NEEDLRT:=$(shell if $(CC) -E glibcvertest.h -o -|grep IOTOP_NEED_LRT|grep -q yes;then echo need; fi)
+# some architectures do not have -mno-stackrealign
+HAVESREA:=$(shell if $(CC) -mno-stackrealign -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
+# old comiplers do not have -Wdate-time
+HAVEWDTI:=$(shell if $(CC) -Wdate-time -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 
-MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -Wall -Wextra -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 --std=gnu90 -fPIE
+MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -Wall -Wextra -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 --std=gnu89 -fPIE
+ifeq ("$(HAVESREA)","no")
+MYCFLAGS:=$(filter-out -mno-stackrealign,$(MYCFLAGS))
+endif
+ifeq ("$(HAVEWDTI)","no")
+MYCFLAGS:=$(filter-out -Wdate-time,$(MYCFLAGS))
+endif
+
 MYLIBS:=$(NCLD) $(LIBS)
 MYLDFLAGS:=$(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -fPIE -pie
 ifeq ("$(NEEDLRT)","need")

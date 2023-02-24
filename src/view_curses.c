@@ -2251,7 +2251,7 @@ inline void view_curses_fini(void) {
 inline void view_curses_loop(void) {
 	struct xxxid_stats_arr *ps=NULL;
 	struct xxxid_stats_arr *cs=NULL;
-	struct act_stats act={0};
+	struct act_stats act={0,0,0,0,0,0,0,};
 	uint64_t bef=0;
 	int refresh=0;
 	int k=ERR;
