@@ -33,7 +33,9 @@ ifdef GCCFANALIZER
 CFLAGS+=-fanalyzer
 endif
 
+PREFIX?=$(DESTDIR)/usr
 INSTALL?=install
+STRIP?=strip
 
 PKG_CONFIG?=pkg-config
 NCCC?=$(shell $(PKG_CONFIG) --cflags ncursesw)
@@ -54,22 +56,20 @@ HAVESREA:=$(shell if $(CC) -mno-stackrealign -xc -c /dev/null -o /dev/null >/dev
 # old comiplers do not have -Wdate-time
 HAVEWDTI:=$(shell if $(CC) -Wdate-time -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 
-MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -Wall -Wextra -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 --std=gnu89 -fPIE
 ifeq ("$(HAVESREA)","no")
-MYCFLAGS:=$(filter-out -mno-stackrealign,$(MYCFLAGS))
+CFLAGS:=$(filter-out -mno-stackrealign,$(CFLAGS))
 endif
 ifeq ("$(HAVEWDTI)","no")
-MYCFLAGS:=$(filter-out -Wdate-time,$(MYCFLAGS))
+CFLAGS:=$(filter-out -Wdate-time,$(CFLAGS))
 endif
 
+MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -Wall -Wextra -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 --std=gnu89 -fPIE
 MYLIBS:=$(NCLD) $(LIBS)
 MYLDFLAGS:=$(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -fPIE -pie
+
 ifeq ("$(NEEDLRT)","need")
 MYLDFLAGS+=-lrt
 endif
-STRIP?=strip
-
-PREFIX?=$(DESTDIR)/usr
 
 ifeq ("$(V)","1")
 Q:=
