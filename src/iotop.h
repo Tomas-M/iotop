@@ -78,6 +78,7 @@ typedef union {
 
 // character sets for pseudographics
 enum {
+	CHARSET_BRAILLE,
 	CHARSET_ASCII,
 	CHARSET_97531
 };

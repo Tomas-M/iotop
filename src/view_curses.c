@@ -665,7 +665,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	ge=config.f.reverse_graph?0:gr_width_h-1;
 	gi=config.f.reverse_graph?-1:1;
 	for (j=gs;ge<gs?j>=ge:j<=ge;j+=gi) {
-		if (has_unicode&&config.f.unicode) {
+		if (has_unicode&&config.f.unicode&&config.f.charset==CHARSET_BRAILLE) {
 			strcat(pg_t_r,br_graph[value2scale(hist_t_r[j*2],mx_t_r)][value2scale(hist_t_r[j*2+gi],mx_t_r)]);
 			strcat(pg_t_w,br_graph[value2scale(hist_t_w[j*2],mx_t_w)][value2scale(hist_t_w[j*2+gi],mx_t_w)]);
 			strcat(pg_a_r,br_graph[value2scale(hist_a_r[j*2],mx_a_r)][value2scale(hist_a_r[j*2+gi],mx_a_r)]);

@@ -151,6 +151,7 @@ static inline void parse_args(int clac,char **clav) {
 	config.f.base=1024; // use non-SI units by default
 	config.f.threshold=2; // default threshold is 2*base
 	config.f.unicode=1; // default is unicode
+	config.f.charset=CHARSET_BRAILLE; // default is Braille
 
 	// implement https://no-color.org/ proposal
 	if (no_color&&*no_color)
