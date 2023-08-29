@@ -229,6 +229,9 @@ static const char *br_graph[5][5]={
 // ASCII pseudo graph - 1x5 levels graph per character
 static const char *as_graph[5]={" ","_",".",":","|",};
 
+// common DEC characters for graph
+static const char *dec_graph[5]={"⎽","⎼","─","⎻","⎺"};
+
 // process and threads grouping characters
 static const char *th_lines_u[8]={" ","►","┌","│","└","╭","┊","╰",};
 static const char *th_lines_a[8]={" ",">",",","|","`",",",":","`",};
@@ -667,11 +670,16 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			strcat(pg_t_w,br_graph[value2scale(hist_t_w[j*2],mx_t_w)][value2scale(hist_t_w[j*2+gi],mx_t_w)]);
 			strcat(pg_a_r,br_graph[value2scale(hist_a_r[j*2],mx_a_r)][value2scale(hist_a_r[j*2+gi],mx_a_r)]);
 			strcat(pg_a_w,br_graph[value2scale(hist_a_w[j*2],mx_a_w)][value2scale(hist_a_w[j*2+gi],mx_a_w)]);
-		} else {
+		} else if (!config.f.unicode&&config.f.charset==CHARSET_ASCII) {
 			strcat(pg_t_r,as_graph[value2scale(hist_t_r[j],mx_t_r)]);
 			strcat(pg_t_w,as_graph[value2scale(hist_t_w[j],mx_t_w)]);
 			strcat(pg_a_r,as_graph[value2scale(hist_a_r[j],mx_a_r)]);
 			strcat(pg_a_w,as_graph[value2scale(hist_a_w[j],mx_a_w)]);
+		} else if (!config.f.unicode&&config.f.charset==CHARSET_97531) {
+			strcat(pg_t_r,dec_graph[value2scale(hist_t_r[j],mx_t_r)]);
+			strcat(pg_t_w,dec_graph[value2scale(hist_t_w[j],mx_t_w)]);
+			strcat(pg_a_r,dec_graph[value2scale(hist_a_r[j],mx_a_r)]);
+			strcat(pg_a_w,dec_graph[value2scale(hist_a_w[j],mx_a_w)]);
 		}
 	}
 
@@ -2305,4 +2313,3 @@ inline void view_curses_loop(void) {
 		k=getch();
 	}
 }
-

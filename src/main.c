@@ -47,6 +47,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_UNICODE 0x115
 #define OPT_COLOR 0x116
 #define OPT_NO_ACCUM_BW 0x117
+#define OPT_97531 0x118
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -224,6 +225,7 @@ static inline void parse_args(int clac,char **clav) {
 				{"no-si",no_argument,NULL,OPT_NO_SI},
 				{"threshold",required_argument,NULL,OPT_THR},
 				{"ascii",no_argument,NULL,OPT_ASCII},
+				{"97531",no_argument,NULL,OPT_97531},
 				{"unicode",no_argument,NULL,OPT_UNICODE},
 				{"write",no_argument,NULL,'W'},
 				{NULL,0,NULL,0}
@@ -344,6 +346,11 @@ static inline void parse_args(int clac,char **clav) {
 					break;
 				case OPT_ASCII:
 					config.f.unicode=0;
+					config.f.charset=CHARSET_ASCII;
+					break;
+				case OPT_97531:
+					config.f.unicode=0;
+					config.f.charset=CHARSET_97531;
 					break;
 				case OPT_NO_ONLY:
 					config.f.only=0;

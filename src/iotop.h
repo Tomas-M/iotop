@@ -70,9 +70,17 @@ typedef union {
 		int sort_order;
 		int base; // 1000 or 1024
 		int threshold; // 1..10
+		int charset;
 	} f;
 	int opts[22];
 } config_t;
+
+
+// character sets for pseudographics
+enum {
+	CHARSET_ASCII,
+	CHARSET_97531
+};
 
 typedef struct {
 	int iter;
@@ -280,4 +288,3 @@ inline void config_file_free(void);
 inline int config_file_save(void);
 
 #endif // __IOTOP_H__
-
