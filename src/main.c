@@ -134,7 +134,7 @@ static inline void print_help(void) {
 		"      --threshold=1..10  threshold to switch to next unit\n"
 		"      --ascii            disable using Unicode\n"
 		"      --unicode          use Unicode drawing chars\n"
-		"      --97531            selects DEC Special Graphics Characters\n"
+		"      --97531            selects DEC special graphics characters\n"
 		"  -W, --write            write preceding options to the config and exit\n",
 		progname
 	);
