@@ -964,21 +964,21 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 								v1=value2scale(s->readhist[j*2],maxvisible);
 								v2=value2scale(s->readhist[j*2+gi],maxvisible);
 							} else
-								v1=value2scale(s->readhist[j*2],maxvisible);
+								v1=value2scale(s->readhist[j],maxvisible);
 							break;
 						case E_GR_W:
 							if (has_unicode&&config.f.unicode) {
 								v1=value2scale(s->writehist[j*2],maxvisible);
 								v2=value2scale(s->writehist[j*2+gi],maxvisible);
 							} else
-								v1=value2scale(s->writehist[j*2],maxvisible);
+								v1=value2scale(s->writehist[j],maxvisible);
 							break;
 						case E_GR_RW:
 							if (has_unicode&&config.f.unicode) {
 								v1=value2scale(s->readhist[j*2]+s->writehist[j*2],maxvisible);
 								v2=value2scale(s->readhist[j*2+gi]+s->writehist[j*2+gi],maxvisible);
 							} else
-								v1=value2scale(s->readhist[j*2]+s->writehist[j*2],maxvisible);
+								v1=value2scale(s->readhist[j]+s->writehist[j],maxvisible);
 							break;
 						case E_GR_SW:
 							if (has_unicode&&config.f.unicode) {
