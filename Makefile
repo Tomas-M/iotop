@@ -56,16 +56,17 @@ HAVESREA:=$(shell if $(CC) -mno-stackrealign -xc -c /dev/null -o /dev/null >/dev
 # old comiplers do not have -Wdate-time
 HAVEWDTI:=$(shell if $(CC) -Wdate-time -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 
-ifeq ("$(HAVESREA)","no")
-CFLAGS:=$(filter-out -mno-stackrealign,$(CFLAGS))
-endif
-ifeq ("$(HAVEWDTI)","no")
-CFLAGS:=$(filter-out -Wdate-time,$(CFLAGS))
-endif
-
 MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -Wall -Wextra -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 --std=gnu89 -fPIE
 MYLIBS:=$(NCLD) $(LIBS)
 MYLDFLAGS:=$(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -fPIE -pie
+
+ifeq ("$(HAVESREA)","no")
+MYCFLAGS:=$(filter-out -mno-stackrealign,$(MYCFLAGS))
+endif
+
+ifeq ("$(HAVEWDTI)","no")
+MYCFLAGS:=$(filter-out -Wdate-time,$(MYCFLAGS))
+endif
 
 ifeq ("$(NEEDLRT)","need")
 MYLDFLAGS+=-lrt
