@@ -141,18 +141,42 @@ static int dontrefresh=0; // flag to inhibit refresh of data
 static int initial_delayacct=0; // initial state of task_delayacct
 
 typedef struct {
-	const char *descr;
-	const char *k1;
-	const char *k2;
-	const char *k3;
+	char *descr; // static description or dynamic buffer
+	const char *t; // printf template for the buffer
+	const char *k1; // key 1
+	const char *k2; // key 2
+	const char *k3; // key 3
 } s_helpitem;
 
-static char units[100]="";
-static char unitt[100]="";
+// populated with the longest text for initial help window sizing
+static char tsoor[200]="Toggle sort order [desc]";
+static char tonly[200]="Toggle showing only processes with IO activity [only]";
+static char tproc[200]="Toggle showing processes/threads [proc]";
+static char caccu[200]="Cycle accumulated/accum-bw/current values [accum-bw]";
+static char tcomm[200]="Toggle showing full command line [off]";
+static char tcol1[200]="Toggle showing TID [off]";
+static char tcol2[200]="Toggle showing PRIO [off]";
+static char tcol3[200]="Toggle showing USER [off]";
+static char tcol4[200]="Toggle showing DISK READ [off]";
+static char tcol5[200]="Toggle showing DISK WRITE [off]";
+static char tcol6[200]="Toggle showing SWAPIN [off]";
+static char tcol7[200]="Toggle showing IO [off]";
+static char tcol8[200]="Toggle showing GRAPH [off]";
+static char tcol9[200]="Toggle showing COMMAND [off]";
+static char cgrph[200]="Cycle GRAPH source (IO, R, W, R+W, SW) [R+W]";
+static char tgrdi[200]="Toggle reverse GRAPH direction [right]";
+static char tasci[200]="Toggle using Unicode/ASCII characters [Unicode]";
+static char tcolr[200]="Toggle colorizing values [off]";
+static char txxxi[200]="Toggle exited processes xxx/inverse [inverse]";
+static char texit[200]="Toggle showing exited processes [off]";
+static char tfrez[200]="Toggle data freeze [off]";
+static char units[200]="Toggle SI units [1024]";
+static char unitt[200]="Cycle unit threshold [10]";
+static char tdact[200]="Toggle task_delayacct [dynamic off]";
 
 const s_helpitem thelp[]={
 	{.descr="Exit",.k2="q",.k3="Q"},
-	{.descr="Toggle sort order",.k1="<space>",.k2="r"},
+	{.descr=tsoor,.t="Toggle sort order [%s]",.k1="<space>",.k2="r"},
 	{.descr="Scroll to the top of the list",.k1="<home>"},
 	{.descr="Scroll to the bottom of the list",.k1="<end>"},
 	{.descr="Scroll one screen up",.k1="<page-up>"},
@@ -162,38 +186,38 @@ const s_helpitem thelp[]={
 	{.descr="Sort by next column",.k1="<right>"},
 	{.descr="Sort by previous column",.k1="<left>"},
 	{.descr="Cancel ionice/filter/search or close help window",.k1="<esc>"},
-	{.descr="Toggle showing only processes with IO activity",.k2="o",.k3="O"},
-	{.descr="Toggle showing processes/threads",.k2="p",.k3="P"},
-	{.descr="Cycle accumulated/accum-bw/current values",.k2="a",.k3="A"},
-	{.descr="Toggle showing full command line",.k2="c",.k3="C"},
-	{.descr="Toggle showing TID",.k2="1"},
-	{.descr="Toggle showing PRIO",.k2="2"},
-	{.descr="Toggle showing USER",.k2="3"},
-	{.descr="Toggle showing DISK READ",.k2="4"},
-	{.descr="Toggle showing DISK WRITE",.k2="5"},
-	{.descr="Toggle showing SWAPIN",.k2="6"},
-	{.descr="Toggle showing IO",.k2="7"},
-	{.descr="Toggle showing GRAPH",.k2="8"},
-	{.descr="Toggle showing COMMAND",.k2="9"},
+	{.descr=tonly,.t="Toggle showing only processes with IO activity [%s]",.k2="o",.k3="O"},
+	{.descr=tproc,.t="Toggle showing processes/threads [%s]",.k2="p",.k3="P"},
+	{.descr=caccu,.t="Cycle accumulated/accum-bw/current values [%s]",.k2="a",.k3="A"},
+	{.descr=tcomm,.t="Toggle showing full command line [%s]",.k2="c",.k3="C"},
+	{.descr=tcol1,.t="Toggle showing TID [%s]",.k2="1"},
+	{.descr=tcol2,.t="Toggle showing PRIO [%s]",.k2="2"},
+	{.descr=tcol3,.t="Toggle showing USER [%s]",.k2="3"},
+	{.descr=tcol4,.t="Toggle showing DISK READ [%s]",.k2="4"},
+	{.descr=tcol5,.t="Toggle showing DISK WRITE [%s]",.k2="5"},
+	{.descr=tcol6,.t="Toggle showing SWAPIN [%s]",.k2="6"},
+	{.descr=tcol7,.t="Toggle showing IO [%s]",.k2="7"},
+	{.descr=tcol8,.t="Toggle showing GRAPH [%s]",.k2="8"},
+	{.descr=tcol9,.t="Toggle showing COMMAND [%s]",.k2="9"},
 	{.descr="Show all columns",.k2="0"},
-	{.descr="Cycle GRAPH source (IO, R, W, R+W, SW)",.k2="g",.k3="G"},
-	{.descr="Toggle reverse GRAPH direction",.k2="R"},
+	{.descr=cgrph,.t="Cycle GRAPH source (IO, R, W, R+W, SW) [%s]",.k2="g",.k3="G"},
+	{.descr=tgrdi,.t="Toggle reverse GRAPH direction [%s]",.k2="R"},
 	{.descr="Toggle showing inline help",.k2="?"},
-	{.descr="Toggle showing this help",.k2="h",.k3="H"},
+	{.descr="Toggle showing this help [on]",.k2="h",.k3="H"},
 	{.descr="IOnice a process/thread",.k2="i",.k3="I"},
 	{.descr="Change UID and PID filters",.k2="f",.k3="F"},
 	{.descr="Search cmdline by regex",.k2="/"},
-	{.descr="Toggle using Unicode/ASCII characters",.k2="u",.k3="U"},
-	{.descr="Toggle colorizing values",.k2="l",.k3="L"},
-	{.descr="Toggle exited processes xxx/inverse",.k2="x",.k3="X"},
-	{.descr="Toggle showing exited processes",.k2="e",.k3="E"},
-	{.descr="Toggle data freeze",.k2="s",.k3="S"},
-	{.descr=units,.k1="<Ctrl-B>",.k2="",.k3=""},
-	{.descr=unitt,.k1="<Ctrl-R>",.k2="",.k3=""},
-	{.descr="Toggle task_delayacct (if available)",.k1="<Ctrl-T>",.k2="",.k3=""},
+	{.descr=tasci,.t="Toggle using Unicode/ASCII characters [%s]",.k2="u",.k3="U"},
+	{.descr=tcolr,.t="Toggle colorizing values [%s]",.k2="l",.k3="L"},
+	{.descr=txxxi,.t="Toggle exited processes xxx/inverse [%s]",.k2="x",.k3="X"},
+	{.descr=texit,.t="Toggle showing exited processes [%s]",.k2="e",.k3="E"},
+	{.descr=tfrez,.t="Toggle data freeze [%s]",.k2="s",.k3="S"},
+	{.descr=units,.t="Toggle SI units [%d]",.k1="<Ctrl-B>",.k2="b",.k3=""},
+	{.descr=unitt,.t="Cycle unit threshold [%d]",.k1="<Ctrl-R>",.k2="t",.k3=""},
+	{.descr=tdact,.t="Toggle task_delayacct [%s]",.k1="<Ctrl-T>",.k2="",.k3=""},
 	{.descr="Redraw screen",.k1="<Ctrl-L>",.k2="",.k3=""},
 	{.descr="Reset all settings to their defaults",.k2="D"},
-	{.descr="Save current setting in config file",.k2="W"},
+	{.descr="Save the current settings in config file",.k2="W"},
 	{.descr=NULL},
 };
 
@@ -426,13 +450,123 @@ static inline void view_help(void) {
 	int i,a=c1w,b=c2w,c=c3w,d=cdw;
 	int hh=getmaxy(whelp);
 	int hw=getmaxx(whelp);
-	static int helpcnt=0;
+	int helpcnt=0;
 	const s_helpitem *p;
 	int can_scroll;
 
-	if (!helpcnt) // count thelp items once
-		for (p=thelp;p->descr;p++)
-			helpcnt++;
+	for (p=thelp;p->descr;p++) {
+		helpcnt++;
+		if (p->t)
+			switch (p->k2[0]) {
+				case 'r':
+					sprintf(p->descr,p->t,(config.f.sort_order==SORT_ASC)?"asc":"desc");
+					break;
+				case 'o':
+					sprintf(p->descr,p->t,config.f.only?"only":"all");
+					break;
+				case 'p':
+					sprintf(p->descr,p->t,config.f.processes?"proc":"all");
+					break;
+				case 'a': {
+					char *acc="current";
+
+					if (config.f.accumulated)
+						acc="accum";
+					else if (config.f.accumbw)
+						acc="accum-bw";
+					sprintf(p->descr,p->t,acc);
+					break;
+				}
+				case 'c':
+					sprintf(p->descr,p->t,config.f.fullcmdline?"on":"off");
+					break;
+				case '1':
+					sprintf(p->descr,p->t,!config.f.hidepid?"on":"off");
+					break;
+				case '2':
+					sprintf(p->descr,p->t,!config.f.hideprio?"on":"off");
+					break;
+				case '3':
+					sprintf(p->descr,p->t,!config.f.hideuser?"on":"off");
+					break;
+				case '4':
+					sprintf(p->descr,p->t,!config.f.hideread?"on":"off");
+					break;
+				case '5':
+					sprintf(p->descr,p->t,!config.f.hidewrite?"on":"off");
+					break;
+				case '6':
+					sprintf(p->descr,p->t,!config.f.hideswapin?"on":"off");
+					break;
+				case '7':
+					sprintf(p->descr,p->t,!config.f.hideio?"on":"off");
+					break;
+				case '8':
+					sprintf(p->descr,p->t,!config.f.hidegraph?"on":"off");
+					break;
+				case '9':
+					sprintf(p->descr,p->t,!config.f.hidecmd?"on":"off");
+					break;
+				case 'g': {
+					char *grt="";
+
+					switch (config.f.grtype) {
+						case E_GR_IO:
+							grt="IO";
+							break;
+						case E_GR_R:
+							grt="R";
+							break;
+						case E_GR_W:
+							grt="W";
+							break;
+						case E_GR_RW:
+							grt="R+W";
+							break;
+						case E_GR_SW:
+							grt="SW";
+							break;
+					}
+
+					sprintf(p->descr,p->t,grt);
+					break;
+				}
+				case 'R':
+					sprintf(p->descr,p->t,config.f.reverse_graph?"left":"right");
+					break;
+				case 'u':
+					sprintf(p->descr,p->t,config.f.unicode?"Unicode":"ASCII");
+					break;
+				case 'l':
+					sprintf(p->descr,p->t,config.f.nocolor?"off":"on");
+					break;
+				case 'x':
+					sprintf(p->descr,p->t,config.f.deadx?"xxx":"inverse");
+					break;
+				case 'e':
+					sprintf(p->descr,p->t,config.f.hideexited?"off":"on");
+					break;
+				case 's':
+					sprintf(p->descr,p->t,dontrefresh?"on":"off");
+					break;
+				case 'b':
+					sprintf(p->descr,p->t,config.f.base);
+					break;
+				case 't':
+					sprintf(p->descr,p->t,config.f.threshold);
+					break;
+				case 0: { // only task_delayacct has no key
+					char *tda="";
+
+					if (has_task_delayacct())
+						tda=read_task_delayacct()?"dynamic on":"dynamic off";
+					else
+						tda="static on";
+					sprintf(p->descr,p->t,tda);
+					break;
+				}
+			}
+	}
 
 	// adjust scroll position
 	if (hh-2>=helpcnt) { // all fits, no scroll
@@ -444,9 +578,6 @@ static inline void view_help(void) {
 		helppos=helpcnt-(hh-2);
 	if (helppos<0) // can't go before start
 		helppos=0;
-
-	snprintf(units,sizeof units,"Toggle SI units [now: %d]",config.f.base);
-	snprintf(unitt,sizeof unitt,"Cycle unit threshold [now: %d]",config.f.threshold);
 
 	mvwprintw(whelp,0,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	wattron(whelp,A_REVERSE);
@@ -2134,9 +2265,11 @@ static inline int curses_key(int ch) {
 				update_search();
 			}
 			break;
+		case 'b':
 		case KEY_CTRL_B:
 			config.f.base=config.f.base==1000?1024:1000;
 			break;
+		case 't':
 		case KEY_CTRL_R:
 			config.f.threshold++;
 			if (config.f.threshold>10)
