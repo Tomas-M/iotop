@@ -62,10 +62,12 @@ MYLDFLAGS:=$(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -fPIE -pie
 
 ifeq ("$(HAVESREA)","no")
 MYCFLAGS:=$(filter-out -mno-stackrealign,$(MYCFLAGS))
+MYLDFLAGS:=$(filter-out -mno-stackrealign,$(MYLDFLAGS))
 endif
 
 ifeq ("$(HAVEWDTI)","no")
 MYCFLAGS:=$(filter-out -Wdate-time,$(MYCFLAGS))
+MYLDFLAGS:=$(filter-out -Wdate-time,$(MYLDFLAGS))
 endif
 
 ifeq ("$(NEEDLRT)","need")
