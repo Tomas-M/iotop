@@ -50,7 +50,7 @@ inline int get_vm_counters(uint64_t *pgpgin,uint64_t *pgpgou) {
 			t=realloc(buf,bs+BSIZ);
 
 			if (!t) {
-				free(buf);
+				free(buf); // gcc-13 yields false positive -Wuse-after-free here
 				close(fd);
 				return ENOMEM;
 			}
