@@ -133,6 +133,19 @@ re:
 	$(Q)$(MAKE) --no-print-directory clean
 	$(Q)$(MAKE) --no-print-directory -j
 
+pv:
+	@echo CFLAGS: $(CFLAGS)
+	@echo LDFLAGS: $(LDFLAGS)
+	@echo LIBS: $(LIBS)
+	@echo NCCC: $(NCCC)
+	@echo NCLD: $(NCLD)
+	@echo NEEDLRT: $(NEEDLRT)
+	@echo HAVESREA: $(HAVESREA)
+	@echo HAVEWDTI: $(HAVEWDTI)
+	@echo MYCFLAGS: $(MYCFLAGS)
+	@echo MYLDFLAGS: $(MYLDFLAGS)
+	@echo MYLIBS: $(MYLIBS)
+
 -include $(DEPS)
 
-.PHONY: all clean install uninstall mkotar re
+.PHONY: all clean install uninstall mkotar re pv
