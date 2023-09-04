@@ -29,6 +29,12 @@ You should have received a copy of the GNU General Public License along with thi
 
 #define VERSION "1.23"
 
+#ifdef LIBNL
+#define SWITCH(func) func##_libnl
+#else
+#define SWITCH(func) func
+#endif
+
 typedef enum {
 	E_GR_IO,
 	E_GR_R,
@@ -152,8 +158,11 @@ struct act_stats {
 
 inline void nl_init(void);
 inline void nl_fini(void);
+inline void nl_init_libnl(void);
+inline void nl_fini_libnl(void);
 
 inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats);
+inline int nl_xxxid_info_libnl(pid_t tid,pid_t pid,struct xxxid_stats *stats);
 
 typedef int (*filter_callback)(struct xxxid_stats *);
 typedef int (*filter_callback_w)(struct xxxid_stats *,int width);

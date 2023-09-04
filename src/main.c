@@ -423,7 +423,7 @@ inline void sig_handler(int signo) {
 		case SIGHUP:
 		case SIGQUIT:
 			v_fini_cb();
-			nl_fini();
+			SWITCH(nl_fini)();
 			exit(EXIT_SUCCESS);
 	}
 }
@@ -436,7 +436,7 @@ int main(int argc,char *argv[]) {
 		return EXIT_FAILURE;
 
 	setlocale(LC_ALL,"");
-	nl_init();
+	SWITCH(nl_init)();
 
 	if (signal(SIGINT,sig_handler)==SIG_ERR)
 		perror("signal");
@@ -457,7 +457,7 @@ int main(int argc,char *argv[]) {
 	v_init_cb();
 	v_loop_cb();
 	v_fini_cb();
-	nl_fini();
+	SWITCH(nl_fini)();
 
 	return 0;
 }

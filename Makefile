@@ -38,16 +38,25 @@ INSTALL?=install
 STRIP?=strip
 
 PKG_CONFIG?=pkg-config
-NCCC?=$(shell $(PKG_CONFIG) --cflags ncursesw)
-NCLD?=$(shell $(PKG_CONFIG) --libs ncursesw)
+NCCC	?= $(shell $(PKG_CONFIG) --cflags ncursesw)
+NCLD	?= $(shell $(PKG_CONFIG) --libs ncursesw)
 ifeq ("$(NCLD)","")
-NCCC:=$(shell $(PKG_CONFIG) --cflags ncurses)
-NCLD:=$(shell $(PKG_CONFIG) --libs ncurses)
+NCCC	:= $(shell $(PKG_CONFIG) --cflags ncurses)
+NCLD	:= $(shell $(PKG_CONFIG) --libs ncurses)
 endif
 ifeq ("$(NCLD)","")
-NCCC:=
-NCLD:=-lncursesw
+NCCC	:=
+NCLD	:= -lncursesw
 endif
+
+LIBNL_LIBS 	:= $(shell $(PKG_CONFIG) --libs libnl-3.0 libnl-genl-3.0 2>/dev/null)
+LIBNL_CFLAGS:= $(shell $(PKG_CONFIG) --cflags libnl-3.0 2>/dev/null)
+
+ifneq ($(strip $(LIBNL_LIBS)),)
+libnl_support: MYLIBS 	+= $(LIBNL_LIBS)
+libnl_support: MYCFLAGS += $(LIBNL_CFLAGS) -DLIBNL
+endif
+
 
 # for glibc < 2.17, -lrt is required for clock_gettime
 NEEDLRT:=$(shell if $(CC) -E glibcvertest.h -o -|grep IOTOP_NEED_LRT|grep -q yes;then echo need; fi)
@@ -83,6 +92,8 @@ E:=@echo
 endif
 
 all: $(TARGET)
+
+libnl_support: 	all
 
 $(TARGET): $(OBJS)
 	$(E) LD $@
@@ -148,4 +159,4 @@ pv:
 
 -include $(DEPS)
 
-.PHONY: all clean install uninstall mkotar re pv
+.PHONY: all clean install uninstall mkotar re pv libnl_support
