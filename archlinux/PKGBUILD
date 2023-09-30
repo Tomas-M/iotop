@@ -4,13 +4,13 @@
 
 pkgname=iotop-c
 pkgver=1.23
-pkgrel=1
+pkgrel=2
 pkgdesc="simple top-like I/O monitor (implemented in C)"
-arch=('any')
+arch=('i686' 'x86_64' 'aarch64' 'armv7h' 'ppc64le')
 url="https://github.com/Tomas-M/iotop"
 license=('GPL2')
 depends=('ncurses')
-makedepends=('git' 'pkgconf')
+makedepends=('pkgconf')
 conflicts=('iotop' 'iotop-git')
 provides=('iotop')
 source=("${url}/releases/download/v${pkgver}/iotop-${pkgver}.tar.xz" "${url}/releases/download/v${pkgver}/iotop-${pkgver}.tar.xz.asc")
