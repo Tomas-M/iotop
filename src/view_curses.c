@@ -1688,6 +1688,7 @@ static inline int curses_key_search(int ch) {
 			nocbreak();
 			k2=getch();
 			cbreak();
+			halfdelay(2);
 			key_log(k2,1);
 			if (k2!=ERR) {
 				switch (k2) {
@@ -2121,6 +2122,7 @@ static inline int curses_key(int ch) {
 			nocbreak();
 			k2=getch();
 			cbreak();
+			halfdelay(2);
 			key_log(k2,1);
 			if (k2!=ERR) {
 				switch (k2) {
