@@ -313,10 +313,10 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 		if (config.f.hidegraph) {
 			if (has_tda) {
 				if (s->blkio_val<=0)
-					return 1;
+					goto dohide;
 			} else {
 				if (s->read_val+s->write_val<=0)
-					return 1;
+					goto dohide;
 			}
 		} else {
 			double su=0;
@@ -325,31 +325,36 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 			switch (masked_grtype(0)) {
 				case E_GR_IO:
 					if (!memcmp(s->iohist,iohist_z,gr_width))
-						return 1;
+						goto dohide;
 					break;
 				case E_GR_R:
 					for (i=0;i<gr_width;i++)
 						su+=s->readhist[i];
 					if (su<=0)
-						return 1;
+						goto dohide;
 					break;
 				case E_GR_W:
 					for (i=0;i<gr_width;i++)
 						su+=s->writehist[i];
 					if (su<=0)
-						return 1;
+						goto dohide;
 					break;
 				case E_GR_RW:
 					for (i=0;i<gr_width;i++)
 						su+=s->readhist[i]+s->writehist[i];
 					if (su<=0)
-						return 1;
+						goto dohide;
 					break;
 				case E_GR_SW:
 					if (!memcmp(s->sihist,iohist_z,gr_width))
-						return 1;
+						goto dohide;
 					break;
 			}
+		}
+		if (0) {
+		dohide:
+			if (s->blkio_val<=0&&s->read_val+s->write_val<=0)
+				return 1;
 		}
 	}
 	if (config.f.hideexited&&s->exited)
