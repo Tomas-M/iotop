@@ -1,0 +1,24 @@
+From: Boian Bonev <bbonev@ipacct.com>
+Date: Tue Oct 17 01:23:35 UTC 2023
+Forwarded: 4d0ccbbc62237b7b48764244461b5d47a1befb67
+Subject: Fix busy looping after ESC key
+
+---
+--- a/src/view_curses.c
++++ b/src/view_curses.c
+@@ -1562,6 +1562,7 @@ static inline int curses_key_search(int
+ 			nocbreak();
+ 			k2=getch();
+ 			cbreak();
++			halfdelay(2);
+ 			key_log(k2,1);
+ 			if (k2!=ERR) {
+ 				switch (k2) {
+@@ -1995,6 +1996,7 @@ static inline int curses_key(int ch) {
+ 			nocbreak();
+ 			k2=getch();
+ 			cbreak();
++			halfdelay(2);
+ 			key_log(k2,1);
+ 			if (k2!=ERR) {
+ 				switch (k2) {

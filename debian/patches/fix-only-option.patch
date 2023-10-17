@@ -1,0 +1,64 @@
+From: Boian Bonev <bbonev@ipacct.com>
+Date: Tue Oct 17 01:23:35 UTC 2023
+Forwarded: b787f78c578563f3c2ca158e02619695167f2b03
+Subject: Let option only never hide processes with current IO
+
+---
+--- a/src/view_curses.c
++++ b/src/view_curses.c
+@@ -289,10 +289,10 @@ static inline int filter_view(struct xxx
+ 		if (config.f.hidegraph) {
+ 			if (has_tda) {
+ 				if (s->blkio_val<=0)
+-					return 1;
++					goto dohide;
+ 			} else {
+ 				if (s->read_val+s->write_val<=0)
+-					return 1;
++					goto dohide;
+ 			}
+ 		} else {
+ 			double su=0;
+@@ -301,32 +301,37 @@ static inline int filter_view(struct xxx
+ 			switch (masked_grtype(0)) {
+ 				case E_GR_IO:
+ 					if (!memcmp(s->iohist,iohist_z,gr_width))
+-						return 1;
++						goto dohide;
+ 					break;
+ 				case E_GR_R:
+ 					for (i=0;i<gr_width;i++)
+ 						su+=s->readhist[i];
+ 					if (su<=0)
+-						return 1;
++						goto dohide;
+ 					break;
+ 				case E_GR_W:
+ 					for (i=0;i<gr_width;i++)
+ 						su+=s->writehist[i];
+ 					if (su<=0)
+-						return 1;
++						goto dohide;
+ 					break;
+ 				case E_GR_RW:
+ 					for (i=0;i<gr_width;i++)
+ 						su+=s->readhist[i]+s->writehist[i];
+ 					if (su<=0)
+-						return 1;
++						goto dohide;
+ 					break;
+ 				case E_GR_SW:
+ 					if (!memcmp(s->sihist,iohist_z,gr_width))
+-						return 1;
++						goto dohide;
+ 					break;
+ 			}
+ 		}
++		if (0) {
++		dohide:
++			if (s->blkio_val<=0&&s->read_val+s->write_val<=0)
++				return 1;
++		}
+ 	}
+ 	if (config.f.hideexited&&s->exited)
+ 		return 1;

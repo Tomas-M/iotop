@@ -1,3 +1,13 @@
+iotop-c (1.23-1+deb12u1) bookworm; urgency=medium
+
+  * Backport fixes from 1.25
+    - Fix ESC makes iotop busy loop
+    - Fix the logic in 'only' option
+  * Backport fixes from 1.24
+    - Fix ASCII graph problem in R, W & RW modes
+
+ -- Boian Bonev <bbonev@ipacct.com>  Tue, 17 Oct 2023 01:06:47 +0000
+
 iotop-c (1.23-1) unstable; urgency=medium
 
   [ Debian Janitor ]
