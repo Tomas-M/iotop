@@ -72,6 +72,15 @@ Use the following command:
     sudo xbps-install iotop-c
 </details>
 
+<details>
+  <summary>Arch Linux</summary>
+&nbsp;  
+
+Use the following command:
+    
+    sudo pacman -S iotop-c
+</details>
+
 ## How to build from source
 Please note that the installation and the usage of this program require root access.
 
