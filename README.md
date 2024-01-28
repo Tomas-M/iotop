@@ -233,6 +233,7 @@ The iotop community gathers in #iotop on libera.chat:
 
 Notable contributions (ordered by time of last contribution):
 
+-   Christian Heusel &lt;[christian@heusel.eu](mailto:christian@heusel.eu)&gt; - Arch Linux packaging and testing
 -   Leah Neukirchen &lt;[leah@vuxu.org](mailto:leah@vuxu.org)&gt; - Void Linux packaging and testing
 -   Vitaly Chikunov &lt;[vt@altlinux.org](mailto:vt@altlinux.org)&gt; - ALT Linux packaging and testing
 -   Matteo Bernardini &lt;[ponce@slackbuilds.org](mailto:ponce@slackbuilds.org)&gt; - SlackBuilds packaging and testing
