@@ -516,7 +516,7 @@ static inline void view_help(void) {
 					sprintf(p->descr,p->t,!config.f.hidecmd?"on":"off");
 					break;
 				case 'g': {
-					char *grt="";
+					char *grt;
 
 					switch (config.f.grtype) {
 						case E_GR_IO:
@@ -567,7 +567,7 @@ static inline void view_help(void) {
 					sprintf(p->descr,p->t,config.f.hideclock?"off":"on");
 					break;
 				case 0: { // only task_delayacct has no key
-					char *tda="";
+					char *tda;
 
 					if (has_task_delayacct())
 						tda=read_task_delayacct()?"dynamic on":"dynamic off";
