@@ -247,6 +247,9 @@ inline int config_file_save(void) {
 	// --ascii
 	if (!config.f.unicode)
 		fprintf(cf,"--ascii\n");
+	// --hide-time
+	if (config.f.hideclock)
+		fprintf(cf,"--hide-time\n");
 
 	fclose(cf);
 

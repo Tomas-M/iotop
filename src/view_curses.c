@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define GCC_PRINTF
 
 #include <pwd.h>
+#include <time.h>
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -169,6 +170,7 @@ static char tasci[200]="Toggle using Unicode/ASCII characters [Unicode]";
 static char tcolr[200]="Toggle colorizing values [off]";
 static char txxxi[200]="Toggle exited processes xxx/inverse [inverse]";
 static char texit[200]="Toggle showing exited processes [off]";
+static char tcloc[200]="Toggle showing time clock [on]";
 static char tfrez[200]="Toggle data freeze [off]";
 static char units[200]="Toggle SI units [1024]";
 static char unitt[200]="Cycle unit threshold [10]";
@@ -211,6 +213,7 @@ const s_helpitem thelp[]={
 	{.descr=tcolr,.t="Toggle colorizing values [%s]",.k2="l",.k3="L"},
 	{.descr=txxxi,.t="Toggle exited processes xxx/inverse [%s]",.k2="x",.k3="X"},
 	{.descr=texit,.t="Toggle showing exited processes [%s]",.k2="e",.k3="E"},
+	{.descr=tcloc,.t="Toggle showing time clock [%s]",.k2="T"},
 	{.descr=tfrez,.t="Toggle data freeze [%s]",.k2="s",.k3="S"},
 	{.descr=units,.t="Toggle SI units [%d]",.k1="<Ctrl-B>",.k2="b",.k3=""},
 	{.descr=unitt,.t="Cycle unit threshold [%d]",.k1="<Ctrl-R>",.k2="t",.k3=""},
@@ -560,6 +563,9 @@ static inline void view_help(void) {
 				case 't':
 					sprintf(p->descr,p->t,config.f.threshold);
 					break;
+				case 'T':
+					sprintf(p->descr,p->t,config.f.hideclock?"off":"on");
+					break;
 				case 0: { // only task_delayacct has no key
 					char *tda="";
 
@@ -877,13 +883,15 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	}
 	attroff(A_REVERSE);
 
-	if ((dontrefresh||!has_tda)&&(maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1)<(size_t)maxx)) {
+	if ((dontrefresh||!has_tda||!config.f.hideclock)&&(maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1)<(size_t)maxx)) {
 		size_t xpos=maxx;
 
 		if (!has_tda)
 			xpos-=strlen("[T]");
 		if (dontrefresh)
 			xpos-=strlen("[frozen]");
+		if (!config.f.hideclock)
+			xpos-=strlen("(00:00:00)");
 
 		// don't step on column descriptions
 		if (xpos<maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1))
@@ -897,6 +905,18 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		}
 		if (dontrefresh)
 			mvprintw(ionice_line+1,xpos+(has_tda?0:strlen("[T]")),"[frozen]");
+		if (!config.f.hideclock) {
+			time_t t=time(NULL);
+			struct tm *tm;
+			char ts[20];
+
+			tm=localtime(&t);
+			if (strftime(ts,sizeof ts,"(%H:%M:%S)",tm)==0)
+				strcpy(ts,"( error! )");
+			attron(A_REVERSE);
+			mvprintw(ionice_line+1,xpos+(has_tda?0:strlen("[T]"))+(dontrefresh?strlen("[frozen]"):0),"%s",ts);
+			attroff(A_REVERSE);
+		}
 	}
 	// easiest place to print debug info
 	//mvprintw(ionice_line+1,maxx-maxcmdline+strlen(COLUMN_L(0))+1," ... ",...);
@@ -2123,6 +2143,9 @@ static inline int curses_key(int ch) {
 		case 'X':
 			config.f.deadx=!config.f.deadx;
 			break;
+		case 'T':
+			config.f.hideclock=!config.f.hideclock;
+			break;
 		case KEY_ESCAPE: // ESC
 			nocbreak();
 			k2=getch();
@@ -2426,6 +2449,9 @@ inline void view_curses_loop(void) {
 			}
 			get_vm_counters(&act.read_bytes,&act.write_bytes);
 			act.ts_c=now;
+			refresh=1;
+		} else if (bef+1000*params.delay<now&&dontrefresh&&!config.f.hideclock) {
+			bef=now;
 			refresh=1;
 		}
 		if (refresh&&k==ERR)

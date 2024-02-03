@@ -62,6 +62,7 @@ typedef union {
 		int hideexited;
 		int nocolor;
 		int reverse_graph;
+		int hideclock;
 		int accumbw;
 		int unicode; // this and below are not part of opts
 		e_grtype grtype;
@@ -71,7 +72,7 @@ typedef union {
 		int base; // 1000 or 1024
 		int threshold; // 1..10
 	} f;
-	int opts[22];
+	int opts[23];
 } config_t;
 
 typedef struct {
