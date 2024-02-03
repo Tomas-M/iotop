@@ -1,6 +1,6 @@
 Name:           iotop-c
-Version:        1.25
-Release:        4%{?dist}
+Version:        1.26
+Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
 License:        GPL-2.0-or-later
@@ -53,6 +53,9 @@ V=1 STRIP=: %make_install
 %{_mandir}/man8/iotop.8*
 
 %changelog
+* Sat 03 Feb 2024 Boian Bonev <bbonev@ipacct.com> - 1.26-1
+- Update to latest ver 1.26
+
 * Thu Feb 01 2024 Michal Hlavinka <mhlavink@redhat.com> - 1.25-4
 - replace iotop https://fedoraproject.org/wiki/Changes/Replace_iotop_with_iotop-c
 - iotop-c executable renamed back to iotop
