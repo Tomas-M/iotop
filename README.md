@@ -206,6 +206,8 @@ cd iotop && git checkout master && git pull && make clean && make -j
         --show-exited      show exited processes
     -l, --no-color         do not colorize values
         --color            colorize values
+    -T, --hide-time        hide current time
+        --show-time        show current time
         --si               use SI units of 1000 when printing values
         --no-si            use non-SI units of 1024 when printing values
         --threshold=1..10  threshold to switch to next unit
