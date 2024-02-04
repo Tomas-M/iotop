@@ -519,6 +519,7 @@ static inline void view_help(void) {
 					char *grt;
 
 					switch (config.f.grtype) {
+						default:
 						case E_GR_IO:
 							grt="IO";
 							break;
