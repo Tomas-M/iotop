@@ -72,6 +72,15 @@ Use the following command:
     sudo xbps-install iotop-c
 </details>
 
+<details>
+  <summary>Arch Linux</summary>
+&nbsp;  
+
+Use the following command:
+    
+    sudo pacman -S iotop-c
+</details>
+
 ## How to build from source
 Please note that the installation and the usage of this program require root access.
 
@@ -197,6 +206,8 @@ cd iotop && git checkout master && git pull && make clean && make -j
         --show-exited      show exited processes
     -l, --no-color         do not colorize values
         --color            colorize values
+    -T, --hide-time        hide current time
+        --show-time        show current time
         --si               use SI units of 1000 when printing values
         --no-si            use non-SI units of 1024 when printing values
         --threshold=1..10  threshold to switch to next unit
@@ -224,6 +235,7 @@ The iotop community gathers in #iotop on libera.chat:
 
 Notable contributions (ordered by time of last contribution):
 
+-   Christian Heusel &lt;[christian@heusel.eu](mailto:christian@heusel.eu)&gt; - Arch Linux packaging and testing
 -   Leah Neukirchen &lt;[leah@vuxu.org](mailto:leah@vuxu.org)&gt; - Void Linux packaging and testing
 -   Vitaly Chikunov &lt;[vt@altlinux.org](mailto:vt@altlinux.org)&gt; - ALT Linux packaging and testing
 -   Matteo Bernardini &lt;[ponce@slackbuilds.org](mailto:ponce@slackbuilds.org)&gt; - SlackBuilds packaging and testing

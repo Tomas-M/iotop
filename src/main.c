@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020-2023  Boian Bonev
+Copyright (C) 2020-2024  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -47,6 +47,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_UNICODE 0x115
 #define OPT_COLOR 0x116
 #define OPT_NO_ACCUM_BW 0x117
+#define OPT_SHOW_TIME 0x118
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -65,7 +66,7 @@ inline void init_params(void) {
 	params.user_id=-1;
 }
 
-static const char str_opt[]="boPaktqc123456789xelRA";
+static const char str_opt[]="boPaktqc123456789xelRTA";
 
 static inline void print_help(void) {
 	printf(
@@ -128,6 +129,8 @@ static inline void print_help(void) {
 		"      --show-exited      show exited processes\n"
 		"  -l, --no-color         do not colorize values\n"
 		"      --color            colorize values\n"
+		"  -T, --hide-time        hide current time\n"
+		"      --show-time        show current time\n"
 		"      --si               use SI units of 1000 when printing values\n"
 		"      --no-si            use non-SI units of 1024 when printing values\n"
 		"      --threshold=1..10  threshold to switch to next unit\n"
@@ -211,6 +214,8 @@ static inline void parse_args(int clac,char **clav) {
 				{"show-graph",no_argument,NULL,OPT_SHOW_GRAPH},
 				{"hide-command",no_argument,NULL,'9'},
 				{"show-command",no_argument,NULL,OPT_SHOW_CMD},
+				{"hide-time",no_argument,NULL,'T'},
+				{"show-time",no_argument,NULL,OPT_SHOW_TIME},
 				{"dead-x",no_argument,NULL,'x'},
 				{"no-dead-x",no_argument,NULL,OPT_NO_DEADX},
 				{"hide-exited",no_argument,NULL,'e'},
@@ -229,7 +234,7 @@ static inline void parse_args(int clac,char **clav) {
 				{NULL,0,NULL,0}
 			};
 
-			int c=getopt_long(argc,argv,"vhbon:d:p:u:Paktqc123456789xelRg:H:WA",long_options,NULL);
+			int c=getopt_long(argc,argv,"boPaktqc123456789xelRTAn:d:p:u:g:H:vhW",long_options,NULL);
 
 			if (c==-1) {
 				if (optind<argc) {
@@ -284,6 +289,7 @@ static inline void parse_args(int clac,char **clav) {
 				case 'e':
 				case 'l':
 				case 'R':
+				case 'T':
 				case_opt:
 					config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
 					break;
@@ -407,6 +413,9 @@ static inline void parse_args(int clac,char **clav) {
 					break;
 				case OPT_NO_ACCUM_BW:
 					config.f.accumbw=0;
+					break;
+				case OPT_SHOW_TIME:
+					config.f.hideclock=0;
 					break;
 				default:
 					exit(EXIT_FAILURE);

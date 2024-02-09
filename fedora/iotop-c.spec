@@ -1,5 +1,5 @@
 Name:           iotop-c
-Version:        1.25
+Version:        1.26
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
@@ -8,6 +8,9 @@ URL:            https://github.com/Tomas-M/iotop/
 Source0:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.xz
 Source1:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.xz.asc
 Source2:        https://raw.githubusercontent.com/Tomas-M/iotop/v%{version}/debian/upstream/signing-key.asc
+
+Provides:       iotop
+Obsoletes:      iotop < 0.7
 
 BuildRequires:  gcc
 BuildRequires:  gnupg2
@@ -42,16 +45,27 @@ NO_FLTO=1 %make_build
 
 %install
 V=1 STRIP=: %make_install
-mv %{buildroot}%{_sbindir}/iotop %{buildroot}%{_sbindir}/iotop-c
-mv %{buildroot}%{_mandir}/man8/iotop.8 %{buildroot}%{_mandir}/man8/iotop-c.8
 
 %files
 %license COPYING
 %license LICENSE
-%{_sbindir}/iotop-c
-%{_mandir}/man8/iotop-c.8*
+%{_sbindir}/iotop
+%{_mandir}/man8/iotop.8*
 
 %changelog
+* Sat 03 Feb 2024 Boian Bonev <bbonev@ipacct.com> - 1.26-1
+- Update to latest ver 1.26
+
+* Thu Feb 01 2024 Michal Hlavinka <mhlavink@redhat.com> - 1.25-4
+- replace iotop https://fedoraproject.org/wiki/Changes/Replace_iotop_with_iotop-c
+- iotop-c executable renamed back to iotop
+
+* Wed Jan 24 2024 Fedora Release Engineering <releng@fedoraproject.org> - 1.25-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_40_Mass_Rebuild
+
+* Sat Jan 20 2024 Fedora Release Engineering <releng@fedoraproject.org> - 1.25-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_40_Mass_Rebuild
+
 * Sat Oct 14 2023 Boian Bonev <bbonev@ipacct.com> - 1.25-1
 - Update to latest ver 1.25
 
