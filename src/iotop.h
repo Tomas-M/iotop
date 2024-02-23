@@ -188,7 +188,7 @@ inline char *u8strpadt(const char *s,ssize_t len);
 inline char *esc_low_ascii(char *p);
 
 typedef void (*pg_cb)(pid_t pid,pid_t tid,struct xxxid_stats_arr *hint1,filter_callback hint2);
-inline void pidgen_cb(pg_cb cb,void *hint1,void *hint2);
+inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hint2);
 
 
 inline int is_a_dir(const char *p);

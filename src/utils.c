@@ -118,7 +118,7 @@ inline char *read_cmdline(int pid,int isshort) {
 	return rv;
 }
 
-inline void pidgen_cb(pg_cb cb,void *hint1,void *hint2) {
+inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hint2) {
 	DIR *pr;
 
 	if ((pr=opendir("/proc"))) {
