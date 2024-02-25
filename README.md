@@ -235,6 +235,7 @@ The iotop community gathers in #iotop on libera.chat:
 
 Notable contributions (ordered by time of last contribution):
 
+-   Miko Larsson &lt;[mikoxyzzz@gmail.com](mailto:mikoxyzzz@gmail.com)&gt; - Control-flow integrity (CFI) fixes and testing
 -   Christian Heusel &lt;[christian@heusel.eu](mailto:christian@heusel.eu)&gt; - Arch Linux packaging and testing
 -   Leah Neukirchen &lt;[leah@vuxu.org](mailto:leah@vuxu.org)&gt; - Void Linux packaging and testing
 -   Vitaly Chikunov &lt;[vt@altlinux.org](mailto:vt@altlinux.org)&gt; - ALT Linux packaging and testing
