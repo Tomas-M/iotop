@@ -316,8 +316,24 @@ Note that all options after this one will be ignored.
 Exit
 .TP
 \fBW\fR
-Save current settings to configuration file in
-\fB$HOME/.config/iotop/iotoprc\fR
+Save current settings to configuration file in a place conforming to XDG Base
+Directory Specification. The respective path is created in case it does not
+exist. In case of error creating or accessing the config file, the error is
+silently ignored and the configuration is not saved.
+
+.RS
+\fB$XDG_CONFIG_HOME/iotop/iotoprc\fR - if environment variable XDG_CONFIG_HOME
+is set.
+.RE
+
+.RS
+\fB$HOME/.config/iotop/iotoprc\fR - if environment variable XDG_CONFIG_HOME is
+not set but HOME is set.
+.RE
+
+.RS
+\fB.config/iotop/iotoprc\fR - if neither XDG_CONFIG_HOME nor HOME are set.
+.RE
 .TP
 \fBD\fR
 Reset all settings to their default values
