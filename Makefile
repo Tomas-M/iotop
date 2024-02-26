@@ -2,6 +2,8 @@
 #   make NO_FLTO=1
 # and this to enable verbose mode:
 #   make V=1
+# an example how to build with CFI (https://en.wikipedia.org/wiki/Control-flow_integrity)
+#   CC=clang-17 CFLAGS="-fsanitize=cfi -fno-sanitize-trap -fvisibility=hidden" make
 
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
