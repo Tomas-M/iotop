@@ -44,13 +44,17 @@ inline int get_vm_counters(uint64_t *pgpgin,uint64_t *pgpgou) {
 
 	for (;;) {
 		ssize_t l=read(fd,buf+bp,bs-bp);
+
 		if (l<=0)
 			break;
 		if (l==bs-bp) {
 			t=realloc(buf,bs+BSIZ);
 
 			if (!t) {
+				#pragma GCC diagnostic push
+				#pragma GCC diagnostic ignored "-Wuse-after-free"
 				free(buf); // gcc-13 yields false positive -Wuse-after-free here
+				#pragma GCC diagnostic pop
 				close(fd);
 				return ENOMEM;
 			}
