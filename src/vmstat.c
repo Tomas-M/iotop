@@ -51,7 +51,13 @@ inline int get_vm_counters(uint64_t *pgpgin,uint64_t *pgpgou) {
 			t=realloc(buf,bs+BSIZ);
 
 			if (!t) {
+				// it requires hell of an effort to silence a bogus warning...
 				#pragma GCC diagnostic push
+				// silence gcc about unknown -Wunknown-warning-option
+				#pragma GCC diagnostic ignored "-Wpragmas"
+				// silence clang about unknown -Wuse-after-free
+				#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+				// silence the warning itself
 				#pragma GCC diagnostic ignored "-Wuse-after-free"
 				free(buf); // gcc-13 yields false positive -Wuse-after-free here
 				#pragma GCC diagnostic pop
