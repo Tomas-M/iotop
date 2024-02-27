@@ -57,6 +57,16 @@ NEEDLRT:=$(shell if $(CC) -E glibcvertest.h -o -|grep IOTOP_NEED_LRT|grep -q yes
 HAVESREA:=$(shell if $(CC) -mno-stackrealign -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 # old comiplers do not have -Wdate-time
 HAVEWDTI:=$(shell if $(CC) -Wdate-time -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
+# old compilers can not generate dependecies
+HAVEDEPS:=$(shell if $(CC) -MM -MT /dev/null -MF /dev/null /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
+# old compilers do not understand C standard
+HAVECSTD:=$(shell if $(CC) --std=gnu89 -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
+# old compilers do not understand -flto=auto
+HAVEFLTA:=$(shell if $(CC) -flto=auto -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
+# old compilers do not understand -flto at all
+HAVEFLTO:=$(shell if $(CC) -flto -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
+# old compilers do not understand -pie; clang yields error when stderr is redirected :(
+HAVELPIE:=$(shell if $(CC) -Wno-unused-command-line-argument -pie -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 
 MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -Wall -Wextra -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 --std=gnu89 -fPIE
 MYLIBS:=$(NCLD) $(LIBS)
@@ -72,6 +82,31 @@ MYCFLAGS:=$(filter-out -Wdate-time,$(MYCFLAGS))
 MYLDFLAGS:=$(filter-out -Wdate-time,$(MYLDFLAGS))
 endif
 
+ifeq ("$(HAVECSTD)","no")
+MYCFLAGS:=$(filter-out --std=gnu89,$(MYCFLAGS))
+MYLDFLAGS:=$(filter-out --std=gnu89,$(MYLDFLAGS))
+MYCFLAGS:=$(filter-out -D_FORTIFY_SOURCE=2,$(MYCFLAGS))
+MYLDFLAGS:=$(filter-out -D_FORTIFY_SOURCE=2,$(MYLDFLAGS))
+endif
+
+ifeq ("$(HAVEFLTA)","no")
+ifndef NO_FLTO
+ifeq ("$(HAVEFLTA)","no")
+MYCFLAGS:=$(filter-out -flto=auto,$(MYCFLAGS))
+MYLDFLAGS:=$(filter-out -flto=auto,$(MYLDFLAGS))
+else
+MYCFLAGS:=$(filter-out -flto=auto,$(MYCFLAGS))
+MYLDFLAGS:=$(filter-out -flto=auto,$(MYLDFLAGS))
+MYCFLAGS+=-flto
+MYLDFLAGS+=-flto
+endif
+endif
+endif
+
+ifeq ("$(HAVELPIE)","no")
+MYLDFLAGS:=$(filter-out -pie,$(MYLDFLAGS))
+endif
+
 ifeq ("$(NEEDLRT)","need")
 MYLDFLAGS+=-lrt
 endif
@@ -84,6 +119,12 @@ Q:=@
 E:=@echo
 endif
 
+ifeq ("$(HAVEDEPS)","no")
+NDEP:=@true
+else
+NDEP:=
+endif
+
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
@@ -91,8 +132,8 @@ $(TARGET): $(OBJS)
 	$(Q)$(CC) -o $@ $(MYLDFLAGS) $^ $(MYLIBS)
 
 bld/%.o: src/%.c bld/.mkdir
-	$(E) DE $@
-	$(Q)$(CC) $(MYCFLAGS) -MM -MT $@ -MF $(patsubst %.o,%.d,$@) $<
+	$(NDEP) $(E) DE $@
+	$(NDEP) $(Q)$(CC) $(MYCFLAGS) -MM -MT $@ -MF $(patsubst %.o,%.d,$@) $<
 	$(E) CC $@
 	$(Q)$(CC) $(MYCFLAGS) -c -o $@ $<
 
@@ -144,6 +185,11 @@ pv:
 	@echo NEEDLRT: $(NEEDLRT)
 	@echo HAVESREA: $(HAVESREA)
 	@echo HAVEWDTI: $(HAVEWDTI)
+	@echo HAVEDEPS: $(HAVEDEPS)
+	@echo HAVECSTD: $(HAVECSTD)
+	@echo HAVEFLTA: $(HAVEFLTA)
+	@echo HAVEFLTO: $(HAVEFLTO)
+	@echo HAVELPIE: $(HAVELPIE)
 	@echo MYCFLAGS: $(MYCFLAGS)
 	@echo MYLDFLAGS: $(MYLDFLAGS)
 	@echo MYLIBS: $(MYLIBS)
