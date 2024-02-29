@@ -292,7 +292,7 @@ inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
 	if (!a)
 		return NULL;
 
-	pidgen_cb((pg_cb)pid_cb,a,filter);
+	pidgen_cb(pid_cb,a,filter);
 	return a;
 }
 
