@@ -23,6 +23,8 @@ inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write) {
 	*read=*write=0;
 
 	for (i=0;i<cs->length;i++) {
+		if (cs->arr[i]->pid!=cs->arr[i]->tid)
+			continue;
 		if (!config.f.accumulated) {
 			*read+=cs->arr[i]->read_val;
 			*write+=cs->arr[i]->write_val;
