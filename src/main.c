@@ -143,6 +143,7 @@ static inline void print_help(void) {
 }
 
 static inline void parse_args(int clac,char **clav) {
+	char *no_renice=getenv("IOTOP_NO_RENICE");
 	char *no_color=getenv("NO_COLOR");
 	int v;
 	int i;
@@ -158,6 +159,9 @@ static inline void parse_args(int clac,char **clav) {
 	// implement https://no-color.org/ proposal
 	if (no_color&&*no_color)
 		config.f.nocolor=1;
+	// allow disabling process re-nice
+	if (no_renice&&*no_renice)
+		config.f.norenice=1;
 
 	for (i=0;i<2;i++) {
 		char **argv;

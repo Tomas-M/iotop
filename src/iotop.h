@@ -72,6 +72,7 @@ typedef union {
 		int sort_order;
 		int base; // 1000 or 1024
 		int threshold; // 1..10
+		int norenice;
 	} f;
 	int opts[24];
 } config_t;

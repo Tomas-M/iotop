@@ -170,6 +170,7 @@ static char tasci[200]="Toggle using Unicode/ASCII characters [Unicode]";
 static char tcolr[200]="Toggle colorizing values [off]";
 static char txxxi[200]="Toggle exited processes xxx/inverse [inverse]";
 static char tinvr[200]="Toggle inverse interface (black on white) [off]";
+static char tnice[200]="IOnice a process/thread [DISABLED]";
 static char texit[200]="Toggle showing exited processes [off]";
 static char tcloc[200]="Toggle showing time clock [on]";
 static char tfrez[200]="Toggle data freeze [off]";
@@ -207,7 +208,7 @@ const s_helpitem thelp[]={
 	{.descr=tgrdi,.t="Toggle reverse GRAPH direction [%s]",.k2="R"},
 	{.descr="Toggle showing inline help",.k2="?"},
 	{.descr="Toggle showing this help [on]",.k2="h",.k3="H"},
-	{.descr="IOnice a process/thread",.k2="i",.k3="I"},
+	{.descr=tnice,.t="IOnice a process/thread%s",.k2="i",.k3="I"},
 	{.descr="Change UID and PID filters",.k2="f",.k3="F"},
 	{.descr="Search cmdline by regex",.k2="/"},
 	{.descr=tasci,.t="Toggle using Unicode/ASCII characters [%s]",.k2="u",.k3="U"},
@@ -611,10 +612,13 @@ static inline void view_help(void) {
 						tda="static on";
 					sprintf(p->descr,p->t,tda);
 					break;
+				}
 				case 'n':
 					sprintf(p->descr,p->t,config.f.inverse?"on":"off");
 					break;
-				}
+				case 'i':
+					sprintf(p->descr,p->t,config.f.norenice?" [DISABLED]":"");
+					break;
 			}
 	}
 
@@ -2288,7 +2292,7 @@ static inline int curses_key(int ch) {
 			break;
 		case 'i':
 		case 'I':
-			if (!in_filter) {
+			if (!config.f.norenice&&!in_filter) {
 				in_ionice=1;
 				ionice_id[0]=0;
 				ionice_cl=1;
