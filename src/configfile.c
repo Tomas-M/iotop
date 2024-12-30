@@ -261,6 +261,9 @@ inline int config_file_save(void) {
 	// --hide-time
 	if (config.f.hideclock)
 		fprintf(cf,"--hide-time\n");
+	// --inverse
+	if (config.f.inverse)
+		fprintf(cf,"--inverse\n");
 
 	fclose(cf);
 

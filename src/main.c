@@ -66,7 +66,7 @@ inline void init_params(void) {
 	params.user_id=-1;
 }
 
-static const char str_opt[]="boPaktqc123456789xelRTA";
+static const char str_opt[]="boPaktqc123456789xelRTAN";
 
 static inline void print_help(void) {
 	printf(
@@ -136,6 +136,7 @@ static inline void print_help(void) {
 		"      --threshold=1..10  threshold to switch to next unit\n"
 		"      --ascii            disable using Unicode\n"
 		"      --unicode          use Unicode drawing chars\n"
+		"  -N, --inverse          use inverse interface (black on white)\n"
 		"  -W, --write            write preceding options to the config and exit\n",
 		progname
 	);
@@ -231,10 +232,11 @@ static inline void parse_args(int clac,char **clav) {
 				{"ascii",no_argument,NULL,OPT_ASCII},
 				{"unicode",no_argument,NULL,OPT_UNICODE},
 				{"write",no_argument,NULL,'W'},
+				{"inverse",no_argument,NULL,'N'},
 				{NULL,0,NULL,0}
 			};
 
-			int c=getopt_long(argc,argv,"boPaktqc123456789xelRTAn:d:p:u:g:H:vhW",long_options,NULL);
+			int c=getopt_long(argc,argv,"boPaktqc123456789xelRTAn:d:p:u:g:H:vhWN",long_options,NULL);
 
 			if (c==-1) {
 				if (optind<argc) {
@@ -290,6 +292,7 @@ static inline void parse_args(int clac,char **clav) {
 				case 'l':
 				case 'R':
 				case 'T':
+				case 'N':
 				case_opt:
 					config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
 					break;

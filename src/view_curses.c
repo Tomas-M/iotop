@@ -169,6 +169,7 @@ static char tgrdi[200]="Toggle reverse GRAPH direction [right]";
 static char tasci[200]="Toggle using Unicode/ASCII characters [Unicode]";
 static char tcolr[200]="Toggle colorizing values [off]";
 static char txxxi[200]="Toggle exited processes xxx/inverse [inverse]";
+static char tinvr[200]="Toggle inverse interface (black on white) [off]";
 static char texit[200]="Toggle showing exited processes [off]";
 static char tcloc[200]="Toggle showing time clock [on]";
 static char tfrez[200]="Toggle data freeze [off]";
@@ -212,6 +213,7 @@ const s_helpitem thelp[]={
 	{.descr=tasci,.t="Toggle using Unicode/ASCII characters [%s]",.k2="u",.k3="U"},
 	{.descr=tcolr,.t="Toggle colorizing values [%s]",.k2="l",.k3="L"},
 	{.descr=txxxi,.t="Toggle exited processes xxx/inverse [%s]",.k2="x",.k3="X"},
+	{.descr=tinvr,.t="Toggle inverse interface (black on white) [%s]",.k2="n",.k3="N"},
 	{.descr=texit,.t="Toggle showing exited processes [%s]",.k2="e",.k3="E"},
 	{.descr=tcloc,.t="Toggle showing time clock [%s]",.k2="T"},
 	{.descr=tfrez,.t="Toggle data freeze [%s]",.k2="s",.k3="S"},
@@ -379,14 +381,23 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 	if (!items) // avoid div by 0
 		items++;
 
-	attron(A_REVERSE);
+	if (config.f.inverse)
+		attroff(A_REVERSE);
+	else
+		attron(A_REVERSE);
 	if (from==to) {
 		if (config.f.unicode&&has_unicode) {
 			mvprintw(from,xpos,"%s",scroll_u[3]);
 		} else {
-			attron(A_REVERSE);
+			if (config.f.inverse)
+				attroff(A_REVERSE);
+			else
+				attron(A_REVERSE);
 			mvprintw(from,xpos,"%s",scroll_a[3]);
-			attroff(A_REVERSE);
+			if (config.f.inverse)
+				attron(A_REVERSE);
+			else
+				attroff(A_REVERSE);
 		}
 	} else {
 		int visible=to-from+1; // count of visible items
@@ -413,9 +424,15 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 
 		for (i=from;i<=to;i++) {
 			if (i==from||i==to) {
-				attron(A_REVERSE);
+				if (config.f.inverse)
+					attroff(A_REVERSE);
+				else
+					attron(A_REVERSE);
 				mvprintw(i,xpos,"%s",(config.f.unicode&&has_unicode)?scroll_u[i==from?1:2]:scroll_a[i==from?1:2]);
-				attroff(A_REVERSE);
+				if (config.f.inverse)
+					attron(A_REVERSE);
+				else
+					attroff(A_REVERSE);
 			}
 			if (i!=from&&i!=to) {
 				if (config.f.unicode&&has_unicode) {
@@ -427,25 +444,43 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 						if (i==begpos/8)
 							mvprintw(i,xpos,"%s",scroll_u[4+7-begpos%8]);
 						if (i==endpos/8&&i!=begpos/8) {
-							attron(A_REVERSE);
+							if (config.f.inverse)
+								attroff(A_REVERSE);
+							else
+								attron(A_REVERSE);
 							mvprintw(i,xpos,"%s",scroll_u[4+7-endpos%8]);
-							attroff(A_REVERSE);
+							if (config.f.inverse)
+								attron(A_REVERSE);
+							else
+								attroff(A_REVERSE);
 						}
 						if (begpos/8<i&&i<endpos/8)
 							mvprintw(i,xpos,"%s",scroll_u[11]);
 					}
 				} else {
 					if (items<=to-from+1) {
-						attron(A_REVERSE);
+						if (config.f.inverse)
+							attroff(A_REVERSE);
+						else
+							attron(A_REVERSE);
 						mvprintw(i,xpos,"%s",scroll_a[0]);
-						attroff(A_REVERSE);
+						if (config.f.inverse)
+							attron(A_REVERSE);
+						else
+							attroff(A_REVERSE);
 					} else {
 						if (i<begpos||endpos<i)
 							mvprintw(i,xpos,"%s",scroll_a[0]);
 						else {
-							attron(A_REVERSE);
+							if (config.f.inverse)
+								attroff(A_REVERSE);
+							else
+								attron(A_REVERSE);
 							mvprintw(i,xpos,"%s",scroll_a[0]);
-							attroff(A_REVERSE);
+							if (config.f.inverse)
+								attron(A_REVERSE);
+							else
+								attroff(A_REVERSE);
 						}
 					}
 				}
@@ -576,6 +611,9 @@ static inline void view_help(void) {
 						tda="static on";
 					sprintf(p->descr,p->t,tda);
 					break;
+				case 'n':
+					sprintf(p->descr,p->t,config.f.inverse?"on":"off");
+					break;
 				}
 			}
 	}
@@ -591,28 +629,52 @@ static inline void view_help(void) {
 	if (helppos<0) // can't go before start
 		helppos=0;
 
+	if (config.f.inverse)
+		wattron(whelp,A_REVERSE);
+	else
+		wattroff(whelp,A_REVERSE);
 	mvwprintw(whelp,0,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
-	wattron(whelp,A_REVERSE);
+	if (config.f.inverse)
+		wattroff(whelp,A_REVERSE);
+	else
+		wattron(whelp,A_REVERSE);
 	wprintw(whelp," help ");
-	wattroff(whelp,A_REVERSE);
+	if (config.f.inverse)
+		wattron(whelp,A_REVERSE);
+	else
+		wattroff(whelp,A_REVERSE);
 	for (i=1+strlen(" help ");i<hw;i++)
 		wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	for (p=thelp+helppos,i=1;i<hh-1&&p->descr;i++,p++)
 		mvwprintw(whelp,i,0," %-*.*s %-*.*s %-*.*s - %-*.*s ",a,a,p->k1?p->k1:"",b,b,p->k2?p->k2:"",c,c,p->k3?p->k3:"",d,d,p->descr);
 	mvwprintw(whelp,hh-1,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
-	wattron(whelp,A_REVERSE|A_DIM);
+	if (config.f.inverse) {
+		wattron(whelp,A_DIM);
+		wattroff(whelp,A_REVERSE);
+	} else
+		wattron(whelp,A_REVERSE|A_DIM);
 	for (i=1;i<hw&&i<1+(int)strlen(" iotop "VERSION" ");i++)
 		mvwprintw(whelp,hh-1,i,"%c",(" iotop "VERSION" ")[i-1]);
-	wattroff(whelp,A_REVERSE|A_DIM);
+	if (config.f.inverse) {
+		wattroff(whelp,A_DIM);
+		wattron(whelp,A_REVERSE);
+	} else
+		wattroff(whelp,A_REVERSE|A_DIM);
 	if (can_scroll) {
 		int vp=1+strlen(" iotop "VERSION" ");
 
 		for (i=vp;i<hw&&i<vp+2;i++)
 			wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
-		wattron(whelp,A_REVERSE);
+		if (config.f.inverse)
+			wattroff(whelp,A_REVERSE);
+		else
+			wattron(whelp,A_REVERSE);
 		for (i=vp+2;i<hw&&i<vp+2+(int)strlen(" < > scroll ");i++)
 			mvwprintw(whelp,hh-1,i,"%c",(" < > scroll ")[i-vp-2]);
-		wattroff(whelp,A_REVERSE);
+		if (config.f.inverse)
+			wattron(whelp,A_REVERSE);
+		else
+			wattroff(whelp,A_REVERSE);
 		vp+=strlen(" < > scroll ");
 		for (i=vp;i<hw;i++)
 			wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
@@ -624,24 +686,42 @@ static inline void view_help(void) {
 static inline void view_warning(void) {
 	int i;
 
+	if (config.f.inverse)
+		wattron(wtda,A_REVERSE);
+	else
+		wattroff(wtda,A_REVERSE);
 	mvwprintw(wtda,0,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
-	wattron(wtda,A_REVERSE);
+	if (config.f.inverse)
+		wattroff(wtda,A_REVERSE);
+	else
+		wattron(wtda,A_REVERSE);
 	wattron(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 	wprintw(wtda," warning ");
 	wattroff(wtda,config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
-	wattroff(wtda,A_REVERSE);
+	if (config.f.inverse)
+		wattron(wtda,A_REVERSE);
+	else
+		wattroff(wtda,A_REVERSE);
 	for (i=1+strlen(" warning ");i<whw;i++)
 		wprintw(wtda,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	mvwprintw(wtda,1,0,"%*.*s",whw,whw,"");
-	mvwprintw(wtda,2,0," task_delayacct is %s ",read_task_delayacct()?"ON ":"OFF");
+	mvwprintw(wtda,2,0," task_delayacct is %s  ",read_task_delayacct()?"ON ":"OFF");
 	mvwprintw(wtda,3,0," press Ctrl-T to toggle ");
 	mvwprintw(wtda,4,0,"%*.*s",whw,whw,"");
 	mvwprintw(wtda,whh-1,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	for (i=1;i<whw;i++)
 		wprintw(wtda,"%s",(has_unicode&&config.f.unicode)?"─":"_");
-	wattron(wtda,A_REVERSE|A_DIM);
+	if (config.f.inverse) {
+		wattron(wtda,A_DIM);
+		wattroff(wtda,A_REVERSE);
+	} else
+		wattron(wtda,A_REVERSE|A_DIM);
 	mvwprintw(wtda,whh-1,1," press a key to hide ");
-	wattroff(wtda,A_REVERSE|A_DIM);
+	if (config.f.inverse) {
+		wattroff(wtda,A_DIM);
+		wattron(wtda,A_REVERSE);
+	} else
+		wattroff(wtda,A_REVERSE|A_DIM);
 }
 
 static inline void color_print_pc(double v) {
@@ -693,6 +773,11 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	int maxy;
 	int maxx;
 	int skip;
+
+	if (config.f.inverse)
+		attron(A_REVERSE);
+	else
+		attroff(A_REVERSE);
 
 	ionice_pos_data=NULL;
 
@@ -843,7 +928,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		}
 	}
 
-	attron(A_REVERSE);
+	if (config.f.inverse)
+		attroff(A_REVERSE);
+	else
+		attron(A_REVERSE);
 	mvhline(ionice_line+1,0,' ',maxx);
 	move(ionice_line+1,0);
 
@@ -882,7 +970,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (masked_sort_by(0)==i)
 			attroff(A_BOLD);
 	}
-	attroff(A_REVERSE);
+	if (config.f.inverse)
+		attron(A_REVERSE);
+	else
+		attroff(A_REVERSE);
 
 	if ((dontrefresh||!has_tda||!config.f.hideclock)&&(maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1)<(size_t)maxx)) {
 		size_t xpos=maxx;
@@ -898,11 +989,17 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		if (xpos<maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1))
 			xpos=maxx-maxcmdline+(config.f.hidecmd?0:strlen(COLUMN_L(0))+1);
 		if (!has_tda) {
-			attron(A_REVERSE);
+			if (config.f.inverse)
+				attroff(A_REVERSE);
+			else
+				attron(A_REVERSE);
 			attron(config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
 			mvprintw(ionice_line+1,xpos,"[T]");
 			attroff(config.f.nocolor?A_BOLD:COLOR_PAIR(RED_PAIR));
-			attroff(A_REVERSE);
+			if (config.f.inverse)
+				attron(A_REVERSE);
+			else
+				attroff(A_REVERSE);
 		}
 		if (dontrefresh)
 			mvprintw(ionice_line+1,xpos+(has_tda?0:strlen("[T]")),"[frozen]");
@@ -914,9 +1011,15 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			tm=localtime(&t);
 			if (strftime(ts,sizeof ts,"(%H:%M:%S)",tm)==0)
 				strcpy(ts,"( error! )");
-			attron(A_REVERSE);
+			if (config.f.inverse)
+				attroff(A_REVERSE);
+			else
+				attron(A_REVERSE);
 			mvprintw(ionice_line+1,xpos+(has_tda?0:strlen("[T]"))+(dontrefresh?strlen("[frozen]"):0),"%s",ts);
-			attroff(A_REVERSE);
+			if (config.f.inverse)
+				attron(A_REVERSE);
+			else
+				attroff(A_REVERSE);
 		}
 	}
 	// easiest place to print debug info
@@ -1233,14 +1336,26 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				if (config.f.reverse_graph) {
 					graphstr[strlen(graphstr)-1]=0; // remove last space
 					printw("%*.*s",hrevpos,hrevpos,graphstr);
-					attron(A_REVERSE);
+					if (config.f.inverse)
+						attroff(A_REVERSE);
+					else
+						attron(A_REVERSE);
 					printw("%s",graphstr+hrevpos);
-					attroff(A_REVERSE);
+					if (config.f.inverse)
+						attron(A_REVERSE);
+					else
+						attroff(A_REVERSE);
 					printw(" ");
 				} else {
-					attron(A_REVERSE);
+					if (config.f.inverse)
+						attroff(A_REVERSE);
+					else
+						attron(A_REVERSE);
 					printw("%*.*s",hrevpos,hrevpos,graphstr);
-					attroff(A_REVERSE);
+					if (config.f.inverse)
+						attron(A_REVERSE);
+					else
+						attroff(A_REVERSE);
 					printw("%s",graphstr+hrevpos);
 				}
 			} else
@@ -1312,34 +1427,64 @@ donedraw:
 				}
 
 				attron(A_BOLD);
-				if (ionice_cl)
-					attron(A_REVERSE);
+				if (ionice_cl) {
+					if (config.f.inverse)
+						attroff(A_REVERSE);
+					else
+						attron(A_REVERSE);
+				}
 				printw("%s",str_ioprio_class[ionice_class]);
-				if (ionice_cl)
-					attroff(A_REVERSE);
+				if (ionice_cl) {
+					if (config.f.inverse)
+						attron(A_REVERSE);
+					else
+						attroff(A_REVERSE);
+				}
 				printw("/");
-				if (!ionice_cl)
-					attron(A_REVERSE);
+				if (!ionice_cl) {
+					if (config.f.inverse)
+						attroff(A_REVERSE);
+					else
+						attron(A_REVERSE);
+				}
 				printw("%d",ionice_prio);
-				if (!ionice_cl)
-					attroff(A_REVERSE);
+				if (!ionice_cl) {
+					if (config.f.inverse)
+						attron(A_REVERSE);
+					else
+						attroff(A_REVERSE);
+				}
 				attroff(A_BOLD);
 			} else
 				printw(" (invalid %s)",COLUMN_NAME(0));
 			printw(" ");
-			attron(A_REVERSE);
+			if (config.f.inverse)
+				attroff(A_REVERSE);
+			else
+				attron(A_REVERSE);
 			printw("[use 0-9/bksp for %s, tab and arrows for prio]",COLUMN_NAME(0));
-			attroff(A_REVERSE);
+			if (config.f.inverse)
+				attron(A_REVERSE);
+			else
+				attroff(A_REVERSE);
 		} else {
 			if (ionice_pos==-1||ionice_pos_data==NULL||ionice_pos_data->exited)
 				printw(" (select %s by arrows or enter by 0-9/bksp)",COLUMN_NAME(0));
 			else {
 				attron(A_BOLD);
-				if (ionice_col==0)
-					attron(A_REVERSE);
+				if (ionice_col==0) {
+					if (config.f.inverse)
+						attroff(A_REVERSE);
+					else
+						attron(A_REVERSE);
+				}
 				printw("%d",ionice_pos_data->tid);
-				if (ionice_col==0)
-					attroff(A_REVERSE);
+				if (ionice_col==0) {
+					if (config.f.inverse)
+						attron(A_REVERSE);
+					else
+						attroff(A_REVERSE);
+				}
 				attroff(A_BOLD);
 
 				printw(" Current: ");
@@ -1355,22 +1500,44 @@ donedraw:
 				}
 
 				attron(A_BOLD);
-				if (ionice_col==1)
-					attron(A_REVERSE);
+				if (ionice_col==1) {
+					if (config.f.inverse)
+						attroff(A_REVERSE);
+					else
+						attron(A_REVERSE);
+				}
 				printw("%s",str_ioprio_class[ionice_class]);
-				if (ionice_col==1)
-					attroff(A_REVERSE);
+				if (ionice_col==1) {
+					if (config.f.inverse)
+						attron(A_REVERSE);
+					else
+						attroff(A_REVERSE);
+				}
 				printw("/");
-				if (ionice_col==2)
-					attron(A_REVERSE);
+				if (ionice_col==2) {
+					if (config.f.inverse)
+						attroff(A_REVERSE);
+					else
+						attron(A_REVERSE);
+				}
 				printw("%d",ionice_prio);
-				if (ionice_col==2)
-					attroff(A_REVERSE);
+				if (ionice_col==2) {
+					if (config.f.inverse)
+						attron(A_REVERSE);
+					else
+						attroff(A_REVERSE);
+				}
 				attroff(A_BOLD);
 				printw(" ");
-				attron(A_REVERSE);
+				if (config.f.inverse)
+					attroff(A_REVERSE);
+				else
+					attron(A_REVERSE);
 				printw("[use arrows and tab for %s and prio]",COLUMN_NAME(0));
-				attroff(A_REVERSE);
+				if (config.f.inverse)
+					attron(A_REVERSE);
+				else
+					attroff(A_REVERSE);
 			}
 		}
 	}
@@ -1419,9 +1586,15 @@ donedraw:
 		}
 
 		printw("  ");
-		attron(A_REVERSE);
+		if (config.f.inverse)
+			attroff(A_REVERSE);
+		else
+			attron(A_REVERSE);
 		printw("[use 0-9/n/bksp for UID/TID, tab to switch UID/TID]");
-		attroff(A_REVERSE);
+		if (config.f.inverse)
+			attron(A_REVERSE);
+		else
+			attroff(A_REVERSE);
 	}
 	if (in_search) {
 		int ssize=maxx-strlen("Search: ")-10;
@@ -1433,12 +1606,18 @@ donedraw:
 			char *ss=ucell_substr(search_uc,toskip,ssize);
 			char *ps=u8strpadt(ss,ssize);
 
-			attron(A_REVERSE);
+			if (config.f.inverse)
+				attroff(A_REVERSE);
+			else
+				attron(A_REVERSE);
 			if (ps)
 				printw("%s",ps);
 			else
 				printw("%*.*s",ssize,ssize,"");
-			attroff(A_REVERSE);
+			if (config.f.inverse)
+				attron(A_REVERSE);
+			else
+				attroff(A_REVERSE);
 			printw(" [");
 			if (!config.f.nocolor)
 				attron(search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
@@ -1459,7 +1638,10 @@ donedraw:
 	}
 	draw_vscroll(maxx-1,head1row?2:3,maxy-1-(noinlinehelp==0&&config.f.helptype==2?2:0),dispcount,saveskip);
 	if (config.f.helptype==2) {
-		attron(A_REVERSE);
+		if (config.f.inverse)
+			attroff(A_REVERSE);
+		else
+			attron(A_REVERSE);
 
 		mvhline(maxy-2,0,' ',maxx);
 		mvhline(maxy-1,0,' ',maxx);
@@ -1597,7 +1779,10 @@ donedraw:
 		attroff(A_UNDERLINE);
 		printw(": %s ",dontrefresh?"unfreeze":"freeze");
 
-		attroff(A_REVERSE);
+		if (config.f.inverse)
+			attron(A_REVERSE);
+		else
+			attroff(A_REVERSE);
 	}
 	wnoutrefresh(stdscr);
 	if (config.f.helptype==1) {
@@ -2135,6 +2320,8 @@ static inline int curses_key(int ch) {
 		case 'N':
 			if (in_filter)
 				strcpy(filter_col?filter_pid:filter_uid,"none");
+			else
+				config.f.inverse=!config.f.inverse;
 			break;
 		case 'u':
 		case 'U':
