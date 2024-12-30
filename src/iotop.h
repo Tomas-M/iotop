@@ -282,5 +282,10 @@ inline int config_file_load(int *pac,char ***pav);
 inline void config_file_free(void);
 inline int config_file_save(void);
 
+/* main.c */
+
+inline void init_params(void);
+inline void init_config(void);
+
 #endif // __IOTOP_H__
 
