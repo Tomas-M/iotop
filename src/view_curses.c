@@ -311,9 +311,13 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	// apply uid/pid filter
 	if (filter1(s))
 		return 1;
-	if (search_regx_ok)
-		if (regexec(&search_regx,s->cmdline1,0,NULL,0)&&regexec(&search_regx,s->cmdline2,0,NULL,0))
+	if (search_regx_ok) {
+		char tid[22];
+
+		sprintf(tid,"%lu",(unsigned long)s->tid);
+		if (regexec(&search_regx,s->cmdline1,0,NULL,0)&&regexec(&search_regx,s->cmdline2,0,NULL,0)&&regexec(&search_regx,tid,0,NULL,0))
 			return 1;
+	}
 	// visible history is non-zero
 	if (config.f.only) {
 		if (config.f.hidegraph) {
@@ -1289,7 +1293,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			mvhline(line,0,' ',maxx);
 			move(line,0);
 			if (!config.f.hidepid)
-				printw("%*i  ",maxpidlen,s->tid);
+				printw("%*lu  ",maxpidlen,(unsigned long)s->tid);
 			if (!config.f.hideprio) {
 				char c=' ';
 
@@ -1928,7 +1932,7 @@ static inline int curses_key_search(int ch) {
 			in_search=0;
 			if (search_str) {
 				free(search_str);
-				search_str=0;
+				search_str=NULL;
 			}
 			if (search_regx_ok) {
 				regfree(&search_regx);
@@ -2065,6 +2069,18 @@ static inline int curses_key(int ch) {
 			config.f.base=1024; // use non-SI units by default
 			config.f.threshold=2; // default threshold is 2*base
 			config.f.unicode=1; // default is unicode
+			// reset search regex
+			if (search_str)
+				free(search_str);
+			search_str=NULL;
+			if (search_regx_ok) {
+				regfree(&search_regx);
+				search_regx_ok=0;
+			}
+			if (search_uc) {
+				ucell_free(search_uc);
+				search_uc=NULL;
+			}
 			break;
 		case 'W':
 			config_file_save();
