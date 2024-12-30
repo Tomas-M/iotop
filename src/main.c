@@ -66,6 +66,15 @@ inline void init_params(void) {
 	params.user_id=-1;
 }
 
+inline void init_config(void) {
+	memset(&config,0,sizeof(config));
+	config.f.sort_by=SORT_BY_GRAPH;
+	config.f.sort_order=SORT_DESC;
+	config.f.base=1024; // use non-SI units by default
+	config.f.threshold=2; // default threshold is 2*base
+	config.f.unicode=1; // default is unicode
+}
+
 static const char str_opt[]="boPaktqc123456789xelRTAN";
 
 static inline void print_help(void) {
@@ -149,12 +158,7 @@ static inline void parse_args(int clac,char **clav) {
 	int i;
 
 	init_params();
-	memset(&config,0,sizeof(config));
-	config.f.sort_by=SORT_BY_GRAPH;
-	config.f.sort_order=SORT_DESC;
-	config.f.base=1024; // use non-SI units by default
-	config.f.threshold=2; // default threshold is 2*base
-	config.f.unicode=1; // default is unicode
+	init_config();
 
 	// implement https://no-color.org/ proposal
 	if (no_color&&*no_color)

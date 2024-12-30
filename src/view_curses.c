@@ -2062,13 +2062,8 @@ static inline int curses_key(int ch) {
 		return curses_key_search(ch);
 	switch (ch) {
 		case 'D':
-			params.delay=1;
-			memset(&config,0,sizeof(config));
-			config.f.sort_by=SORT_BY_GRAPH;
-			config.f.sort_order=SORT_DESC;
-			config.f.base=1024; // use non-SI units by default
-			config.f.threshold=2; // default threshold is 2*base
-			config.f.unicode=1; // default is unicode
+			init_params();
+			init_config();
 			// reset search regex
 			if (search_str)
 				free(search_str);
