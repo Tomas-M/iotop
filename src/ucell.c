@@ -799,13 +799,13 @@ inline void ucell_move_word_back(ucell *uc) { // {{{
 int main(void) {
 	cell c;
 
-	printf("PSIZE: %lu\n",PSIZE);
-	printf("sizeof(cell): %lu\n",sizeof(cell));
-	printf("sizeof(c.p): %lu\n",sizeof(c.p));
-	printf("sizeof(c.d): %lu\n",sizeof(c.d));
-	printf("off(c.p): %lu\n",__builtin_offsetof(cell,p));
-	printf("off(c.d): %lu\n",__builtin_offsetof(cell,d));
-	printf("off(c.pad): %lu\n",__builtin_offsetof(cell,pad));
+	printf("PSIZE: %zu\n",PSIZE);
+	printf("sizeof(cell): %zu\n",sizeof(cell));
+	printf("sizeof(c.p): %zu\n",sizeof(c.p));
+	printf("sizeof(c.d): %zu\n",sizeof(c.d));
+	printf("off(c.p): %zu\n",__builtin_offsetof(cell,p));
+	printf("off(c.d): %zu\n",__builtin_offsetof(cell,d));
+	printf("off(c.pad): %zu\n",__builtin_offsetof(cell,pad));
 	return 0;
 }
 
