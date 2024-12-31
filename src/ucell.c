@@ -60,7 +60,6 @@ typedef struct __attribute__((packed)) _cell {
 			uint8_t flags:1; // storage type 0=inline, 1=allocated
 			uint8_t w:2; // terminal cells needed to represent this char
 		};
-		uint8_t pad;
 	};
 } cell;
 
