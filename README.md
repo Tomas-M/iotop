@@ -213,6 +213,8 @@ cd iotop && git checkout master && git pull && make clean && make -j
         --threshold=1..10  threshold to switch to next unit
         --ascii            disable using Unicode
         --unicode          use Unicode drawing chars
+    -N, --inverse          use inverse interface (black on white)
+        --filter=REGEX     filter processes by TID and COMMAND
     -W, --write            write preceding options to the config and exit
 
 ## Contribute
