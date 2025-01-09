@@ -1027,7 +1027,6 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	}
 	// easiest place to print debug info
 	//mvprintw(ionice_line+1,maxx-maxcmdline+strlen(COLUMN_L(0))+1," ... ",...);
-	mvprintw(ionice_line+1,maxx-maxcmdline+strlen(COLUMN_L(0))+1," @%s@ ",params.search_str);
 
 	maxcmdline--; // vertical scroller
 
