@@ -77,7 +77,6 @@ inline int config_file_load(int *pac,char ***pav) {
 	FILE *cf=config_file_open("r");
 	ssize_t sz;
 	char *s;
-	char *e;
 
 	if (!cf)
 		return -1;
@@ -131,13 +130,10 @@ inline int config_file_load(int *pac,char ***pav) {
 		ac++;
 		while (*s&&*s!='\n')
 			s++;
-		e=s-1;
 		if (*s) {
 			*s=0;
 			s++;
 		}
-		while (e>av[ac-1]&&(*e==' '||*e=='\t')) // trim trailing white space
-			*e--=0;
 	}
 
 	fclose(cf);
@@ -264,6 +260,8 @@ inline int config_file_save(void) {
 	// --inverse
 	if (config.f.inverse)
 		fprintf(cf,"--inverse\n");
+	if (params.search_regx_ok&&params.search_str&&strlen(params.search_str))
+		fprintf(cf,"--filter=%s\n",params.search_str);
 
 	fclose(cf);
 

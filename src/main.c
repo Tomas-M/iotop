@@ -48,6 +48,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_COLOR 0x116
 #define OPT_NO_ACCUM_BW 0x117
 #define OPT_SHOW_TIME 0x118
+#define OPT_FILTER 0x119
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -60,14 +61,19 @@ view_fini v_fini_cb=view_curses_fini;
 view_loop v_loop_cb=view_curses_loop;
 
 inline void init_params(void) {
+	memset(&params,0,sizeof params);
 	params.iter=-1;
 	params.delay=1;
 	params.pid=-1;
 	params.user_id=-1;
+	params.search_str=NULL;
+	memset(&params.search_regx,0,sizeof params.search_regx);
+	params.search_regx_ok=0;
+	params.search_uc=NULL;
 }
 
 inline void init_config(void) {
-	memset(&config,0,sizeof(config));
+	memset(&config,0,sizeof config);
 	config.f.sort_by=SORT_BY_GRAPH;
 	config.f.sort_order=SORT_DESC;
 	config.f.base=1024; // use non-SI units by default
@@ -146,6 +152,7 @@ static inline void print_help(void) {
 		"      --ascii            disable using Unicode\n"
 		"      --unicode          use Unicode drawing chars\n"
 		"  -N, --inverse          use inverse interface (black on white)\n"
+		"      --filter=REGEX     filter processes by TID and COMMAND\n"
 		"  -W, --write            write preceding options to the config and exit\n",
 		progname
 	);
@@ -241,6 +248,7 @@ static inline void parse_args(int clac,char **clav) {
 				{"unicode",no_argument,NULL,OPT_UNICODE},
 				{"write",no_argument,NULL,'W'},
 				{"inverse",no_argument,NULL,'N'},
+				{"filter",required_argument,NULL,OPT_FILTER},
 				{NULL,0,NULL,0}
 			};
 
@@ -427,6 +435,25 @@ static inline void parse_args(int clac,char **clav) {
 					break;
 				case OPT_SHOW_TIME:
 					config.f.hideclock=0;
+					break;
+				case OPT_FILTER:
+					if (params.search_str)
+						free(params.search_str);
+					params.search_str=NULL;
+					if (params.search_regx_ok) {
+						regfree(&params.search_regx);
+						params.search_regx_ok=0;
+					}
+					params.search_str=strdup(optarg);
+					if (!params.search_str) {
+						fprintf(stderr,"%s: can not allocate memory for: %s\n",progname,optarg);
+						exit(EXIT_FAILURE);
+					}
+					params.search_regx_ok=regcomp(&params.search_regx,params.search_str,REG_EXTENDED)==0;
+					if (!params.search_regx_ok) {
+						fprintf(stderr,"%s: invalid regular expression: %s\n",progname,optarg);
+						exit(EXIT_FAILURE);
+					}
 					break;
 				default:
 					exit(EXIT_FAILURE);

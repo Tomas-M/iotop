@@ -12,7 +12,6 @@ You should have received a copy of the GNU General Public License along with thi
 */
 
 #include "iotop.h"
-#include "ucell.h"
 
 // allow ncurses printf-like arguments checking
 #define GCC_PRINTF
@@ -115,10 +114,6 @@ static char filter_uid[50];
 static char filter_pid[50];
 static int filter_col=0; // select what to edit uid(0), pid(1)
 static int in_search=0; // search by regex interface flag
-static char *search_str=NULL; // search regex string
-static regex_t search_regx; // search regex
-static int search_regx_ok=0; // search regex compiles ok
-static ucell *search_uc=NULL; // utf cell array
 static struct xxxid_stats *ionice_pos_data=NULL;
 static int has_unicode=0;
 static double hist_t_r[HISTORY_CNT]={0};
@@ -311,11 +306,11 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	// apply uid/pid filter
 	if (filter1(s))
 		return 1;
-	if (search_regx_ok) {
+	if (params.search_regx_ok) {
 		char tid[22];
 
 		sprintf(tid,"%lu",(unsigned long)s->tid);
-		if (regexec(&search_regx,s->cmdline1,0,NULL,0)&&regexec(&search_regx,s->cmdline2,0,NULL,0)&&regexec(&search_regx,tid,0,NULL,0))
+		if (regexec(&params.search_regx,s->cmdline1,0,NULL,0)&&regexec(&params.search_regx,s->cmdline2,0,NULL,0)&&regexec(&params.search_regx,tid,0,NULL,0))
 			return 1;
 	}
 	// visible history is non-zero
@@ -1032,6 +1027,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	}
 	// easiest place to print debug info
 	//mvprintw(ionice_line+1,maxx-maxcmdline+strlen(COLUMN_L(0))+1," ... ",...);
+	mvprintw(ionice_line+1,maxx-maxcmdline+strlen(COLUMN_L(0))+1," @%s@ ",params.search_str);
 
 	maxcmdline--; // vertical scroller
 
@@ -1610,8 +1606,8 @@ donedraw:
 		mvhline(ionice_line,0,' ',maxx);
 		mvprintw(ionice_line,0,"Search: ");
 		if (ssize>2) {
-			int toskip=ssize-1<ucell_cursor_c(search_uc)?ucell_cursor_c(search_uc)-ssize+1:0;
-			char *ss=ucell_substr(search_uc,toskip,ssize);
+			int toskip=ssize-1<ucell_cursor_c(params.search_uc)?ucell_cursor_c(params.search_uc)-ssize+1:0;
+			char *ss=ucell_substr(params.search_uc,toskip,ssize);
 			char *ps=u8strpadt(ss,ssize);
 
 			if (config.f.inverse)
@@ -1628,14 +1624,14 @@ donedraw:
 				attroff(A_REVERSE);
 			printw(" [");
 			if (!config.f.nocolor)
-				attron(search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
+				attron(params.search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
 			attron(A_BOLD);
-			printw("%s",search_regx_ok?"  OK  ":"Error!");
+			printw("%s",params.search_regx_ok?"  OK  ":"Error!");
 			if (!config.f.nocolor)
-				attroff(search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
+				attroff(params.search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
 			attroff(A_BOLD);
 			printw("]");
-			promptx=strlen("Search: ")+ucell_cursor_c(search_uc)-toskip;
+			promptx=strlen("Search: ")+ucell_cursor_c(params.search_uc)-toskip;
 			prompty=ionice_line;
 			show=TRUE;
 			if (ps)
@@ -1870,21 +1866,21 @@ donedraw:
 static inline void update_search(void) {
 	char *fs;
 
-	if (!search_uc)
+	if (!params.search_uc)
 		return;
 
-	fs=ucell_substr(search_uc,0,0); // regex to compile
+	fs=ucell_substr(params.search_uc,0,0); // regex to compile
 	if (!fs)
 		return;
-	if (search_str)
-		free(search_str);
-	search_str=fs;
-	if (search_regx_ok) {
-		regfree(&search_regx);
-		search_regx_ok=0;
+	if (params.search_str)
+		free(params.search_str);
+	params.search_str=fs;
+	if (params.search_regx_ok) {
+		regfree(&params.search_regx);
+		params.search_regx_ok=0;
 	}
-	if (search_str)
-		search_regx_ok=regcomp(&search_regx,search_str,REG_EXTENDED)==0;
+	if (params.search_str)
+		params.search_regx_ok=regcomp(&params.search_regx,params.search_str,REG_EXTENDED)==0;
 }
 
 static inline void key_log(int ch __attribute__((unused)),int issecond __attribute__((unused))) {
@@ -1930,88 +1926,88 @@ static inline int curses_key_search(int ch) {
 				break;
 			}
 			in_search=0;
-			if (search_str) {
-				free(search_str);
-				search_str=NULL;
+			if (params.search_str) {
+				free(params.search_str);
+				params.search_str=NULL;
 			}
-			if (search_regx_ok) {
-				regfree(&search_regx);
-				search_regx_ok=0;
+			if (params.search_regx_ok) {
+				regfree(&params.search_regx);
+				params.search_regx_ok=0;
 			}
-			if (search_uc) {
-				ucell_free(search_uc);
-				search_uc=NULL;
+			if (params.search_uc) {
+				ucell_free(params.search_uc);
+				params.search_uc=NULL;
 			}
 			break;
 		case KEY_RET: // CR
 		case KEY_ENTER:
 			in_search=0;
-			if (search_regx_ok&&search_str&&!strlen(search_str)) { // empty string=cancel search
-				regfree(&search_regx);
-				search_regx_ok=0;
+			if (params.search_regx_ok&&params.search_str&&!strlen(params.search_str)) { // empty string=cancel search
+				regfree(&params.search_regx);
+				params.search_regx_ok=0;
 			}
-			if (!search_regx_ok) {
-				if (search_str) {
-					free(search_str);
-					search_str=0;
+			if (!params.search_regx_ok) {
+				if (params.search_str) {
+					free(params.search_str);
+					params.search_str=0;
 				}
-				if (search_uc) {
-					ucell_free(search_uc);
-					search_uc=NULL;
+				if (params.search_uc) {
+					ucell_free(params.search_uc);
+					params.search_uc=NULL;
 				}
 			}
 			break;
 		case KEY_HOME:
 		case KEY_CTRL_A:
-			ucell_move_home(search_uc);
+			ucell_move_home(params.search_uc);
 			break;
 		case KEY_END:
 		case KEY_CTRL_E:
-			ucell_move_end(search_uc);
+			ucell_move_end(params.search_uc);
 			break;
 		case KEY_RIGHT:
 		case KEY_CTRL_F:
-			ucell_move(search_uc);
+			ucell_move(params.search_uc);
 			break;
 		case KEY_LEFT:
 		case KEY_CTRL_B:
-			ucell_move_back(search_uc);
+			ucell_move_back(params.search_uc);
 			break;
 		case KEY_CTRL_H: // Ctrl-H, Backspace on some terminals
 		case KEY_BACKSPACE: // del prev char
-			ucell_del_char_prev(search_uc);
+			ucell_del_char_prev(params.search_uc);
 			update_search();
 			break;
 		case KEY_DC:
 		case KEY_CTRL_D: // del current char
-			ucell_del_char(search_uc);
+			ucell_del_char(params.search_uc);
 			update_search();
 			break;
 		case KEY_CTRL_K: // Ctrl-K, del to end of line
-			ucell_del_to_end(search_uc);
+			ucell_del_to_end(params.search_uc);
 			update_search();
 			break;
 		case KEY_CTRL_U: // Ctrl-U, del all
-			ucell_del_all(search_uc);
+			ucell_del_all(params.search_uc);
 			update_search();
 			break;
 		case KEY_CTRL_W: // Ctrl-W, del prev word
 		case_Alt_Backspace:
-			ucell_del_word_prev(search_uc);
+			ucell_del_word_prev(params.search_uc);
 			update_search();
 			break;
 		case_Alt_f: // word forward
 		case_Ctrl_Right:
-			ucell_move_word(search_uc);
+			ucell_move_word(params.search_uc);
 			update_search();
 			break;
 		case_Alt_b: // word backward
 		case_Ctrl_Left:
-			ucell_move_word_back(search_uc);
+			ucell_move_word_back(params.search_uc);
 			update_search();
 			break;
 		case_Alt_d: // del word at cursor
-			ucell_del_word(search_uc);
+			ucell_del_word(params.search_uc);
 			update_search();
 			break;
 		case KEY_CTRL_L: // Ctrl-L
@@ -2021,7 +2017,7 @@ static inline int curses_key_search(int ch) {
 			break;
 		default:
 			if (ch>=' '&&ch<=0xff) {
-				if (ucell_utf_feed(search_uc,ch)>0) {
+				if (ucell_utf_feed(params.search_uc,ch)>0) {
 					update_search();
 					return 0; // refresh screen
 				}
@@ -2065,16 +2061,16 @@ static inline int curses_key(int ch) {
 			init_params();
 			init_config();
 			// reset search regex
-			if (search_str)
-				free(search_str);
-			search_str=NULL;
-			if (search_regx_ok) {
-				regfree(&search_regx);
-				search_regx_ok=0;
+			if (params.search_str)
+				free(params.search_str);
+			params.search_str=NULL;
+			if (params.search_regx_ok) {
+				regfree(&params.search_regx);
+				params.search_regx_ok=0;
 			}
-			if (search_uc) {
-				ucell_free(search_uc);
-				search_uc=NULL;
+			if (params.search_uc) {
+				ucell_free(params.search_uc);
+				params.search_uc=NULL;
 			}
 			break;
 		case 'W':
@@ -2481,19 +2477,26 @@ static inline int curses_key(int ch) {
 		case '/':
 			if (!in_ionice&&!in_filter) {
 				in_search=1;
-				if (!search_regx_ok) {
-					if (search_uc) {
-						ucell_free(search_uc);
-						search_uc=NULL;
+				if (!params.search_regx_ok) {
+					if (params.search_uc) {
+						ucell_free(params.search_uc);
+						params.search_uc=NULL;
 					}
 				}
-				if (!search_uc)
-					search_uc=ucell_init(0);
-				if (search_str) {
-					free(search_str);
-					search_str=NULL;
+				if (!params.search_uc) {
+					params.search_uc=ucell_init(0);
+					if (params.search_regx_ok) {
+						char *ss=params.search_str;
+
+						while (*ss)
+							ucell_utf_feed(params.search_uc,*ss++);
+					}
 				}
-				if (!search_uc)
+				if (params.search_str) {
+					free(params.search_str);
+					params.search_str=NULL;
+				}
+				if (!params.search_uc)
 					in_search=0;
 				update_search();
 			}
@@ -2589,17 +2592,17 @@ inline void view_curses_fini(void) {
 	if (wtda)
 		delwin(wtda);
 	endwin();
-	if (search_str) {
-		free(search_str);
-		search_str=NULL;
+	if (params.search_str) {
+		free(params.search_str);
+		params.search_str=NULL;
 	}
-	if (search_regx_ok) {
-		regfree(&search_regx);
-		search_regx_ok=0;
+	if (params.search_regx_ok) {
+		regfree(&params.search_regx);
+		params.search_regx_ok=0;
 	}
-	if (search_uc) {
-		ucell_free(search_uc);
-		search_uc=NULL;
+	if (params.search_uc) {
+		ucell_free(params.search_uc);
+		params.search_uc=NULL;
 	}
 
 	if (has_task_delayacct())

@@ -24,8 +24,11 @@ You should have received a copy of the GNU General Public License along with thi
 #define _DEFAULT_SOURCE
 #endif
 
-#include <sys/types.h>
+#include <regex.h>
 #include <stdint.h>
+#include <sys/types.h>
+
+#include "ucell.h"
 
 #define VERSION "1.26"
 
@@ -82,6 +85,10 @@ typedef struct {
 	int delay;
 	int pid;
 	int user_id;
+	char *search_str; // search regex string
+	regex_t search_regx; // search regex
+	int search_regx_ok; // search regex compiles ok
+	ucell *search_uc; // utf cell array
 } params_t;
 
 extern config_t config;

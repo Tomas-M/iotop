@@ -35,21 +35,21 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	humanize_val(&total_a_read,str_a_read,0);
 	humanize_val(&total_a_write,str_a_write,0);
 
-	printf(HEADER1_FORMAT,total_read,str_read,"",total_write,str_write,"");
+	if (!config.f.quiet) {
+		printf(HEADER1_FORMAT,total_read,str_read,"",total_write,str_write,"");
 
-	if (config.f.timestamp) {
-		time_t t=time(NULL);
+		if (config.f.timestamp) {
+			time_t t=time(NULL);
 
-		printf(" | %s",ctime(&t));
-	} else
+			printf(" | %s",ctime(&t));
+		} else
+			printf("\n");
+
+		printf(HEADER2_FORMAT,total_a_read,str_a_read,"",total_a_write,str_a_write,"");
 		printf("\n");
-
-	printf(HEADER2_FORMAT,total_a_read,str_a_read,"",total_a_write,str_a_write,"");
-
-	printf("\n");
-
-	if (!config.f.quiet)
 		printf("%6s %4s %8s %11s %11s %6s %6s %s\n",config.f.processes?"PID":"TID","PRIO","USER","DISK READ","DISK WRITE","SWAPIN","IO","COMMAND");
+	}
+
 	arr_sort(cs,iotop_sort_cb);
 
 	for (i=0;cs->sor&&i<diff_len;i++) {
@@ -72,10 +72,17 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		// show only processes, if configured
 		if (config.f.processes&&s->pid!=s->tid)
 			continue;
-		if (config.f.only&&!read_val&&!write_val)
+		if (config.f.only&&!read_val&&!write_val&&!s->swapin_val&&!s->blkio_val)
 			continue;
 		if (s->exited) // do not show exited processes in batch view
 			continue;
+		if (params.search_regx_ok) {
+			char tid[22];
+
+			sprintf(tid,"%lu",(unsigned long)s->tid);
+			if (regexec(&params.search_regx,s->cmdline1,0,NULL,0)&&regexec(&params.search_regx,s->cmdline2,0,NULL,0)&&regexec(&params.search_regx,tid,0,NULL,0))
+				continue;
+		}
 
 		humanize_val(&read_val,read_str,1);
 		humanize_val(&write_val,write_str,1);
