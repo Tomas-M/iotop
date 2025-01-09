@@ -53,14 +53,21 @@ You should have received a copy of the GNU General Public License along with thi
 static const char *progname=NULL;
 int maxpidlen=5;
 
-config_t config;
-params_t params;
+config_t config={0};
+params_t params={0};
 
 view_init v_init_cb=view_curses_init;
 view_fini v_fini_cb=view_curses_fini;
 view_loop v_loop_cb=view_curses_loop;
 
 inline void init_params(void) {
+	// initally params are zeroed; free the things possibly allocated on a second call
+	if (params.search_str)
+		free(params.search_str);
+	if (params.search_regx_ok)
+		regfree(&params.search_regx);
+	if (params.search_uc)
+		ucell_free(params.search_uc);
 	memset(&params,0,sizeof params);
 	params.iter=-1;
 	params.delay=1;

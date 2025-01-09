@@ -2059,18 +2059,6 @@ static inline int curses_key(int ch) {
 		case 'D':
 			init_params();
 			init_config();
-			// reset search regex
-			if (params.search_str)
-				free(params.search_str);
-			params.search_str=NULL;
-			if (params.search_regx_ok) {
-				regfree(&params.search_regx);
-				params.search_regx_ok=0;
-			}
-			if (params.search_uc) {
-				ucell_free(params.search_uc);
-				params.search_uc=NULL;
-			}
 			break;
 		case 'W':
 			config_file_save();
