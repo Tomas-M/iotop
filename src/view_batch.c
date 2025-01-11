@@ -55,24 +55,29 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	for (i=0;cs->sor&&i<diff_len;i++) {
 		struct xxxid_stats *s=cs->sor[i];
 		char read_str[4],write_str[4];
+		double swapin_val;
+		double blkio_val;
 		double write_val;
 		double read_val;
 		char *pw_name;
 
 		if (config.f.accumbw) {
-			read_val=s->read_val_abw;
-			write_val=s->write_val_abw;
+			read_val=config.f.processes?s->read_val_abw_p:s->read_val_abw;
+			write_val=config.f.processes?s->write_val_abw_p:s->write_val_abw;
 		} else if (config.f.accumulated) {
-			read_val=s->read_val_acc;
-			write_val=s->write_val_acc;
+			read_val=config.f.processes?s->read_val_acc_p:s->read_val_acc;
+			write_val=config.f.processes?s->write_val_acc_p:s->write_val_acc;
 		} else {
-			read_val=s->read_val;
-			write_val=s->write_val;
+			read_val=config.f.processes?s->read_val_p:s->read_val;
+			write_val=config.f.processes?s->write_val_p:s->write_val;
 		}
+		swapin_val=config.f.processes?s->swapin_val_p:s->swapin_val;
+		blkio_val=config.f.processes?s->blkio_val_p:s->blkio_val;
+
 		// show only processes, if configured
 		if (config.f.processes&&s->pid!=s->tid)
 			continue;
-		if (config.f.only&&!read_val&&!write_val&&!s->swapin_val&&!s->blkio_val)
+		if (config.f.only&&!read_val&&!write_val&&!swapin_val&&!blkio_val)
 			continue;
 		if (s->exited) // do not show exited processes in batch view
 			continue;
@@ -89,7 +94,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 		pw_name=u8strpadt(s->pw_name,10);
 
-		printf("%6i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str,write_val,write_str,s->swapin_val,s->blkio_val,config.f.fullcmdline?s->cmdline2:s->cmdline1);
+		printf("%6i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str,write_val,write_str,swapin_val,blkio_val,config.f.fullcmdline?s->cmdline2:s->cmdline1);
 
 		if (pw_name)
 			free(pw_name);

@@ -29,10 +29,10 @@ You should have received a copy of the GNU General Public License along with thi
  * Generic macros for dealing with netlink sockets. Might be duplicated
  * elsewhere
  */
-#define GENLMSG_DATA(glh)	   ((void *)((char*)NLMSG_DATA(glh) + GENL_HDRLEN))
-#define GENLMSG_PAYLOAD(glh)	(NLMSG_PAYLOAD(glh, 0) - GENL_HDRLEN)
-#define NLA_DATA(na)			((void *)((char*)(na) + NLA_HDRLEN))
-#define NLA_PAYLOAD(len)		(len - NLA_HDRLEN)
+#define GENLMSG_DATA(glh) ((void *)((char*)NLMSG_DATA(glh)+GENL_HDRLEN))
+#define GENLMSG_PAYLOAD(glh) (NLMSG_PAYLOAD(glh,0)-GENL_HDRLEN)
+#define NLA_DATA(na) ((void *)((char*)(na)+NLA_HDRLEN))
+#define NLA_PAYLOAD(len) (len-NLA_HDRLEN)
 
 #define MAX_MSG_SIZE 1024
 
@@ -265,21 +265,11 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 		if (filter&&filter(s))
 			free_stats(s);
 		else {
-			if (s->pid!=s->tid) { // maintain a thread list for each process
-				struct xxxid_stats *p=arr_find(a,s->pid); // main process' tid=thread's pid
-
-				if (p) {
-					// aggregate thread data into the main process
-					if (!p->threads)
-						p->threads=arr_alloc();
-					if (p->threads) {
-						arr_add(p->threads,s);
-						p->swapin_delay_total+=s->swapin_delay_total;
-						p->blkio_delay_total+=s->blkio_delay_total;
-						p->read_bytes+=s->read_bytes;
-						p->write_bytes+=s->write_bytes;
-					}
-				}
+			if (s->pid==s->tid) { // main process, copy own data to aggregated process data
+				s->swapin_delay_total_p=s->swapin_delay_total;
+				s->blkio_delay_total_p=s->blkio_delay_total;
+				s->read_bytes_p=s->read_bytes;
+				s->write_bytes_p=s->write_bytes;
 			}
 			arr_add(a,s);
 		}
@@ -288,11 +278,33 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 
 inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
 	struct xxxid_stats_arr *a=arr_alloc();
+	int i;
 
 	if (!a)
 		return NULL;
 
 	pidgen_cb(pid_cb,a,filter);
+
+	for (i=0;a->arr&&i<a->length;i++) {
+		struct xxxid_stats *s=a->arr[i];
+
+		if (s->pid!=s->tid) { // maintain a thread list for each process
+			struct xxxid_stats *p=arr_find(a,s->pid); // main process' tid=thread's pid
+
+			if (p) {
+				// aggregate thread data into the main process
+				if (!p->threads)
+					p->threads=arr_alloc();
+				if (p->threads) {
+					arr_add(p->threads,s);
+					p->swapin_delay_total_p+=s->swapin_delay_total;
+					p->blkio_delay_total_p+=s->blkio_delay_total;
+					p->read_bytes_p+=s->read_bytes;
+					p->write_bytes_p+=s->write_bytes;
+				}
+			}
+		}
+	}
 	return a;
 }
 

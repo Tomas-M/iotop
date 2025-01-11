@@ -140,6 +140,37 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 		memcpy(c->writehist+1,p->writehist,sizeof c->writehist-sizeof *c->writehist);
 		c->writehist[0]=wv;
 
+		if (c->pid==c->tid) {
+			c->blkio_val_p=(double)rrv(c->blkio_delay_total_p,p->blkio_delay_total_p)/(time_s*10000000.0);
+			if (c->blkio_val_p>100)
+				c->blkio_val_p=100;
+
+			c->swapin_val_p=(double)rrv(c->swapin_delay_total_p,p->swapin_delay_total_p)/(time_s*10000000.0);
+			if (c->swapin_val_p>100)
+				c->swapin_val_p=100;
+
+			rv=(double)rrv(c->read_bytes_p,p->read_bytes_p);
+			wv=(double)rrv(c->write_bytes_p,p->write_bytes_p);
+
+			c->read_val_p=rv/time_s;
+			c->write_val_p=wv/time_s;
+
+			c->read_val_acc_p=p->read_val_acc_p+rv;
+			c->write_val_acc_p=p->write_val_acc_p+wv;
+
+			c->read_val_abw_p=c->read_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
+			c->write_val_abw_p=c->write_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
+
+			memcpy(c->iohist_p+1,p->iohist_p,sizeof c->iohist_p-sizeof *c->iohist_p);
+			c->iohist_p[0]=value2scale(c->blkio_val_p,100.0);
+			memcpy(c->sihist_p+1,p->sihist_p,sizeof c->sihist_p-sizeof *c->sihist_p);
+			c->sihist_p[0]=value2scale(c->swapin_val_p,100.0);
+			memcpy(c->readhist_p+1,p->readhist_p,sizeof c->readhist_p-sizeof *c->readhist_p);
+			c->readhist_p[0]=rv;
+			memcpy(c->writehist_p+1,p->writehist_p,sizeof c->writehist_p-sizeof *c->writehist_p);
+			c->writehist_p[0]=wv;
+		}
+
 		snprintf(temp,sizeof temp,"%i",c->tid);
 		maxpidlen=maxpidlen<(int)strlen(temp)?(int)strlen(temp):maxpidlen;
 	}
@@ -176,6 +207,16 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 				p->readhist[0]=0.0;
 				memmove(p->writehist+1,p->writehist,sizeof p->writehist-sizeof *p->writehist);
 				p->writehist[0]=0.0;
+				if (p->tid==p->pid) { // shift process aggregated data, only for main process
+					memmove(p->iohist_p+1,p->iohist_p,sizeof p->iohist_p-sizeof *p->iohist_p);
+					p->iohist_p[0]=0;
+					memmove(p->sihist_p+1,p->sihist_p,sizeof p->sihist_p-sizeof *p->sihist_p);
+					p->sihist_p[0]=0;
+					memmove(p->readhist_p+1,p->readhist_p,sizeof p->readhist_p-sizeof *p->readhist_p);
+					p->readhist_p[0]=0.0;
+					memmove(p->writehist_p+1,p->writehist_p,sizeof p->writehist_p-sizeof *p->writehist_p);
+					p->writehist_p[0]=0.0;
+				}
 				if (arr_add(cs,p)) { // free the data in case add fails
 					if (p->cmdline1)
 						free(p->cmdline1);
@@ -260,8 +301,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					for (i=0;i<grlen;i++) {
-						aa+=pa->iohist[i];
-						ab+=pb->iohist[i];
+						aa+=config.f.processes?pa->iohist_p[i]:pa->iohist[i];
+						ab+=config.f.processes?pb->iohist_p[i]:pb->iohist[i];
 					}
 					res=aa-ab;
 					break;
@@ -269,8 +310,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					for (i=0;i<grlen;i++) {
-						da+=pa->readhist[i];
-						db+=pb->readhist[i];
+						da+=config.f.processes?pa->readhist_p[i]:pa->readhist[i];
+						db+=config.f.processes?pb->readhist_p[i]:pb->readhist[i];
 					}
 					if (da>db)
 						res=1;
@@ -283,8 +324,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					for (i=0;i<grlen;i++) {
-						da+=pa->writehist[i];
-						db+=pb->writehist[i];
+						da+=config.f.processes?pa->writehist_p[i]:pa->writehist[i];
+						db+=config.f.processes?pb->writehist_p[i]:pb->writehist[i];
 					}
 					if (da>db)
 						res=1;
@@ -297,10 +338,10 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					for (i=0;i<grlen;i++) {
-						da+=pa->readhist[i];
-						db+=pb->readhist[i];
-						da+=pa->writehist[i];
-						db+=pb->writehist[i];
+						da+=config.f.processes?pa->readhist_p[i]:pa->readhist[i];
+						db+=config.f.processes?pb->readhist_p[i]:pb->readhist[i];
+						da+=config.f.processes?pa->writehist_p[i]:pa->writehist[i];
+						db+=config.f.processes?pb->writehist_p[i]:pb->writehist[i];
 					}
 					if (da>db)
 						res=1;
@@ -313,8 +354,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					for (i=0;i<grlen;i++) {
-						aa+=pa->sihist[i];
-						ab+=pb->sihist[i];
+						aa+=config.f.processes?pa->sihist_p[i]:pa->sihist[i];
+						ab+=config.f.processes?pb->sihist_p[i]:pb->sihist[i];
 					}
 					res=aa-ab;
 					break;
@@ -335,25 +376,33 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 			break;
 		case SORT_BY_READ:
 			if (config.f.accumbw)
-				res=pa->read_val_abw>pb->read_val_abw?1:pa->read_val_abw<pb->read_val_abw?-1:0;
+				res=(config.f.processes?pa->read_val_abw_p:pa->read_val_abw)>(config.f.processes?pb->read_val_abw_p:pb->read_val_abw)?1:
+					(config.f.processes?pa->read_val_abw_p:pa->read_val_abw)<(config.f.processes?pb->read_val_abw_p:pb->read_val_abw)?-1:0;
 			else if (config.f.accumulated)
-				res=pa->read_val_acc>pb->read_val_acc?1:pa->read_val_acc<pb->read_val_acc?-1:0;
+				res=(config.f.processes?pa->read_val_acc_p:pa->read_val_acc)>(config.f.processes?pb->read_val_acc_p:pb->read_val_acc)?1:
+					(config.f.processes?pa->read_val_acc_p:pa->read_val_acc)<(config.f.processes?pb->read_val_acc_p:pb->read_val_acc)?-1:0;
 			else
-				res=pa->read_val>pb->read_val?1:pa->read_val<pb->read_val?-1:0;
+				res=(config.f.processes?pa->read_val_p:pa->read_val)>(config.f.processes?pb->read_val_p:pb->read_val)?1:
+					(config.f.processes?pa->read_val_p:pa->read_val)<(config.f.processes?pb->read_val_p:pb->read_val)?-1:0;
 			break;
 		case SORT_BY_WRITE:
 			if (config.f.accumbw)
-				res=pa->write_val_abw>pb->write_val_abw?1:pa->write_val_abw<pb->write_val_abw?-1:0;
+				res=(config.f.processes?pa->write_val_abw_p:pa->write_val_abw)>(config.f.processes?pb->write_val_abw_p:pb->write_val_abw)?1:
+					(config.f.processes?pa->write_val_abw_p:pa->write_val_abw)<(config.f.processes?pb->write_val_abw_p:pb->write_val_abw)?-1:0;
 			else if (config.f.accumulated)
-				res=pa->write_val_acc>pb->write_val_acc?1:pa->write_val_acc<pb->write_val_acc?-1:0;
+				res=(config.f.processes?pa->write_val_acc_p:pa->write_val_acc)>(config.f.processes?pb->write_val_acc_p:pb->write_val_acc)?1:
+					(config.f.processes?pa->write_val_acc_p:pa->write_val_acc)<(config.f.processes?pb->write_val_acc_p:pb->write_val_acc)?-1:0;
 			else
-				res=pa->write_val>pb->write_val?1:pa->write_val<pb->write_val?-1:0;
+				res=(config.f.processes?pa->write_val_p:pa->write_val)>(config.f.processes?pb->write_val_p:pb->write_val)?1:
+					(config.f.processes?pa->write_val_p:pa->write_val)<(config.f.processes?pb->write_val_p:pb->write_val)?-1:0;
 			break;
 		case SORT_BY_SWAPIN:
-			res=pa->swapin_val>pb->swapin_val?1:pa->swapin_val<pb->swapin_val?-1:0;
+			res=(config.f.processes?pa->swapin_val_p:pa->swapin_val)>(config.f.processes?pb->swapin_val_p:pb->swapin_val)?1:
+				(config.f.processes?pa->swapin_val_p:pa->swapin_val)<(config.f.processes?pb->swapin_val_p:pb->swapin_val)?-1:0;
 			break;
 		case SORT_BY_IO:
-			res=pa->blkio_val>pb->blkio_val?1:pa->blkio_val<pb->blkio_val?-1:0;
+			res=(config.f.processes?pa->blkio_val_p:pa->blkio_val)>(config.f.processes?pb->blkio_val_p:pb->blkio_val)?1:
+				(config.f.processes?pa->blkio_val_p:pa->blkio_val)<(config.f.processes?pb->blkio_val_p:pb->blkio_val)?-1:0;
 			break;
 	}
 	res*=order;

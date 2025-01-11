@@ -306,6 +306,10 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	// apply uid/pid filter
 	if (filter1(s))
 		return 1;
+	if (config.f.processes&&s->pid!=s->tid)
+		return 1;
+	if (config.f.hideexited&&s->exited)
+		return 1;
 	if (params.search_regx_ok) {
 		char tid[22];
 
@@ -316,56 +320,55 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	// visible history is non-zero
 	if (config.f.only) {
 		if (config.f.hidegraph) {
-			if (has_tda) {
-				if (s->blkio_val<=0)
-					goto dohide;
-			} else {
-				if (s->read_val+s->write_val<=0)
-					goto dohide;
-			}
+			if ((config.f.processes?s->blkio_val_p:s->blkio_val)<=0&&
+				(config.f.processes?s->swapin_val_p:s->swapin_val)<=0&&
+				(config.f.processes?s->read_val_p:s->read_val)<=0&&
+				(config.f.processes?s->write_val_p:s->write_val)<=0)
+				goto dohide;
 		} else {
 			double su=0;
 			int i;
 
 			switch (masked_grtype(0)) {
 				case E_GR_IO:
-					if (!memcmp(s->iohist,iohist_z,gr_width))
+					if (!memcmp(config.f.processes?s->iohist_p:s->iohist,iohist_z,gr_width))
 						goto dohide;
 					break;
 				case E_GR_R:
 					for (i=0;i<gr_width;i++)
-						su+=s->readhist[i];
+						su+=config.f.processes?s->readhist_p[i]:s->readhist[i];
 					if (su<=0)
 						goto dohide;
 					break;
 				case E_GR_W:
 					for (i=0;i<gr_width;i++)
-						su+=s->writehist[i];
+						su+=config.f.processes?s->writehist_p[i]:s->writehist[i];
 					if (su<=0)
 						goto dohide;
 					break;
 				case E_GR_RW:
-					for (i=0;i<gr_width;i++)
-						su+=s->readhist[i]+s->writehist[i];
+					for (i=0;i<gr_width;i++) {
+						su+=config.f.processes?s->readhist_p[i]:s->readhist[i];
+						su+=config.f.processes?s->writehist_p[i]:s->writehist[i];
+					}
 					if (su<=0)
 						goto dohide;
 					break;
 				case E_GR_SW:
-					if (!memcmp(s->sihist,iohist_z,gr_width))
+					if (!memcmp(config.f.processes?s->sihist_p:s->sihist,iohist_z,gr_width))
 						goto dohide;
 					break;
 			}
 		}
 		if (0) {
 		dohide:
-			if (s->blkio_val<=0&&s->read_val+s->write_val<=0)
+			if ((config.f.processes?s->blkio_val_p:s->blkio_val)<=0&&
+				(config.f.processes?s->swapin_val_p:s->swapin_val)<=0&&
+				(config.f.processes?s->read_val_p:s->read_val)<=0&&
+				(config.f.processes?s->write_val_p:s->write_val)<=0)
 				return 1;
 		}
 	}
-	if (config.f.hideexited&&s->exited)
-		return 1;
-	if (config.f.processes&&s->tid!=s->pid)
-		return 1;
 	if (config.f.hidegraph) {
 		if (s->exited>=3)
 			return 2;
@@ -1183,14 +1186,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			}
 
 			if (config.f.accumbw) {
-				read_val=s->read_val_abw;
-				write_val=s->write_val_abw;
+				read_val=config.f.processes?s->read_val_abw_p:s->read_val_abw;
+				write_val=config.f.processes?s->write_val_abw_p:s->write_val_abw;
 			} else if (config.f.accumulated) {
-				read_val=s->read_val_acc;
-				write_val=s->write_val_acc;
+				read_val=config.f.processes?s->read_val_acc_p:s->read_val_acc;
+				write_val=config.f.processes?s->write_val_acc_p:s->write_val_acc;
 			} else {
-				read_val=s->read_val;
-				write_val=s->write_val;
+				read_val=config.f.processes?s->read_val_p:s->read_val;
+				write_val=config.f.processes?s->write_val_p:s->write_val;
 			}
 
 			humanize_val(&read_val,read_str,1);
@@ -1217,38 +1220,38 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					switch (masked_grtype(0)) {
 						case E_GR_IO:
 							if (has_unicode&&config.f.unicode) {
-								v1=s->iohist[j*2];
-								v2=s->iohist[j*2+gi];
+								v1=config.f.processes?s->iohist_p[j*2]:s->iohist[j*2];
+								v2=config.f.processes?s->iohist_p[j*2+gi]:s->iohist[j*2+gi];
 							} else
-								v1=s->iohist[j];
+								v1=config.f.processes?s->iohist_p[j]:s->iohist[j];
 							break;
 						case E_GR_R:
 							if (has_unicode&&config.f.unicode) {
-								v1=value2scale(s->readhist[j*2],maxvisible);
-								v2=value2scale(s->readhist[j*2+gi],maxvisible);
+								v1=value2scale(config.f.processes?s->readhist_p[j*2]:s->readhist[j*2],maxvisible);
+								v2=value2scale(config.f.processes?s->readhist_p[j*2+gi]:s->readhist[j*2+gi],maxvisible);
 							} else
-								v1=value2scale(s->readhist[j],maxvisible);
+								v1=value2scale(config.f.processes?s->readhist_p[j]:s->readhist[j],maxvisible);
 							break;
 						case E_GR_W:
 							if (has_unicode&&config.f.unicode) {
-								v1=value2scale(s->writehist[j*2],maxvisible);
-								v2=value2scale(s->writehist[j*2+gi],maxvisible);
+								v1=value2scale(config.f.processes?s->writehist_p[j*2]:s->writehist[j*2],maxvisible);
+								v2=value2scale(config.f.processes?s->writehist_p[j*2+gi]:s->writehist[j*2+gi],maxvisible);
 							} else
-								v1=value2scale(s->writehist[j],maxvisible);
+								v1=value2scale(config.f.processes?s->writehist_p[j]:s->writehist[j],maxvisible);
 							break;
 						case E_GR_RW:
 							if (has_unicode&&config.f.unicode) {
-								v1=value2scale(s->readhist[j*2]+s->writehist[j*2],maxvisible);
-								v2=value2scale(s->readhist[j*2+gi]+s->writehist[j*2+gi],maxvisible);
+								v1=value2scale(config.f.processes?s->readhist_p[j*2]+s->writehist_p[j*2]:s->readhist[j*2]+s->writehist[j*2],maxvisible);
+								v2=value2scale(config.f.processes?s->readhist_p[j*2+gi]+s->writehist_p[j*2+gi]:s->readhist[j*2+gi]+s->writehist[j*2+gi],maxvisible);
 							} else
-								v1=value2scale(s->readhist[j]+s->writehist[j],maxvisible);
+								v1=value2scale(config.f.processes?s->readhist_p[j]+s->writehist_p[j]:s->readhist[j]+s->writehist[j],maxvisible);
 							break;
 						case E_GR_SW:
 							if (has_unicode&&config.f.unicode) {
-								v1=s->sihist[j*2];
-								v2=s->sihist[j*2+gi];
+								v1=config.f.processes?s->sihist_p[j*2]:s->sihist[j*2];
+								v2=config.f.processes?s->sihist_p[j*2+gi]:s->sihist[j*2+gi];
 							} else
-								v1=s->sihist[j];
+								v1=config.f.processes?s->sihist_p[j]:s->sihist[j];
 							break;
 					}
 					if (config.f.deadx) {
@@ -1325,7 +1328,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					printw("  Error  ");
 					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
-					color_print_pc(s->swapin_val);
+					color_print_pc(config.f.processes?s->swapin_val_p:s->swapin_val);
 			}
 			if (!config.f.hideio&&has_tda) {
 				if (s->error_x) {
@@ -1333,7 +1336,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					printw("  Error  ");
 					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
-					color_print_pc(s->blkio_val);
+					color_print_pc(config.f.processes?s->blkio_val_p:s->blkio_val);
 			}
 			if (!config.f.hidegraph&&hrevpos>0) {
 				if (config.f.reverse_graph) {

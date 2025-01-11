@@ -113,6 +113,10 @@ struct xxxid_stats {
 	uint64_t blkio_delay_total; // nanoseconds
 	uint64_t read_bytes;
 	uint64_t write_bytes;
+	uint64_t swapin_delay_total_p; // aggregated data from all threads
+	uint64_t blkio_delay_total_p; // used for process view
+	uint64_t read_bytes_p;
+	uint64_t write_bytes_p;
 	uint64_t ts_s; // start timestamp for accum-bw
 	uint64_t ts_e; // end timestamp for accum-bw
 
@@ -125,6 +129,15 @@ struct xxxid_stats {
 	double read_val_abw;
 	double write_val_abw;
 
+	double blkio_val_p;
+	double swapin_val_p;
+	double read_val_p;
+	double write_val_p;
+	double read_val_acc_p;
+	double write_val_acc_p;
+	double read_val_abw_p;
+	double write_val_abw_p;
+
 	int io_prio;
 
 	int euid;
@@ -136,6 +149,11 @@ struct xxxid_stats {
 	uint8_t sihist[HISTORY_CNT]; // swapin history data
 	double readhist[HISTORY_CNT]; // read history data
 	double writehist[HISTORY_CNT]; // write history data
+
+	uint8_t iohist_p[HISTORY_CNT]; // io history data (aggregated in main process)
+	uint8_t sihist_p[HISTORY_CNT]; // swapin history data (aggregated in main process)
+	double readhist_p[HISTORY_CNT]; // read history data (aggregated in main process)
+	double writehist_p[HISTORY_CNT]; // write history data (aggregated in main process)
 
 	int exited; // exited>0 shows for how many refresh cycles the process is gone
 	int error_x; // netlink api did not return valid data
