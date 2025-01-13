@@ -298,7 +298,7 @@ inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
 				if (p->threads) {
 					arr_add(p->threads,s);
 					p->swapin_delay_total_p=mymax(p->swapin_delay_total_p,s->swapin_delay_total);
-					p->blkio_delay_total_p+=mymax(p->blkio_delay_total_p,s->blkio_delay_total);
+					p->blkio_delay_total_p=mymax(p->blkio_delay_total_p,s->blkio_delay_total);
 					p->read_bytes_p+=s->read_bytes;
 					p->write_bytes_p+=s->write_bytes;
 				}
