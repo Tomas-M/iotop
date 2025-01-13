@@ -312,5 +312,7 @@ inline int config_file_save(void);
 inline void init_params(void);
 inline void init_config(void);
 
+#define mymax(a,b) (((a)>(b))?(a):(b))
+
 #endif // __IOTOP_H__
 

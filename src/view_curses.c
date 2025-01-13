@@ -98,8 +98,6 @@ You should have received a copy of the GNU General Public License along with thi
 #define GREEN_PAIR 3
 #define MAGENTA_PAIR 4
 
-#define mymax(a,b) (((a)>(b))?(a):(b))
-
 static int in_ionice=0; // ionice interface flag and state vars
 static char ionice_id[50];
 static int ionice_pos=-1;
