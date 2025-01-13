@@ -4,7 +4,7 @@ iotop-c (1.27-1) unstable; urgency=medium
   * Bump standards to 4.7.0, no changes
   * Change pkg-config to pkgconf
 
- --  <bbonev@ipacct.com>  Mon, 13 Jan 2025 10:36:15 +0000
+ -- Boian Bonev <bbonev@ipacct.com>  Mon, 13 Jan 2025 10:36:15 +0000
 
 iotop-c (1.26-1) unstable; urgency=medium
 
