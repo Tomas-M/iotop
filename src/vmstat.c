@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020-2024  Boian Bonev
+Copyright (C) 2020-2025  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -44,13 +44,23 @@ inline int get_vm_counters(uint64_t *pgpgin,uint64_t *pgpgou) {
 
 	for (;;) {
 		ssize_t l=read(fd,buf+bp,bs-bp);
+
 		if (l<=0)
 			break;
 		if (l==bs-bp) {
 			t=realloc(buf,bs+BSIZ);
 
 			if (!t) {
+				// it requires hell of an effort to silence a bogus warning...
+				#pragma GCC diagnostic push
+				// silence gcc about unknown -Wunknown-warning-option
+				#pragma GCC diagnostic ignored "-Wpragmas"
+				// silence clang about unknown -Wuse-after-free
+				#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+				// silence the warning itself
+				#pragma GCC diagnostic ignored "-Wuse-after-free"
 				free(buf); // gcc-13 yields false positive -Wuse-after-free here
+				#pragma GCC diagnostic pop
 				close(fd);
 				return ENOMEM;
 			}

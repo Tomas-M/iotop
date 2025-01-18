@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020-2024  Boian Bonev
+Copyright (C) 2020-2025  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -24,10 +24,13 @@ You should have received a copy of the GNU General Public License along with thi
 #define _DEFAULT_SOURCE
 #endif
 
-#include <sys/types.h>
+#include <regex.h>
 #include <stdint.h>
+#include <sys/types.h>
 
-#define VERSION "1.26"
+#include "ucell.h"
+
+#define VERSION "1.27"
 
 typedef enum {
 	E_GR_IO,
@@ -64,6 +67,7 @@ typedef union {
 		int reverse_graph;
 		int hideclock;
 		int accumbw;
+		int inverse;
 		int unicode; // this and below are not part of opts
 		e_grtype grtype;
 		int helptype;
@@ -71,8 +75,9 @@ typedef union {
 		int sort_order;
 		int base; // 1000 or 1024
 		int threshold; // 1..10
+		int norenice;
 	} f;
-	int opts[23];
+	int opts[24];
 } config_t;
 
 typedef struct {
@@ -80,6 +85,10 @@ typedef struct {
 	int delay;
 	int pid;
 	int user_id;
+	char *search_str; // search regex string
+	regex_t search_regx; // search regex
+	int search_regx_ok; // search regex compiles ok
+	ucell *search_uc; // utf cell array
 } params_t;
 
 extern config_t config;
@@ -104,6 +113,10 @@ struct xxxid_stats {
 	uint64_t blkio_delay_total; // nanoseconds
 	uint64_t read_bytes;
 	uint64_t write_bytes;
+	uint64_t swapin_delay_total_p; // aggregated data from all threads
+	uint64_t blkio_delay_total_p; // used for process view
+	uint64_t read_bytes_p;
+	uint64_t write_bytes_p;
 	uint64_t ts_s; // start timestamp for accum-bw
 	uint64_t ts_e; // end timestamp for accum-bw
 
@@ -116,6 +129,15 @@ struct xxxid_stats {
 	double read_val_abw;
 	double write_val_abw;
 
+	double blkio_val_p;
+	double swapin_val_p;
+	double read_val_p;
+	double write_val_p;
+	double read_val_acc_p;
+	double write_val_acc_p;
+	double read_val_abw_p;
+	double write_val_abw_p;
+
 	int io_prio;
 
 	int euid;
@@ -127,6 +149,11 @@ struct xxxid_stats {
 	uint8_t sihist[HISTORY_CNT]; // swapin history data
 	double readhist[HISTORY_CNT]; // read history data
 	double writehist[HISTORY_CNT]; // write history data
+
+	uint8_t iohist_p[HISTORY_CNT]; // io history data (aggregated in main process)
+	uint8_t sihist_p[HISTORY_CNT]; // swapin history data (aggregated in main process)
+	double readhist_p[HISTORY_CNT]; // read history data (aggregated in main process)
+	double writehist_p[HISTORY_CNT]; // write history data (aggregated in main process)
 
 	int exited; // exited>0 shows for how many refresh cycles the process is gone
 	int error_x; // netlink api did not return valid data
@@ -187,8 +214,8 @@ inline int64_t monotime(void);
 inline char *u8strpadt(const char *s,ssize_t len);
 inline char *esc_low_ascii(char *p);
 
-typedef void (*pg_cb)(pid_t pid,pid_t tid,void *hint1,void *hint2);
-inline void pidgen_cb(pg_cb cb,void *hint1,void *hint2);
+typedef void (*pg_cb)(pid_t pid,pid_t tid,struct xxxid_stats_arr *hint1,filter_callback hint2);
+inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hint2);
 
 
 inline int is_a_dir(const char *p);
@@ -279,6 +306,13 @@ inline int write_task_delayacct(int da);
 inline int config_file_load(int *pac,char ***pav);
 inline void config_file_free(void);
 inline int config_file_save(void);
+
+/* main.c */
+
+inline void init_params(void);
+inline void init_config(void);
+
+#define mymax(a,b) (((a)>(b))?(a):(b))
 
 #endif // __IOTOP_H__
 

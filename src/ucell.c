@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
-Copyright (C) 2020-2024  Boian Bonev
+Copyright (C) 2020-2025  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -60,7 +60,6 @@ typedef struct __attribute__((packed)) _cell {
 			uint8_t flags:1; // storage type 0=inline, 1=allocated
 			uint8_t w:2; // terminal cells needed to represent this char
 		};
-		uint8_t pad;
 	};
 } cell;
 
@@ -799,13 +798,13 @@ inline void ucell_move_word_back(ucell *uc) { // {{{
 int main(void) {
 	cell c;
 
-	printf("PSIZE: %lu\n",PSIZE);
-	printf("sizeof(cell): %lu\n",sizeof(cell));
-	printf("sizeof(c.p): %lu\n",sizeof(c.p));
-	printf("sizeof(c.d): %lu\n",sizeof(c.d));
-	printf("off(c.p): %lu\n",__builtin_offsetof(cell,p));
-	printf("off(c.d): %lu\n",__builtin_offsetof(cell,d));
-	printf("off(c.pad): %lu\n",__builtin_offsetof(cell,pad));
+	printf("PSIZE: %zu\n",PSIZE);
+	printf("sizeof(cell): %zu\n",sizeof(cell));
+	printf("sizeof(c.p): %zu\n",sizeof(c.p));
+	printf("sizeof(c.d): %zu\n",sizeof(c.d));
+	printf("off(c.p): %zu\n",__builtin_offsetof(cell,p));
+	printf("off(c.d): %zu\n",__builtin_offsetof(cell,d));
+	printf("off(c.pad): %zu\n",__builtin_offsetof(cell,pad));
 	return 0;
 }
 

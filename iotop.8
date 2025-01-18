@@ -1,4 +1,4 @@
-.TH IOTOP "8" "January 22, 2024"
+.TH IOTOP "8" "January 13, 2025"
 .SH NAME
 iotop \- simple top\-like I/O monitor
 .SH SYNOPSIS
@@ -306,6 +306,13 @@ Disable using Unicode
 \fB\-\-unicode\fR
 Use Unicode drawing chars
 .TP
+\fB\-N\fR, \fB\-\-inverse\fR
+Use inverse interface (black on white)
+.TP
+\fB\-\-filter=REGEX\fR
+Filter processes by TID and COMMAND. This will only show processes where TID
+or COMMAND are matching the REGEX.
+.TP
 \fB\-W\fR, \fB\-\-write\fR
 Merge the preceding options to the current config, save the config and exit.
 Note that all options after this one will be ignored.
@@ -316,8 +323,24 @@ Note that all options after this one will be ignored.
 Exit
 .TP
 \fBW\fR
-Save current settings to configuration file in
-\fB$HOME/.config/iotop/iotoprc\fR
+Save current settings to configuration file in a place conforming to XDG Base
+Directory Specification. The respective path is created in case it does not
+exist. In case of error creating or accessing the config file, the error is
+silently ignored and the configuration is not saved.
+
+.RS
+\fB$XDG_CONFIG_HOME/iotop/iotoprc\fR - if environment variable XDG_CONFIG_HOME
+is set.
+.RE
+
+.RS
+\fB$HOME/.config/iotop/iotoprc\fR - if environment variable XDG_CONFIG_HOME is
+not set but HOME is set.
+.RE
+
+.RS
+\fB.config/iotop/iotoprc\fR - if neither XDG_CONFIG_HOME nor HOME are set.
+.RE
 .TP
 \fBD\fR
 Reset all settings to their default values
@@ -396,6 +419,9 @@ Toggle using Unicode/ASCII characters for pseudo graph
 .TP
 \fBl\fR, \fBL\fR
 Toggle colorizing values
+.TP
+\fBn\fR, \fBN\fR
+Toggle inverse interface (black on white)
 .TP
 \fBx\fR, \fBX\fR
 Toggle the display mode of exited processes/threads between letter x and inverse
@@ -480,9 +506,18 @@ as a single character. Unicode combining characters will be appended to the
 character under the cursor.
 .RE
 .SH ENVIRONMENT
+.TP
+\fBNO_COLOR\fR
 As per the recommendation of \fBhttps://www.no\-color.org/\fR iotop honors the
 contents of the environment variable \fBNO_COLOR\fR and when it is set to a non
 empty string, all color output is suppressed.
+.TP
+\fBHOME\fR, \fBXDG_CONFIG_HOME\fR
+Used to determine the config file path. See the \fBW\fR shortcut for details.
+.TP
+\fBIOTOP_NO_RENICE\fR
+Disable the \fBi\fR shortcut. The user will not be able to change processes'
+nice values.
 .SH SEE ALSO
 .BR ionice (1),
 .BR top (1),
@@ -493,7 +528,7 @@ empty string, all color output is suppressed.
 The original Python iotop implementation was written by Guillaume Chazarain.
 This rewrite in C was started in 2014 by Vyacheslav Trushkin and reworked to
 include all missing features from the original Python code and several new ones
-from 2020 to 2024 by Boian Bonev.
+from 2020 to 2025 by Boian Bonev.
 .PP
 This manual page was started by Paul Wise for the Debian project and is placed
 in the public domain.

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
 
 Copyright (C) 2014  Vyacheslav Trushkin
-Copyright (C) 2020-2024  Boian Bonev
+Copyright (C) 2020-2025  Boian Bonev
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 #include "iotop.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -20,7 +21,8 @@ You should have received a copy of the GNU General Public License along with thi
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define CONFIG_PATH "/.config/iotop"
+#define CONFIG_DIR1 "/.config"
+#define CONFIG_DIR2 "/iotop"
 #define CONFIG_NAME "/iotoprc"
 #define MAX_OPT 50
 
@@ -48,15 +50,25 @@ static inline void mkdir_p(const char *dir) {
 
 static inline FILE *config_file_open(const char *mode) {
 	char path[PATH_MAX];
+	char *xdgconfig;
 	char *home;
 
+	xdgconfig=getenv("XDG_CONFIG_HOME");
 	home=getenv("HOME");
-	if (!home)
-		home="";
 
-	strcpy(path,home);
-	strcat(path,CONFIG_PATH);
-	mkdir_p(path);
+	if (xdgconfig) {
+		strcpy(path,xdgconfig);
+		strcat(path,CONFIG_DIR2);
+		mkdir_p(path);
+	} else {
+		if (home)
+			strcpy(path,home);
+		else
+			strcpy(path,"");
+		strcat(path,CONFIG_DIR1);
+		strcat(path,CONFIG_DIR2);
+		mkdir_p(path);
+	}
 	strcat(path,CONFIG_NAME);
 
 	return fopen(path,mode);
@@ -66,7 +78,6 @@ inline int config_file_load(int *pac,char ***pav) {
 	FILE *cf=config_file_open("r");
 	ssize_t sz;
 	char *s;
-	char *e;
 
 	if (!cf)
 		return -1;
@@ -80,6 +91,8 @@ inline int config_file_load(int *pac,char ***pav) {
 		return -1;
 	}
 	rewind(cf);
+	if (errno) {
+	}
 	ss=calloc(1,sz+1);
 	if (!ss) {
 		fclose(cf);
@@ -120,13 +133,10 @@ inline int config_file_load(int *pac,char ***pav) {
 		ac++;
 		while (*s&&*s!='\n')
 			s++;
-		e=s-1;
 		if (*s) {
 			*s=0;
 			s++;
 		}
-		while (e>av[ac-1]&&(*e==' '||*e=='\t')) // trim trailing white space
-			*e--=0;
 	}
 
 	fclose(cf);
@@ -250,6 +260,11 @@ inline int config_file_save(void) {
 	// --hide-time
 	if (config.f.hideclock)
 		fprintf(cf,"--hide-time\n");
+	// --inverse
+	if (config.f.inverse)
+		fprintf(cf,"--inverse\n");
+	if (params.search_regx_ok&&params.search_str&&strlen(params.search_str))
+		fprintf(cf,"--filter=%s\n",params.search_str);
 
 	fclose(cf);
 
