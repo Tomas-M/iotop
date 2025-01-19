@@ -323,10 +323,18 @@ inline char *u8strpadt(const char *s,ssize_t rlen) {
 	return d;
 }
 
+inline int is_a_file(const char *p) {
+	struct stat st;
+
+	if (lstat(p,&st))
+		return 0;
+	return (st.st_mode&S_IFMT)==S_IFREG;
+}
+
 inline int is_a_dir(const char *p) {
 	struct stat st;
 
-	if (stat(p,&st))
+	if (lstat(p,&st))
 		return 0;
 	return (st.st_mode&S_IFMT)==S_IFDIR;
 }
