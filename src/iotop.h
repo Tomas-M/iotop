@@ -219,6 +219,7 @@ inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hin
 
 
 inline int is_a_dir(const char *p);
+inline int is_a_file(const char *p);
 inline int is_a_process(pid_t tid);
 
 inline double timediff_in_s(uint64_t sta,uint64_t end);
