@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License along with thi
 #include <stdio.h>
 #include <unistd.h>
 #include <syscall.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 
 #include <linux/capability.h>
@@ -26,8 +25,12 @@ inline int system_checks(void) {
 	int vm_event_counters=0;
 	int root_or_netadm=0;
 	int io_accounting=0;
-	struct stat s;
 	uint64_t i,o;
+
+	if (!is_a_process(1)) {
+		printf("Looks like /proc is not mounted.\n");
+		return 1;
+	}
 
 	if (geteuid()==0)
 		root_or_netadm=1;
@@ -59,11 +62,7 @@ inline int system_checks(void) {
 		return EACCES;
 	}
 
-	if (stat("/proc/self/io",&s))
-		perror("Error in stat");
-	else
-		if (S_IFREG==(s.st_mode&S_IFMT))
-			io_accounting=1;
+	io_accounting=is_a_file("/proc/self/io");
 	vm_event_counters=!get_vm_counters(&i,&o);
 	if (!io_accounting||!vm_event_counters) {
 		printf("Could not run iotop as some of the requirements are not met:\n");
