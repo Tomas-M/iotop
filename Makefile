@@ -36,6 +36,7 @@ CFLAGS+=-fanalyzer
 endif
 
 PREFIX?=$(DESTDIR)/usr
+BINDIR?=$(PREFIX)/sbin
 INSTALL?=install
 STRIP?=strip
 
@@ -145,12 +146,12 @@ install: $(TARGET)
 	$(E) STRIP $(TARGET)
 	$(Q)$(STRIP) $(TARGET)
 	$(E) INSTALL $(TARGET)
-	$(Q)$(INSTALL) -D -m 0755 $(TARGET) $(PREFIX)/sbin/$(TARGET)
+	$(Q)$(INSTALL) -D -m 0755 $(TARGET) $(BINDIR)/$(TARGET)
 	$(Q)$(INSTALL) -D -m 0644 iotop.8 $(PREFIX)/share/man/man8/iotop.8
 
 uninstall:
 	$(E) UNINSTALL $(TARGET)
-	$(Q)rm -f $(PREFIX)/sbin/$(TARGET)
+	$(Q)rm -f $(BINDIR)/$(TARGET)
 	$(Q)rm -f $(PREFIX)/share/man/man8/iotop.8
 
 bld/.mkdir:
