@@ -58,7 +58,7 @@ NEEDLRT:=$(shell if $(CC) -E glibcvertest.h -o -|grep IOTOP_NEED_LRT|grep -q yes
 HAVESREA:=$(shell if $(CC) -mno-stackrealign -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 # old comiplers do not have -Wdate-time
 HAVEWDTI:=$(shell if $(CC) -Wdate-time -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
-# old compilers can not generate dependecies
+# old compilers can not generate dependencies
 HAVEDEPS:=$(shell if $(CC) -MM -MT /dev/null -MF /dev/null /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 # old compilers do not understand C standard
 HAVECSTD:=$(shell if $(CC) --std=gnu89 -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
