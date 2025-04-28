@@ -322,8 +322,8 @@ static inline void parse_args(int clac,char **clav) {
 					break;
 				case 'q':
 					config.f.quiet++;
-					if (config.f.quiet>2)
-						config.f.quiet=2;
+					if (config.f.quiet>3)
+						config.f.quiet=3;
 					break;
 				case 'n':
 					params.iter=atoi(optarg);
