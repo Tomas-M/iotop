@@ -61,7 +61,7 @@ view_fini v_fini_cb=view_curses_fini;
 view_loop v_loop_cb=view_curses_loop;
 
 inline void init_params(void) {
-	// initally params are zeroed; free the things possibly allocated on a second call
+	// initially params are zeroed; free the things possibly allocated on a second call
 	if (params.search_str)
 		free(params.search_str);
 	if (params.search_regx_ok)
