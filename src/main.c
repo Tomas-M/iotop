@@ -307,7 +307,6 @@ static inline void parse_args(int clac,char **clav) {
 				case 'P':
 				case 'k':
 				case 't':
-				case 'q':
 				case 'c':
 				case '1' ... '9':
 				case 'x':
@@ -318,6 +317,11 @@ static inline void parse_args(int clac,char **clav) {
 				case 'N':
 				case_opt:
 					config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
+					break;
+				case 'q':
+					config.f.quiet++;
+					if (config.f.quiet>2)
+						config.f.quiet=2;
 					break;
 				case 'n':
 					params.iter=atoi(optarg);
