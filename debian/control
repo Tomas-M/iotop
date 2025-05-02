@@ -6,7 +6,7 @@ Build-Depends:
  debhelper-compat (= 13),
  libncurses-dev,
  pkgconf,
-Standards-Version: 4.7.0
+Standards-Version: 4.7.2
 Rules-Requires-Root: no
 Homepage: https://github.com/Tomas-M/iotop
 Vcs-Browser: https://github.com/Tomas-M/iotop
