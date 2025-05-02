@@ -1,6 +1,6 @@
 Name:           iotop-c
 Version:        1.27
-Release:        1%{?dist}
+Release:        4%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
 License:        GPL-2.0-or-later
@@ -8,6 +8,7 @@ URL:            https://github.com/Tomas-M/iotop/
 Source0:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.xz
 Source1:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.xz.asc
 Source2:        https://raw.githubusercontent.com/Tomas-M/iotop/v%{version}/debian/upstream/signing-key.asc
+Patch1:         iotop-1.27-sbindir.patch
 
 Provides:       iotop
 Obsoletes:      iotop < 0.7
@@ -44,15 +45,24 @@ possible.
 NO_FLTO=1 %make_build
 
 %install
-V=1 STRIP=: %make_install
+V=1 STRIP=: BINDIR=$RPM_BUILD_ROOT%{_bindir} %make_install
 
 %files
 %license COPYING
 %license LICENSE
-%{_sbindir}/iotop
+%{_bindir}/iotop
 %{_mandir}/man8/iotop.8*
 
 %changelog
+* Mon Feb 10 2025 Michal Hlavinka <mhlavink@redhat.com> - 1.27-4
+- rebuild
+
+* Wed Jan 22 2025 Michal Hlavinka <mhlavink@redhat.com> - 1.27-3
+- update for bin and sbin merge https://fedoraproject.org/wiki/Changes/Unify_bin_and_sbin
+
+* Fri Jan 17 2025 Fedora Release Engineering <releng@fedoraproject.org> - 1.27-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_42_Mass_Rebuild
+
 * Mon 13 Jan 2025 Boian Bonev <bbonev@ipacct.com> - 1.27-1
 - Update to latest ver 1.27
 
