@@ -1,6 +1,6 @@
 Name:           iotop-c
-Version:        1.27
-Release:        4%{?dist}
+Version:        1.28
+Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
 License:        GPL-2.0-or-later
@@ -8,7 +8,6 @@ URL:            https://github.com/Tomas-M/iotop/
 Source0:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.xz
 Source1:        https://github.com/Tomas-M/iotop/releases/download/v%{version}/iotop-%{version}.tar.xz.asc
 Source2:        https://raw.githubusercontent.com/Tomas-M/iotop/v%{version}/debian/upstream/signing-key.asc
-Patch1:         iotop-1.27-sbindir.patch
 
 Provides:       iotop
 Obsoletes:      iotop < 0.7
@@ -54,6 +53,9 @@ V=1 STRIP=: BINDIR=$RPM_BUILD_ROOT%{_bindir} %make_install
 %{_mandir}/man8/iotop.8*
 
 %changelog
+* Fri May  2 2025 Boian Bonev <bbonev@ipacct.com> - 1.28-1
+- Update to latest ver 1.28
+
 * Mon Feb 10 2025 Michal Hlavinka <mhlavink@redhat.com> - 1.27-4
 - rebuild
 
@@ -63,13 +65,13 @@ V=1 STRIP=: BINDIR=$RPM_BUILD_ROOT%{_bindir} %make_install
 * Fri Jan 17 2025 Fedora Release Engineering <releng@fedoraproject.org> - 1.27-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_42_Mass_Rebuild
 
-* Mon 13 Jan 2025 Boian Bonev <bbonev@ipacct.com> - 1.27-1
+* Mon Jan 13 2025 Boian Bonev <bbonev@ipacct.com> - 1.27-1
 - Update to latest ver 1.27
 
 * Thu Jul 18 2024 Fedora Release Engineering <releng@fedoraproject.org> - 1.26-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_41_Mass_Rebuild
 
-* Sat 03 Feb 2024 Boian Bonev <bbonev@ipacct.com> - 1.26-1
+* Sat Feb 03 2024 Boian Bonev <bbonev@ipacct.com> - 1.26-1
 - Update to latest ver 1.26
 
 * Thu Feb 01 2024 Michal Hlavinka <mhlavink@redhat.com> - 1.25-4
