@@ -52,6 +52,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 static const char *progname=NULL;
 int maxpidlen=5;
+unsigned taskstats_ver=0; // 0=no warning, any version above the biggest known one will print a warning after exit
 
 config_t config={0};
 params_t params={0};
