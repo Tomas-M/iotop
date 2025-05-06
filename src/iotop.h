@@ -94,7 +94,9 @@ typedef struct {
 extern config_t config;
 extern params_t params;
 extern int maxpidlen;
+extern unsigned taskstats_ver;
 
+#define IOTOP_TASKSTATS_VERSION 15
 
 #define HISTORY_POS 60
 #define HISTORY_CNT (HISTORY_POS*2)
