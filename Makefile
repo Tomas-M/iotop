@@ -158,7 +158,7 @@ bld/.mkdir:
 	$(Q)mkdir -p bld
 	$(Q)touch bld/.mkdir
 
-VER:=$(shell grep VERSION src/iotop.h|tr -d '\"'|awk '{print $$3}')
+VER:=$(shell grep ' VERSION ' src/iotop.h|tr -d '\"'|awk '{print $$3}')
 mkotar:
 	$(MAKE) clean
 	-dh_clean
