@@ -96,6 +96,7 @@ extern params_t params;
 extern int maxpidlen;
 extern unsigned taskstats_ver;
 
+#define IOTOP_TASKSTATS_MINVER 4
 #define IOTOP_TASKSTATS_VERSION 15
 
 #define HISTORY_POS 60

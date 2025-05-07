@@ -2603,7 +2603,14 @@ inline void view_curses_fini(void) {
 				"\tto restore it to its previous value and save some CPU cycles.\n"
 			);
 		}
-	if (taskstats_ver)
+	if (taskstats_ver&&taskstats_ver<IOTOP_TASKSTATS_MINVER)
+		printf(
+			"WARNING:\n"
+			"\tThis kernel provides struct taskstats with version %u.\n"
+			"\tThat does not contain the required data and should be %u or greater.\n",
+			taskstats_ver,IOTOP_TASKSTATS_MINVER
+		);
+	if (taskstats_ver&&taskstats_ver>IOTOP_TASKSTATS_VERSION)
 		printf(
 			"WARNING:\n"
 			"\tThis kernel provides struct taskstats with version %u.\n"
