@@ -136,6 +136,7 @@ inline void view_batch_loop(void) {
 
 		if ((params.iter>-1)&&((--params.iter)==0))
 			break;
+		fflush(stdout);
 		sleep(params.delay);
 	}
 	arr_free(cs);
