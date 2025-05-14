@@ -194,31 +194,29 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 					// NOTE: we use the build system kernel headers for the version field only
 					// all the data access is done by using copies of the respective versions
 					// of the kernel headers
+					// A patch that will fix the problem is proposed to be included in the kernel
+					// and the only broken struct taskstats will be the one with v15. But we can
+					// not rely on the build system kernel headers for universal access and have
+					// to keep the copies.
+					// In this way a build with any kernel headers will work everywhere
 					struct taskstats *ts=NLA_DATA(na);
 					struct taskstats_v14 *t14=NLA_DATA(na);
 					struct taskstats_v15 *t15=NLA_DATA(na);
 
-					// add a compile time check to raise awareness
-					#if TASKSTATS_VERSION > IOTOP_TASKSTATS_VERSION
-					#warning Current kernel implements newer struct taskstats, maybe we need a fix for that too
-					#endif
-
 					if (ts->version<IOTOP_TASKSTATS_MINVER) // v3 and below does not have the data we require
 						taskstats_ver=ts->version;
-					else if (ts->version<15) { // use v14 for v4..v14
+					else if (ts->version!=15) { // use v14 for v4..v14 & v16 onwards
 						stats->read_bytes=t14->read_bytes;
 						stats->write_bytes=t14->write_bytes;
 						stats->swapin_delay_total=t14->swapin_delay_total;
 						stats->blkio_delay_total=t14->blkio_delay_total;
 						stats->euid=t14->ac_uid;
-					} else { // use v15 for v15+ and cross fingers it will not change again
+					} else { // exception for v15 only
 						stats->read_bytes=t15->read_bytes;
 						stats->write_bytes=t15->write_bytes;
 						stats->swapin_delay_total=t15->swapin_delay_total;
 						stats->blkio_delay_total=t15->blkio_delay_total;
 						stats->euid=t15->ac_uid;
-						if (ts->version>IOTOP_TASKSTATS_VERSION) // print a warning about running on a kernel with maybe incompatible struct taskstats
-							taskstats_ver=ts->version;
 					}
 				}
 				len2+=NLA_ALIGN(na->nla_len);
