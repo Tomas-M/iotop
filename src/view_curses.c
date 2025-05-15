@@ -1190,8 +1190,13 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				read_val=config.f.processes?s->read_val_acc_p:s->read_val_acc;
 				write_val=config.f.processes?s->write_val_acc_p:s->write_val_acc;
 			} else {
-				read_val=config.f.processes?s->read_val_p:s->read_val;
-				write_val=config.f.processes?s->write_val_p:s->write_val;
+				if (s->exited) {
+					read_val=0.0;
+					write_val=0.0;
+				} else {
+					read_val=config.f.processes?s->read_val_p:s->read_val;
+					write_val=config.f.processes?s->write_val_p:s->write_val;
+				}
 			}
 
 			humanize_val(&read_val,read_str,1);
@@ -1325,16 +1330,24 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 					printw("  Error  ");
 					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
-				} else
-					color_print_pc(config.f.processes?s->swapin_val_p:s->swapin_val);
+				} else {
+					if (s->exited)
+						color_print_pc(0);
+					else
+						color_print_pc(config.f.processes?s->swapin_val_p:s->swapin_val);
+				}
 			}
 			if (!config.f.hideio&&has_tda) {
 				if (s->error_x) {
 					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 					printw("  Error  ");
 					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
-				} else
-					color_print_pc(config.f.processes?s->blkio_val_p:s->blkio_val);
+				} else {
+					if (s->exited)
+						color_print_pc(0);
+					else
+						color_print_pc(config.f.processes?s->blkio_val_p:s->blkio_val);
+				}
 			}
 			if (!config.f.hidegraph&&hrevpos>0) {
 				if (config.f.reverse_graph) {
