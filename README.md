@@ -199,7 +199,9 @@ cd iotop && git checkout master && git pull && make clean && make -j
     -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)
     -R, --reverse-graph    reverse GRAPH column direction
         --no-reverse-graph do not reverse GRAPH column direction
-    -q, --quiet            suppress some lines of header (implies --batch)
+    -q, --quiet            print column names only on the first run (implies --batch)
+                           a second -q will also suppress the first run column names
+                           a third -q will suppress the I/O summary
     -x, --dead-x           show exited processes/threads with letter x
         --no-dead-x        show exited processes/threads with background
     -e, --hide-exited      hide exited processes

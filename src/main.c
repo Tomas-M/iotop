@@ -52,6 +52,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 static const char *progname=NULL;
 int maxpidlen=5;
+unsigned taskstats_ver=0; // 0=no warning, any version above the biggest known one will print a warning after exit
 
 config_t config={0};
 params_t params={0};
@@ -61,7 +62,7 @@ view_fini v_fini_cb=view_curses_fini;
 view_loop v_loop_cb=view_curses_loop;
 
 inline void init_params(void) {
-	// initally params are zeroed; free the things possibly allocated on a second call
+	// initially params are zeroed; free the things possibly allocated on a second call
 	if (params.search_str)
 		free(params.search_str);
 	if (params.search_regx_ok)
@@ -144,7 +145,9 @@ static inline void print_help(void) {
 		"  -g TYPE, --grtype=TYPE set graph data source (io, r, w, rw and sw)\n"
 		"  -R, --reverse-graph    reverse GRAPH column direction\n"
 		"      --no-reverse-graph do not reverse GRAPH column direction\n"
-		"  -q, --quiet            suppress some lines of header (implies --batch)\n"
+		"  -q, --quiet            print column names only on the first run (implies --batch)\n"
+		"                         a second -q will also suppress the first run column names\n"
+		"                         a third -q will suppress the I/O summary\n"
 		"  -x, --dead-x           show exited processes/threads with letter x\n"
 		"      --no-dead-x        show exited processes/threads with background\n"
 		"  -e, --hide-exited      hide exited processes\n"
@@ -307,7 +310,6 @@ static inline void parse_args(int clac,char **clav) {
 				case 'P':
 				case 'k':
 				case 't':
-				case 'q':
 				case 'c':
 				case '1' ... '9':
 				case 'x':
@@ -318,6 +320,11 @@ static inline void parse_args(int clac,char **clav) {
 				case 'N':
 				case_opt:
 					config.opts[(unsigned int)(strchr(str_opt,c)-str_opt)]=1;
+					break;
+				case 'q':
+					config.f.quiet++;
+					if (config.f.quiet>3)
+						config.f.quiet=3;
 					break;
 				case 'n':
 					params.iter=atoi(optarg);

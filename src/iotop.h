@@ -30,7 +30,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 #include "ucell.h"
 
-#define VERSION "1.27"
+#define VERSION "1.29"
 
 typedef enum {
 	E_GR_IO,
@@ -94,7 +94,9 @@ typedef struct {
 extern config_t config;
 extern params_t params;
 extern int maxpidlen;
+extern unsigned taskstats_ver;
 
+#define IOTOP_TASKSTATS_VERSION 15
 
 #define HISTORY_POS 60
 #define HISTORY_CNT (HISTORY_POS*2)
@@ -219,6 +221,7 @@ inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hin
 
 
 inline int is_a_dir(const char *p);
+inline int is_a_file(const char *p);
 inline int is_a_process(pid_t tid);
 
 inline double timediff_in_s(uint64_t sta,uint64_t end);

@@ -25,6 +25,13 @@ You should have received a copy of the GNU General Public License along with thi
 #include <linux/taskstats.h>
 #include <linux/genetlink.h>
 
+// Recent Linux kernel broke the backwards compatibility in struct taskstats,
+// rendering the kernel headers useless and forcing userland to make hacks
+// like the one below... :(
+
+#include "taskstats-v14.h"
+#include "taskstats-v15.h"
+
 /*
  * Generic macros for dealing with netlink sockets. Might be duplicated
  * elsewhere
@@ -185,14 +192,29 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 			while (len2<aggr_len) {
 				if (na->nla_type==TASKSTATS_TYPE_STATS) {
 					struct taskstats *ts=NLA_DATA(na);
+					struct taskstats_v14 *t14=NLA_DATA(na);
+					struct taskstats_v15 *t15=NLA_DATA(na);
 
-					#define COPY(field) { stats->field = ts->field; }
-					COPY(read_bytes);
-					COPY(write_bytes);
-					COPY(swapin_delay_total);
-					COPY(blkio_delay_total);
-					#undef COPY
-					stats->euid=ts->ac_uid;
+					// add a compile time check to raise awareness
+					#if TASKSTATS_VERSION > IOTOP_TASKSTATS_VERSION
+					#warning Current kernel implements newer struct taskstats, maybe we need a fix for that too
+					#endif
+
+					if (ts->version<15) { // use v14 for 14 and below
+						stats->read_bytes=t14->read_bytes;
+						stats->write_bytes=t14->write_bytes;
+						stats->swapin_delay_total=t14->swapin_delay_total;
+						stats->blkio_delay_total=t14->blkio_delay_total;
+						stats->euid=t14->ac_uid;
+					} else {
+						stats->read_bytes=t15->read_bytes;
+						stats->write_bytes=t15->write_bytes;
+						stats->swapin_delay_total=t15->swapin_delay_total;
+						stats->blkio_delay_total=t15->blkio_delay_total;
+						stats->euid=t15->ac_uid;
+						if (ts->version>IOTOP_TASKSTATS_VERSION) // print a warning about running on a kernel with maybe incompatible struct taskstats
+							taskstats_ver=ts->version;
+					}
 				}
 				len2+=NLA_ALIGN(na->nla_len);
 				na=(struct nlattr *)((char *)na+len2);

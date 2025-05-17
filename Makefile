@@ -36,6 +36,7 @@ CFLAGS+=-fanalyzer
 endif
 
 PREFIX?=$(DESTDIR)/usr
+BINDIR?=$(PREFIX)/sbin
 INSTALL?=install
 STRIP?=strip
 
@@ -57,7 +58,7 @@ NEEDLRT:=$(shell if $(CC) -E glibcvertest.h -o -|grep IOTOP_NEED_LRT|grep -q yes
 HAVESREA:=$(shell if $(CC) -mno-stackrealign -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 # old comiplers do not have -Wdate-time
 HAVEWDTI:=$(shell if $(CC) -Wdate-time -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
-# old compilers can not generate dependecies
+# old compilers can not generate dependencies
 HAVEDEPS:=$(shell if $(CC) -MM -MT /dev/null -MF /dev/null /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 # old compilers do not understand C standard
 HAVECSTD:=$(shell if $(CC) --std=gnu89 -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
@@ -145,19 +146,19 @@ install: $(TARGET)
 	$(E) STRIP $(TARGET)
 	$(Q)$(STRIP) $(TARGET)
 	$(E) INSTALL $(TARGET)
-	$(Q)$(INSTALL) -D -m 0755 $(TARGET) $(PREFIX)/sbin/$(TARGET)
+	$(Q)$(INSTALL) -D -m 0755 $(TARGET) $(BINDIR)/$(TARGET)
 	$(Q)$(INSTALL) -D -m 0644 iotop.8 $(PREFIX)/share/man/man8/iotop.8
 
 uninstall:
 	$(E) UNINSTALL $(TARGET)
-	$(Q)rm -f $(PREFIX)/sbin/$(TARGET)
+	$(Q)rm -f $(BINDIR)/$(TARGET)
 	$(Q)rm -f $(PREFIX)/share/man/man8/iotop.8
 
 bld/.mkdir:
 	$(Q)mkdir -p bld
 	$(Q)touch bld/.mkdir
 
-VER:=$(shell grep VERSION src/iotop.h|tr -d '\"'|awk '{print $$3}')
+VER:=$(shell grep ' VERSION ' src/iotop.h|tr -d '\"'|awk '{print $$3}')
 mkotar:
 	$(MAKE) clean
 	-dh_clean

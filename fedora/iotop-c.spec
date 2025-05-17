@@ -1,5 +1,5 @@
 Name:           iotop-c
-Version:        1.27
+Version:        1.29
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
@@ -44,22 +44,37 @@ possible.
 NO_FLTO=1 %make_build
 
 %install
-V=1 STRIP=: %make_install
+V=1 STRIP=: BINDIR=$RPM_BUILD_ROOT%{_bindir} %make_install
 
 %files
 %license COPYING
 %license LICENSE
-%{_sbindir}/iotop
+%{_bindir}/iotop
 %{_mandir}/man8/iotop.8*
 
 %changelog
-* Mon 13 Jan 2025 Boian Bonev <bbonev@ipacct.com> - 1.27-1
+* Tue May  6 2025 Boian Bonev <bbonev@ipacct.com> - 1.29-1
+- Update to latest ver 1.29
+
+* Fri May  2 2025 Boian Bonev <bbonev@ipacct.com> - 1.28-1
+- Update to latest ver 1.28
+
+* Mon Feb 10 2025 Michal Hlavinka <mhlavink@redhat.com> - 1.27-4
+- rebuild
+
+* Wed Jan 22 2025 Michal Hlavinka <mhlavink@redhat.com> - 1.27-3
+- update for bin and sbin merge https://fedoraproject.org/wiki/Changes/Unify_bin_and_sbin
+
+* Fri Jan 17 2025 Fedora Release Engineering <releng@fedoraproject.org> - 1.27-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_42_Mass_Rebuild
+
+* Mon Jan 13 2025 Boian Bonev <bbonev@ipacct.com> - 1.27-1
 - Update to latest ver 1.27
 
 * Thu Jul 18 2024 Fedora Release Engineering <releng@fedoraproject.org> - 1.26-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_41_Mass_Rebuild
 
-* Sat 03 Feb 2024 Boian Bonev <bbonev@ipacct.com> - 1.26-1
+* Sat Feb 03 2024 Boian Bonev <bbonev@ipacct.com> - 1.26-1
 - Update to latest ver 1.26
 
 * Thu Feb 01 2024 Michal Hlavinka <mhlavink@redhat.com> - 1.25-4

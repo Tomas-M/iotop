@@ -2603,6 +2603,13 @@ inline void view_curses_fini(void) {
 				"\tto restore it to its previous value and save some CPU cycles.\n"
 			);
 		}
+	if (taskstats_ver)
+		printf(
+			"WARNING:\n"
+			"\tThis kernel provides struct taskstats with version %u.\n"
+			"\tThat may not be compatible with the currently supported version %u.\n",
+			taskstats_ver,IOTOP_TASKSTATS_VERSION
+		);
 }
 
 inline void view_curses_loop(void) {
