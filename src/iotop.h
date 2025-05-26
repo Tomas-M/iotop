@@ -30,7 +30,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 #include "ucell.h"
 
-#define VERSION "1.29"
+#define VERSION "1.30"
 
 typedef enum {
 	E_GR_IO,

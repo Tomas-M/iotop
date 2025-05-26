@@ -1,5 +1,5 @@
 Name:           iotop-c
-Version:        1.29
+Version:        1.30
 Release:        1%{?dist}
 Summary:        Simple top-like I/O monitor (implemented in C)
 
@@ -53,6 +53,9 @@ V=1 STRIP=: BINDIR=$RPM_BUILD_ROOT%{_bindir} %make_install
 %{_mandir}/man8/iotop.8*
 
 %changelog
+* Mon May 26 2025 Boian Bonev <bbonev@ipacct.com> - 1.30-1
+- Update to latest ver 1.30
+
 * Tue May  6 2025 Boian Bonev <bbonev@ipacct.com> - 1.29-1
 - Update to latest ver 1.29
 
