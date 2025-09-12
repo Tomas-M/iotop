@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act) {
@@ -65,6 +66,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		double write_val;
 		double read_val;
 		char *pw_name;
+		char *cmdt;
 
 		if (config.f.accumbw) {
 			read_val=config.f.processes?s->read_val_abw_p:s->read_val_abw;
@@ -87,10 +89,18 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		if (s->exited) // do not show exited processes in batch view
 			continue;
 		if (params.search_regx_ok) {
+			int ma_long,ma_short,ma_comm,ma_tid;
 			char tid[22];
 
 			sprintf(tid,"%lu",(unsigned long)s->tid);
-			if (regexec(&params.search_regx,s->cmdline1,0,NULL,0)&&regexec(&params.search_regx,s->cmdline2,0,NULL,0)&&regexec(&params.search_regx,tid,0,NULL,0))
+			ma_long=regexec(&params.search_regx,s->cmdline_long,0,NULL,0);
+			ma_short=regexec(&params.search_regx,s->cmdline_short,0,NULL,0);
+			if (s->cmdline_comm)
+				ma_comm=regexec(&params.search_regx,s->cmdline_comm,0,NULL,0);
+			else
+				ma_comm=REG_NOMATCH;
+			ma_tid=regexec(&params.search_regx,tid,0,NULL,0);
+			if (ma_long&&ma_short&&ma_comm&&ma_tid) // nothing matches
 				continue;
 		}
 
@@ -99,7 +109,18 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 		pw_name=u8strpadt(s->pw_name,10);
 
-		printf("%6i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str,write_val,write_str,swapin_val,blkio_val,config.f.fullcmdline?s->cmdline2:s->cmdline1);
+		if (config.f.fullcmdline&&s->cmdline_comm) { // append custom thread name before full cmdline
+			char tb[1+strlen(s->cmdline_comm)+1+strlen(s->cmdline_long)+1];
+
+			sprintf(tb,"[%s]%s",s->cmdline_comm,s->cmdline_long);
+			cmdt=esc_low_ascii(tb);
+		} else
+			cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline_long:s->cmdline_short);
+
+		printf("%6i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str,write_val,write_str,swapin_val,blkio_val,cmdt?cmdt:"(null)");
+
+		if (cmdt)
+			free(cmdt);
 
 		if (pw_name)
 			free(pw_name);

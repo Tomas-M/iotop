@@ -191,11 +191,13 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 			if (p) {
 				*p=*ps->arr[n]; // WARNING - all dynamic data inside should always be initialized below
 				p->threads=NULL;
-				// copy dynamic data to avoid double free; in the unlikely case strdup fails, data is just lost
-				if (p->cmdline1)
-					p->cmdline1=strdup(ps->arr[n]->cmdline1);
-				if (p->cmdline2)
-					p->cmdline2=strdup(ps->arr[n]->cmdline2);
+				// copy dynamic data to avoid double free; in the unlikely event when strdup fails, filter1 will skip this item
+				if (p->cmdline_short)
+					p->cmdline_short=strdup(ps->arr[n]->cmdline_short);
+				if (p->cmdline_long)
+					p->cmdline_long=strdup(ps->arr[n]->cmdline_long);
+				if (p->cmdline_comm)
+					p->cmdline_comm=strdup(ps->arr[n]->cmdline_comm);
 				if (p->pw_name)
 					p->pw_name=strdup(ps->arr[n]->pw_name);
 				// shift history one step
@@ -218,10 +220,12 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 					p->writehist_p[0]=0.0;
 				}
 				if (arr_add(cs,p)) { // free the data in case add fails
-					if (p->cmdline1)
-						free(p->cmdline1);
-					if (p->cmdline2)
-						free(p->cmdline2);
+					if (p->cmdline_short)
+						free(p->cmdline_short);
+					if (p->cmdline_long)
+						free(p->cmdline_long);
+					if (p->cmdline_comm)
+						free(p->cmdline_comm);
 					if (p->pw_name)
 						free(p->pw_name);
 					free(p);
@@ -366,7 +370,7 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 			res=pa->io_prio-pb->io_prio;
 			break;
 		case SORT_BY_COMMAND:
-			res=strcmp(config.f.fullcmdline?pa->cmdline2:pa->cmdline1,config.f.fullcmdline?pb->cmdline2:pb->cmdline1);
+			res=strcmp(config.f.fullcmdline?pa->cmdline_long:pa->cmdline_short,config.f.fullcmdline?pb->cmdline_long:pb->cmdline_short);
 			break;
 		case SORT_BY_TID:
 			res=pa->tid-pb->tid;
@@ -410,6 +414,9 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 }
 
 inline int filter1(struct xxxid_stats *s) {
+	if (!s->cmdline_long||!s->cmdline_short) // if strdup fails during copy, those may become NULL
+		return 1;
+
 	if ((params.user_id!=-1)&&(s->euid!=params.user_id))
 		return 1;
 

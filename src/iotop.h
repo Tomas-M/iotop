@@ -144,8 +144,9 @@ struct xxxid_stats {
 	int io_prio;
 
 	int euid;
-	char *cmdline1;
-	char *cmdline2;
+	char *cmdline_long;
+	char *cmdline_short;
+	char *cmdline_comm;
 	char *pw_name;
 
 	uint8_t iohist[HISTORY_CNT]; // io history data
@@ -211,7 +212,7 @@ inline int masked_sort_by(int isforward);
 
 /* utils.c */
 
-inline char *read_cmdline(int pid,int isshort);
+inline void read_cmdlines(int pid,char **cmd_long,char **cmd_short,char **cmd_comm);
 
 inline int64_t monotime(void);
 inline char *u8strpadt(const char *s,ssize_t len);

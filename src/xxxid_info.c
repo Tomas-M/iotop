@@ -235,10 +235,12 @@ inline void nl_fini(void) {
 }
 
 inline void free_stats(struct xxxid_stats *s) {
-	if (s->cmdline1)
-		free(s->cmdline1);
-	if (s->cmdline2)
-		free(s->cmdline2);
+	if (s->cmdline_short)
+		free(s->cmdline_short);
+	if (s->cmdline_long)
+		free(s->cmdline_long);
+	if (s->cmdline_comm)
+		free(s->cmdline_comm);
 	if (s->pw_name)
 		free(s->pw_name);
 	arr_free_noitem(s->threads);
@@ -250,8 +252,6 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	struct xxxid_stats *s=calloc(1,sizeof *s);
 	static const char unknown[]="<unknown>";
 	struct passwd *pwd;
-	char *cmdline1;
-	char *cmdline2;
 	int prio;
 
 	if (!s)
@@ -268,15 +268,17 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	} else
 		s->io_prio=prio;
 
-	cmdline1=read_cmdline(tid,1);
-	cmdline2=read_cmdline(tid,0);
+	read_cmdlines(tid,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
 
-	s->cmdline1=cmdline1?cmdline1:strdup(unknown);
-	s->cmdline2=cmdline2?cmdline2:strdup(unknown);
+	if (!s->cmdline_long)
+		s->cmdline_long=strdup(unknown);
+	if (!s->cmdline_short)
+		s->cmdline_short=strdup(unknown);
+	// cmdline_comm can be NULL
 	pwd=getpwuid(s->euid);
 	s->pw_name=strdup(pwd&&pwd->pw_name?pwd->pw_name:unknown);
 
-	if ((s->error_x||s->error_i||!cmdline1||!cmdline2)&&!is_a_process(tid)) { // process exited in the meantime
+	if ((s->error_x||s->error_i||!s->cmdline_long||!s->cmdline_short)&&!is_a_process(tid)) { // process exited in the meantime
 		free_stats(s);
 		return NULL;
 	}

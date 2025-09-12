@@ -309,10 +309,18 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	if (config.f.hideexited&&s->exited)
 		return 1;
 	if (params.search_regx_ok) {
+		int ma_long,ma_short,ma_comm,ma_tid;
 		char tid[22];
 
 		sprintf(tid,"%lu",(unsigned long)s->tid);
-		if (regexec(&params.search_regx,s->cmdline1,0,NULL,0)&&regexec(&params.search_regx,s->cmdline2,0,NULL,0)&&regexec(&params.search_regx,tid,0,NULL,0))
+		ma_long=regexec(&params.search_regx,s->cmdline_long,0,NULL,0);
+		ma_short=regexec(&params.search_regx,s->cmdline_short,0,NULL,0);
+		if (s->cmdline_comm)
+			ma_comm=regexec(&params.search_regx,s->cmdline_comm,0,NULL,0);
+		else
+			ma_comm=REG_NOMATCH;
+		ma_tid=regexec(&params.search_regx,tid,0,NULL,0);
+		if (ma_long&&ma_short&&ma_comm&&ma_tid) // nothing matches
 			return 1;
 	}
 	// visible history is non-zero
@@ -1206,7 +1214,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			pw_name=u8strpadt(pwt,9);
 			if (pwt)
 				free(pwt);
-			cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline2:s->cmdline1);
+
+			if (config.f.fullcmdline&&s->cmdline_comm) { // append custom thread name before full cmdline
+				char tb[1+strlen(s->cmdline_comm)+1+strlen(s->cmdline_long)+1];
+
+				sprintf(tb,"[%s]%s",s->cmdline_comm,s->cmdline_long);
+				cmdt=esc_low_ascii(tb);
+			} else
+				cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline_long:s->cmdline_short);
 			cmdline=u8strpadt(cmdt,maxcmdline-1); // -1 for thread/process link chars
 			if (cmdt)
 				free(cmdt);
