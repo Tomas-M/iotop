@@ -365,10 +365,10 @@ inline int is_a_dir(const char *p) {
 }
 
 inline int is_a_process(pid_t tid) {
-	char path[30];
+	char path[35];
 
-	snprintf(path,sizeof path,"/proc/%d",tid);
-	return is_a_dir(path);
+	snprintf(path,sizeof path,"/proc/%d/stat",tid);
+	return is_a_file(path);
 }
 
 inline double timediff_in_s(uint64_t sta,uint64_t end) {
