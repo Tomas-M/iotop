@@ -249,11 +249,15 @@ inline void free_stats(struct xxxid_stats *s) {
 }
 
 inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
-	struct xxxid_stats *s=calloc(1,sizeof *s);
 	static const char unknown[]="<unknown>";
+	struct xxxid_stats *s;
 	struct passwd *pwd;
 	int prio;
 
+	if (!is_a_process(tid))
+		return NULL;
+
+	s=calloc(1,sizeof *s);
 	if (!s)
 		return NULL;
 
