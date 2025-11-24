@@ -27,7 +27,7 @@ inline int system_checks(void) {
 	int io_accounting=0;
 	uint64_t i,o;
 
-	if (!is_a_process(1)) {
+	if (!is_a_process(getpid())) {
 		printf("Looks like /proc is not mounted.\n");
 		return 1;
 	}
