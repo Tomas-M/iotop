@@ -1,0 +1,3 @@
+Tests: basic-output iterations real-io
+Depends: iotop-c, coreutils
+Restrictions: needs-root isolation-machine
