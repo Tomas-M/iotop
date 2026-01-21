@@ -249,6 +249,9 @@ The iotop community gathers in #iotop on libera.chat:
 
 Notable contributions (ordered by time of last contribution):
 
+-   Renan Rodrigo &lt;[rr@ubuntu.com](mailto:rr@ubuntu.com)&gt; - Contributed autopkgtests
+-   Roshless &lt;[me@roshless.com](mailto:me@roshless.com)&gt; - Alpine Linux installation instructions
+-   Michal Hlavinka &lt;[mhlavink@redhat.com](mailto:mhlavink@redhat.com)&gt; - Fedora/RedHat packaging and testing
 -   Miko Larsson &lt;[mikoxyzzz@gmail.com](mailto:mikoxyzzz@gmail.com)&gt; - Control-flow integrity (CFI) fixes and testing
 -   Christian Heusel &lt;[christian@heusel.eu](mailto:christian@heusel.eu)&gt; - Arch Linux packaging and testing
 -   Leah Neukirchen &lt;[leah@vuxu.org](mailto:leah@vuxu.org)&gt; - Void Linux packaging and testing
