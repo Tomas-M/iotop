@@ -5,14 +5,14 @@
 set -eu
 
 cleanup() {
-    rm -f "$out" "$err" "$filtered_err"
+	rm -f "$out" "$err" "$filtered_err"
 }
 trap cleanup EXIT
 
 # Remove the known iotop-c warning about task_delayacct being disabled.
 # All other stderr output is preserved and should be treated as errors.
 filter_stderr() {
-    sed '/task_delayacct is 0/d'
+	sed '/task_delayacct is 0/d'
 }
 
 out=$(mktemp)
@@ -30,6 +30,6 @@ filter_stderr <"$err" >"$filtered_err"
 count="$(grep -c "Total DISK READ" "$out" || true)"
 
 if [ "$count" -ne "$iteration_count" ]; then
-    echo "ERROR: Expected $iteration_count headers, but found $count" >&2
-    exit 1
+	echo "ERROR: Expected $iteration_count headers, but found $count" >&2
+	exit 1
 fi

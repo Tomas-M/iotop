@@ -7,11 +7,11 @@ set -eu
 # Remove the known iotop-c warning about task_delayacct being disabled.
 # All other stderr output is preserved and should be treated as errors.
 filter_stderr() {
-    sed '/task_delayacct is 0/d'
+	sed '/task_delayacct is 0/d'
 }
 
 cleanup() {
-    rm -f "$out" "$err" "$filtered_err"
+	rm -f "$out" "$err" "$filtered_err"
 }
 trap cleanup EXIT
 

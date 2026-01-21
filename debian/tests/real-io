@@ -5,14 +5,14 @@
 set -eu
 
 cleanup() {
-    rm -f "$out" "$err" "$filter_stderr" "$file"
+	rm -f "$out" "$err" "$filter_stderr" "$file"
 }
 trap cleanup EXIT
 
 # Remove the known iotop-c warning about task_delayacct being disabled.
 # All other stderr output is preserved and should be treated as errors.
 filter_stderr() {
-    sed '/task_delayacct is 0/d'
+	sed '/task_delayacct is 0/d'
 }
 
 out=$(mktemp)
@@ -36,15 +36,15 @@ filter_stderr <"$err" >"$filter_stderr"
 # At least one process line for dd must exist, like
 # 13847 be/4 root          0.00 B/s  693.28 M/s 0.00 % 0.00 % dd
 if ! grep -Eq "^[[:space:]]*$dd_pid[[:space:]].*dd$" "$out"; then
-    echo "ERROR: Expected a line with '$dd_pid ... dd', but did not find it in the output:" >&2
-    cat "$out" >&2
-    exit 1
+	echo "ERROR: Expected a line with '$dd_pid ... dd', but did not find it in the output:" >&2
+	cat "$out" >&2
+	exit 1
 fi
 
 # No process line may have both read and write equal to zero, as in
 # 33   be/5 root         0.00 B/s    0.00 B/s ... ksmd
 if grep -Eq '^[[:space:]]*[0-9]+.*0\.00 B/s[[:space:]]+0\.00 B/s' "$out"; then
-    echo "ERROR: Found an inactive process (both read and write are zero):" >&2
-    grep -E '^[[:space:]]*[0-9]+.*0\.00 B/s[[:space:]]+0\.00 B/s' "$out" >&2
-    exit 1
+	echo "ERROR: Found an inactive process (both read and write are zero):" >&2
+	grep -E '^[[:space:]]*[0-9]+.*0\.00 B/s[[:space:]]+0\.00 B/s' "$out" >&2
+	exit 1
 fi
