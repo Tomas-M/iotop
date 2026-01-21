@@ -1,0 +1,28 @@
+#!/bin/sh
+# Smoke test for iotop-c basic output functionality.
+# Verify that iotop-c can run in batch mode and produce usable output.
+
+set -eu
+
+# Remove the known iotop-c warning about task_delayacct being disabled.
+# All other stderr output is preserved and should be treated as errors.
+filter_stderr() {
+	sed '/task_delayacct is 0/d'
+}
+
+cleanup() {
+	rm -f "$out" "$err" "$filtered_err"
+}
+trap cleanup EXIT
+
+out=$(mktemp)
+err=$(mktemp)
+filtered_err=$(mktemp)
+
+iotop-c -b -n 1 >"$out" 2>"$err" || true
+filter_stderr <"$err" >"$filtered_err"
+
+[ ! -s "$filtered_err" ]
+
+grep -q "Total DISK READ" "$out"
+grep -q "DISK WRITE" "$out"
