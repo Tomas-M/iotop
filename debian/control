@@ -1,13 +1,11 @@
 Source: iotop-c
 Section: admin
-Priority: optional
 Maintainer: Boian Bonev <bbonev@ipacct.com>
 Build-Depends:
  debhelper-compat (= 13),
  libncurses-dev,
  pkgconf,
-Standards-Version: 4.7.2
-Rules-Requires-Root: no
+Standards-Version: 4.7.3
 Homepage: https://github.com/Tomas-M/iotop
 Vcs-Browser: https://github.com/Tomas-M/iotop
 Vcs-Git: https://github.com/Tomas-M/iotop.git
