@@ -1216,9 +1216,9 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				free(pwt);
 
 			if (config.f.fullcmdline&&s->cmdline_comm) { // append custom thread name before full cmdline
-				char tb[1+strlen(s->cmdline_comm)+1+strlen(s->cmdline_long)+1];
+				char tb[1+strlen(s->cmdline_comm)+4+strlen(s->cmdline_long)+1];
 
-				sprintf(tb,"[%s]%s",s->cmdline_comm,s->cmdline_long);
+				sprintf(tb,"[%s] - %s",s->cmdline_comm,s->cmdline_long);
 				cmdt=esc_low_ascii(tb);
 			} else
 				cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline_long:s->cmdline_short);
