@@ -42,6 +42,11 @@ typedef enum {
 	E_GR_MAX=E_GR_SW,
 } e_grtype;
 
+typedef enum {
+	E_UID2NAME_ALWAYS,	/* Always resolve uid with getpwuid(3) */
+	E_UID2NAME_NONE,	/* Print uid as user name */
+} e_uid2name;
+
 typedef union {
 	struct _flags {
 		int batch_mode;
@@ -76,6 +81,7 @@ typedef union {
 		int base; // 1000 or 1024
 		int threshold; // 1..10
 		int norenice;
+		e_uid2name uid2name;
 	} f;
 	int opts[24];
 } config_t;

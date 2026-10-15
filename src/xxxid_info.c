@@ -253,10 +253,17 @@ inline void free_stats(struct xxxid_stats *s) {
 	free(s);
 }
 
+static const char *get_user_name_pwuid(uid_t uid,const char *unknown) {
+	struct passwd *pwd;
+
+	pwd=getpwuid(uid);
+	return pwd&&pwd->pw_name?pwd->pw_name:unknown;
+}
+
 inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	static const char unknown[]="<unknown>";
 	struct xxxid_stats *s;
-	struct passwd *pwd;
+	char uid_str[32];
 	int prio;
 
 	if (!is_a_process(tid))
@@ -284,8 +291,11 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	if (!s->cmdline_short)
 		s->cmdline_short=strdup(unknown);
 	// cmdline_comm can be NULL
-	pwd=getpwuid(s->euid);
-	s->pw_name=strdup(pwd&&pwd->pw_name?pwd->pw_name:unknown);
+	if (config.f.uid2name==E_UID2NAME_NONE) {
+		snprintf(uid_str,sizeof uid_str,"%4u",s->euid);
+		s->pw_name=strdup(uid_str);
+	} else
+		s->pw_name=strdup(get_user_name_pwuid(s->euid,unknown));
 
 	if ((s->error_x||s->error_i||!s->cmdline_long||!s->cmdline_short)&&!is_a_process(tid)) { // process exited in the meantime
 		free_stats(s);

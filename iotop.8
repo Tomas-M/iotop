@@ -314,6 +314,12 @@ Use inverse interface (black on white)
 Filter processes by TID and COMMAND. This will only show processes where TID
 or COMMAND are matching the REGEX.
 .TP
+\fB\-\-uid2name\fR=\fIMETHOD\fR
+Set the method used to convert UID to user name for the USER column.
+Accepted values for \fIMETHOD\fR are \fBalways\fR (always resolve UID to
+username using getpwuid(3), the default) and \fBnone\fR (do not resolve UID,
+show numeric UID instead).
+.TP
 \fB\-W\fR, \fB\-\-write\fR
 Merge the preceding options to the current config, save the config and exit.
 Note that all options after this one will be ignored.
@@ -524,7 +530,8 @@ nice values.
 .BR top (1),
 .BR vmstat (1),
 .BR atop (1),
-.BR htop (1)
+.BR htop (1),
+.BR getpwuid (3)
 .SH AUTHOR
 The original Python iotop implementation was written by Guillaume Chazarain.
 This rewrite in C was started in 2014 by Vyacheslav Trushkin and reworked to

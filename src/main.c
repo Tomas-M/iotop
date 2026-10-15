@@ -49,6 +49,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_NO_ACCUM_BW 0x117
 #define OPT_SHOW_TIME 0x118
 #define OPT_FILTER 0x119
+#define OPT_UID2NAME 0x11a
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -87,6 +88,7 @@ inline void init_config(void) {
 	config.f.base=1024; // use non-SI units by default
 	config.f.threshold=2; // default threshold is 2*base
 	config.f.unicode=1; // default is unicode
+	config.f.uid2name=E_UID2NAME_ALWAYS; // default is always
 }
 
 static const char str_opt[]="boPaktqc123456789xelRTAN";
@@ -163,6 +165,7 @@ static inline void print_help(void) {
 		"      --unicode          use Unicode drawing chars\n"
 		"  -N, --inverse          use inverse interface (black on white)\n"
 		"      --filter=REGEX     filter processes by TID and COMMAND\n"
+		"      --uid2name=METHOD  set method to convert UID to user name ([always], none)\n"
 		"  -W, --write            write preceding options to the config and exit\n",
 		progname
 	);
@@ -259,6 +262,7 @@ static inline void parse_args(int clac,char **clav) {
 				{"write",no_argument,NULL,'W'},
 				{"inverse",no_argument,NULL,'N'},
 				{"filter",required_argument,NULL,OPT_FILTER},
+				{"uid2name",required_argument,NULL,OPT_UID2NAME},
 				{NULL,0,NULL,0}
 			};
 
@@ -466,6 +470,16 @@ static inline void parse_args(int clac,char **clav) {
 					params.search_regx_ok=regcomp(&params.search_regx,params.search_str,REG_EXTENDED)==0;
 					if (!params.search_regx_ok) {
 						fprintf(stderr,"%s: invalid regular expression: %s\n",progname,optarg);
+						exit(EXIT_FAILURE);
+					}
+					break;
+				case OPT_UID2NAME:
+					if (!strcmp(optarg,"always"))
+						config.f.uid2name=E_UID2NAME_ALWAYS;
+					else if (!strcmp(optarg,"none"))
+						config.f.uid2name=E_UID2NAME_NONE;
+					else {
+						fprintf(stderr,"%s: invalid value %s for uid2name\n",progname,optarg);
 						exit(EXIT_FAILURE);
 					}
 					break;
