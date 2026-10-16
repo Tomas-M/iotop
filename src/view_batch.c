@@ -160,6 +160,7 @@ inline void view_batch_loop(void) {
 		fflush(stdout);
 		sleep(params.delay);
 	}
+	clear_uid_cache();
 	arr_free(cs);
 }
 

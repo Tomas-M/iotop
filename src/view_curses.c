@@ -2707,5 +2707,6 @@ inline void view_curses_loop(void) {
 			break;
 		k=getch();
 	}
+	clear_uid_cache();
 }
 

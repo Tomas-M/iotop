@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <pwd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <search.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -260,6 +261,94 @@ static const char *get_user_name_pwuid(uid_t uid,const char *unknown) {
 	return pwd&&pwd->pw_name?pwd->pw_name:unknown;
 }
 
+struct uid_cache_entry {
+	uid_t uid;
+	char *pw_name;
+	uint64_t valid_until_cycle;
+};
+
+static void *uid_tree=NULL;
+static uint64_t current_cycle=0;
+
+static int uid_cache_cmp(const void *a,const void *b) {
+	const struct uid_cache_entry *ea=a;
+	const struct uid_cache_entry *eb=b;
+
+	if (ea->uid<eb->uid)
+		return -1;
+	if (ea->uid>eb->uid)
+		return 1;
+	return 0;
+}
+
+static void free_uid_cache_entry(void *nodep) {
+	struct uid_cache_entry *e=nodep;
+
+	free(e->pw_name);
+	free(e);
+}
+
+static const char *get_user_name_ttl(uid_t uid,const char *unknown, int ttl_cycles) {
+	struct uid_cache_entry key={.uid=uid,.pw_name=NULL};
+	struct uid_cache_entry *e = NULL;
+	void *node=tfind(&key,&uid_tree,uid_cache_cmp);
+	const char *pw_name;
+
+	if (node) {
+		e=*(struct uid_cache_entry **)node;
+		if (current_cycle < e->valid_until_cycle)
+			return e->pw_name;
+	}
+
+	pw_name=get_user_name_pwuid(uid,unknown);
+	if (pw_name == unknown) {
+		if (e) {
+			tdelete(&key,&uid_tree,uid_cache_cmp);
+			free_uid_cache_entry(e);
+		}
+		return unknown;
+	}
+
+	if (!e) {
+		e=calloc(1, sizeof *e);
+		if (!e)
+			return unknown;
+		e->uid=uid;
+		e->pw_name=strdup(pw_name);
+		if (!e->pw_name) {
+			free(e);
+			return unknown;
+		}
+		if (!tsearch(e,&uid_tree,uid_cache_cmp)) {
+			free_uid_cache_entry(e);
+			return unknown;
+		}
+	} else {
+		/* Existing entry: in-place update if name changed */
+		if (strcmp(e->pw_name, pw_name)) {
+			char *new_name=strdup(pw_name);
+			if (new_name) {
+				free(e->pw_name);
+				e->pw_name=new_name;
+			}
+		}
+	}
+
+	e->valid_until_cycle=current_cycle + ttl_cycles;
+	return e->pw_name;
+}
+
+static const char *get_user_name_cyclic(uid_t uid,const char *unknown) {
+	return get_user_name_ttl(uid, unknown, 1);
+}
+
+void clear_uid_cache(void) {
+	if (uid_tree) {
+		tdestroy(uid_tree,free_uid_cache_entry);
+		uid_tree=NULL;
+	}
+}
+
 inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	static const char unknown[]="<unknown>";
 	struct xxxid_stats *s;
@@ -294,7 +383,9 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	if (config.f.uid2name==E_UID2NAME_NONE) {
 		snprintf(uid_str,sizeof uid_str,"%4u",s->euid);
 		s->pw_name=strdup(uid_str);
-	} else
+	} else if (config.f.uid2name==E_UID2NAME_CYCLIC)
+		s->pw_name=strdup(get_user_name_cyclic(s->euid,unknown));
+	else
 		s->pw_name=strdup(get_user_name_pwuid(s->euid,unknown));
 
 	if ((s->error_x||s->error_i||!s->cmdline_long||!s->cmdline_short)&&!is_a_process(tid)) { // process exited in the meantime
@@ -325,6 +416,8 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
 	struct xxxid_stats_arr *a=arr_alloc();
 	int i;
+
+	current_cycle++;
 
 	if (!a)
 		return NULL;
