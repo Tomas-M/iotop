@@ -297,45 +297,43 @@ static const char *get_user_name_ttl(uid_t uid,const char *unknown, int ttl_cycl
 	if (node) {
 		e=*(struct uid_cache_entry **)node;
 		if (current_cycle < e->valid_until_cycle)
-			return e->pw_name;
+			return e->pw_name ? e->pw_name : unknown;
 	}
 
 	pw_name=get_user_name_pwuid(uid,unknown);
-	if (pw_name == unknown) {
-		if (e) {
-			tdelete(&key,&uid_tree,uid_cache_cmp);
-			free_uid_cache_entry(e);
-		}
-		return unknown;
-	}
 
 	if (!e) {
 		e=calloc(1, sizeof *e);
 		if (!e)
 			return unknown;
 		e->uid=uid;
-		e->pw_name=strdup(pw_name);
-		if (!e->pw_name) {
+		if (!tsearch(e,&uid_tree,uid_cache_cmp)) {
 			free(e);
 			return unknown;
 		}
-		if (!tsearch(e,&uid_tree,uid_cache_cmp)) {
-			free_uid_cache_entry(e);
-			return unknown;
+	}
+
+	if (pw_name == unknown) {
+		/* Negative cache: UID has no username */
+		if (e->pw_name) {
+			free(e->pw_name);
+			e->pw_name=NULL;
 		}
-	} else {
-		/* Existing entry: in-place update if name changed */
-		if (strcmp(e->pw_name, pw_name)) {
-			char *new_name=strdup(pw_name);
-			if (new_name) {
-				free(e->pw_name);
-				e->pw_name=new_name;
-			}
+		e->valid_until_cycle=ttl_cycles ? (current_cycle + ttl_cycles) : UINT64_MAX;
+		return unknown;
+	}
+
+	/* Positive cache: update username if changed */
+	if (!e->pw_name || strcmp(e->pw_name, pw_name)) {
+		char *new_name=strdup(pw_name);
+		if (new_name) {
+			free(e->pw_name);
+			e->pw_name=new_name;
 		}
 	}
 
 	e->valid_until_cycle=ttl_cycles ? (current_cycle + ttl_cycles) : UINT64_MAX;
-	return e->pw_name;
+	return e->pw_name ? e->pw_name : unknown;
 }
 
 static const char *get_user_name_cyclic(uid_t uid,const char *unknown) {
