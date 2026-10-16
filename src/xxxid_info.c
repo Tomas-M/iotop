@@ -334,12 +334,16 @@ static const char *get_user_name_ttl(uid_t uid,const char *unknown, int ttl_cycl
 		}
 	}
 
-	e->valid_until_cycle=current_cycle + ttl_cycles;
+	e->valid_until_cycle=ttl_cycles ? (current_cycle + ttl_cycles) : UINT64_MAX;
 	return e->pw_name;
 }
 
 static const char *get_user_name_cyclic(uid_t uid,const char *unknown) {
 	return get_user_name_ttl(uid, unknown, 1);
+}
+
+static const char *get_user_name_static(uid_t uid,const char *unknown) {
+	return get_user_name_ttl(uid, unknown, 0);
 }
 
 void clear_uid_cache(void) {
@@ -385,6 +389,8 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 		s->pw_name=strdup(uid_str);
 	} else if (config.f.uid2name==E_UID2NAME_CYCLIC)
 		s->pw_name=strdup(get_user_name_cyclic(s->euid,unknown));
+	else if (config.f.uid2name==E_UID2NAME_STATIC)
+		s->pw_name=strdup(get_user_name_static(s->euid,unknown));
 	else
 		s->pw_name=strdup(get_user_name_pwuid(s->euid,unknown));
 

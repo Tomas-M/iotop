@@ -46,6 +46,7 @@ typedef enum {
 	E_UID2NAME_ALWAYS,	/* Always resolve uid with getpwuid(3) */
 	E_UID2NAME_NONE,	/* Print uid as user name */
 	E_UID2NAME_CYCLIC,	/* Cache resolved uid within each refresh cycle */
+	E_UID2NAME_STATIC,	/* Cache resolved uid permanently across refresh cycles */
 } e_uid2name;
 
 typedef union {

@@ -165,7 +165,7 @@ static inline void print_help(void) {
 		"      --unicode          use Unicode drawing chars\n"
 		"  -N, --inverse          use inverse interface (black on white)\n"
 		"      --filter=REGEX     filter processes by TID and COMMAND\n"
-		"      --uid2name=METHOD  set method to convert UID to user name ([always], none, cyclic)\n"
+		"      --uid2name=METHOD  set method to convert UID to user name ([always], none, cyclic, static)\n"
 		"  -W, --write            write preceding options to the config and exit\n",
 		progname
 	);
@@ -480,6 +480,8 @@ static inline void parse_args(int clac,char **clav) {
 						config.f.uid2name=E_UID2NAME_NONE;
 					else if (!strcmp(optarg,"cyclic"))
 						config.f.uid2name=E_UID2NAME_CYCLIC;
+					else if (!strcmp(optarg,"static"))
+						config.f.uid2name=E_UID2NAME_STATIC;
 					else {
 						fprintf(stderr,"%s: invalid value %s for uid2name\n",progname,optarg);
 						exit(EXIT_FAILURE);
