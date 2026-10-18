@@ -42,6 +42,13 @@ typedef enum {
 	E_GR_MAX=E_GR_SW,
 } e_grtype;
 
+typedef enum {
+	E_UID2NAME_ALWAYS,	/* Always resolve uid with getpwuid(3) */
+	E_UID2NAME_NONE,	/* Print uid as user name */
+	E_UID2NAME_CYCLIC,	/* Cache resolved uid within each refresh cycle */
+	E_UID2NAME_STATIC,	/* Cache resolved uid permanently across refresh cycles */
+} e_uid2name;
+
 typedef union {
 	struct _flags {
 		int batch_mode;
@@ -76,6 +83,7 @@ typedef union {
 		int base; // 1000 or 1024
 		int threshold; // 1..10
 		int norenice;
+		e_uid2name uid2name;
 	} f;
 	int opts[24];
 } config_t;
@@ -192,6 +200,8 @@ typedef int (*filter_callback_w)(struct xxxid_stats *,int width);
 
 inline struct xxxid_stats_arr *fetch_data(filter_callback);
 inline void free_stats(struct xxxid_stats *s);
+
+void clear_uid_cache(void);
 
 typedef void (*view_loop)(void);
 typedef void (*view_init)(void);

@@ -258,6 +258,15 @@ inline int config_file_save(void) {
 		fprintf(cf,"--inverse\n");
 	if (params.search_regx_ok&&params.search_str&&strlen(params.search_str))
 		fprintf(cf,"--filter=%s\n",params.search_str);
+	// --uid2name
+	if (config.f.uid2name==E_UID2NAME_ALWAYS)
+		fprintf(cf,"--uid2name=always\n");
+	if (config.f.uid2name==E_UID2NAME_NONE)
+		fprintf(cf,"--uid2name=none\n");
+	if (config.f.uid2name==E_UID2NAME_CYCLIC)
+		fprintf(cf,"--uid2name=cyclic\n");
+	if (config.f.uid2name==E_UID2NAME_STATIC)
+		fprintf(cf,"--uid2name=static\n");
 
 	fclose(cf);
 
