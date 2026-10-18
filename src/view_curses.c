@@ -214,7 +214,7 @@ const s_helpitem thelp[]={
 	{.descr=units,.t="Toggle SI units [%d]",.k1="<Ctrl-B>",.k2="b",.k3=""},
 	{.descr=unitt,.t="Cycle unit threshold [%d]",.k1="<Ctrl-R>",.k2="t",.k3=""},
 	{.descr=tdact,.t="Toggle task_delayacct [%s]",.k1="<Ctrl-T>",.k2="",.k3=""},
-	{.descr="Redraw screen",.k1="<Ctrl-L>",.k2="",.k3=""},
+	{.descr="Redraw screen and clear UID cache",.k1="<Ctrl-L>",.k2="",.k3=""},
 	{.descr="Reset all settings to their defaults",.k2="D"},
 	{.descr="Save the current settings in config file",.k2="W"},
 	{.descr=NULL},
@@ -2047,6 +2047,7 @@ static inline int curses_key_search(int ch) {
 			update_search();
 			break;
 		case KEY_CTRL_L: // Ctrl-L
+			clear_uid_cache();
 			redrawwin(stdscr);
 		case KEY_REFRESH:
 		case KEY_RESIZE:
@@ -2539,6 +2540,7 @@ static inline int curses_key(int ch) {
 			write_task_delayacct(!read_task_delayacct());
 			break;
 		case KEY_CTRL_L: // Ctrl-L
+			clear_uid_cache();
 			redrawwin(stdscr);
 		case KEY_REFRESH:
 		case KEY_RESIZE:
@@ -2707,5 +2709,6 @@ inline void view_curses_loop(void) {
 			break;
 		k=getch();
 	}
+	clear_uid_cache();
 }
 
