@@ -780,7 +780,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	int gr_width;
 	int diff_len;
 	int saveskip;
-	int gs,ge,gi;
+	int gs,ge,gi,gl,gr;
 	int i,j,k;
 	int maxy;
 	int maxx;
@@ -901,12 +901,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	gs=config.f.reverse_graph?gr_width_h-1:0;
 	ge=config.f.reverse_graph?0:gr_width_h-1;
 	gi=config.f.reverse_graph?-1:1;
+	gl=config.f.reverse_graph?1:0; // left half of a unicode graph position
+	gr=config.f.reverse_graph?0:1; // right half of a unicode graph position
 	for (j=gs;ge<gs?j>=ge:j<=ge;j+=gi) {
 		if (has_unicode&&config.f.unicode) {
-			strcat(pg_t_r,br_graph[value2scale(hist_t_r[j*2],mx_t_r)][value2scale(hist_t_r[j*2+gi],mx_t_r)]);
-			strcat(pg_t_w,br_graph[value2scale(hist_t_w[j*2],mx_t_w)][value2scale(hist_t_w[j*2+gi],mx_t_w)]);
-			strcat(pg_a_r,br_graph[value2scale(hist_a_r[j*2],mx_a_r)][value2scale(hist_a_r[j*2+gi],mx_a_r)]);
-			strcat(pg_a_w,br_graph[value2scale(hist_a_w[j*2],mx_a_w)][value2scale(hist_a_w[j*2+gi],mx_a_w)]);
+			strcat(pg_t_r,br_graph[value2scale(hist_t_r[j*2+gl],mx_t_r)][value2scale(hist_t_r[j*2+gr],mx_t_r)]);
+			strcat(pg_t_w,br_graph[value2scale(hist_t_w[j*2+gl],mx_t_w)][value2scale(hist_t_w[j*2+gr],mx_t_w)]);
+			strcat(pg_a_r,br_graph[value2scale(hist_a_r[j*2+gl],mx_a_r)][value2scale(hist_a_r[j*2+gr],mx_a_r)]);
+			strcat(pg_a_w,br_graph[value2scale(hist_a_w[j*2+gl],mx_a_w)][value2scale(hist_a_w[j*2+gr],mx_a_w)]);
 		} else {
 			strcat(pg_t_r,as_graph[value2scale(hist_t_r[j],mx_t_r)]);
 			strcat(pg_t_w,as_graph[value2scale(hist_t_w[j],mx_t_w)]);
@@ -1240,42 +1242,44 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				gs=config.f.reverse_graph?gr_width-1:0;
 				ge=config.f.reverse_graph?0:gr_width-1;
 				gi=config.f.reverse_graph?-1:1;
+				gl=config.f.reverse_graph?1:0; // left half of a unicode graph position
+				gr=config.f.reverse_graph?0:1; // right half of a unicode graph position
 				for (j=gs;ge<gs?j>=ge:j<=ge;j+=gi) {
 					uint8_t v1=0,v2=0;
 
 					switch (masked_grtype(0)) {
 						case E_GR_IO:
 							if (has_unicode&&config.f.unicode) {
-								v1=config.f.processes?s->iohist_p[j*2]:s->iohist[j*2];
-								v2=config.f.processes?s->iohist_p[j*2+gi]:s->iohist[j*2+gi];
+								v1=config.f.processes?s->iohist_p[j*2+gl]:s->iohist[j*2+gl];
+								v2=config.f.processes?s->iohist_p[j*2+gr]:s->iohist[j*2+gr];
 							} else
 								v1=config.f.processes?s->iohist_p[j]:s->iohist[j];
 							break;
 						case E_GR_R:
 							if (has_unicode&&config.f.unicode) {
-								v1=value2scale(config.f.processes?s->readhist_p[j*2]:s->readhist[j*2],maxvisible);
-								v2=value2scale(config.f.processes?s->readhist_p[j*2+gi]:s->readhist[j*2+gi],maxvisible);
+								v1=value2scale(config.f.processes?s->readhist_p[j*2+gl]:s->readhist[j*2+gl],maxvisible);
+								v2=value2scale(config.f.processes?s->readhist_p[j*2+gr]:s->readhist[j*2+gr],maxvisible);
 							} else
 								v1=value2scale(config.f.processes?s->readhist_p[j]:s->readhist[j],maxvisible);
 							break;
 						case E_GR_W:
 							if (has_unicode&&config.f.unicode) {
-								v1=value2scale(config.f.processes?s->writehist_p[j*2]:s->writehist[j*2],maxvisible);
-								v2=value2scale(config.f.processes?s->writehist_p[j*2+gi]:s->writehist[j*2+gi],maxvisible);
+								v1=value2scale(config.f.processes?s->writehist_p[j*2+gl]:s->writehist[j*2+gl],maxvisible);
+								v2=value2scale(config.f.processes?s->writehist_p[j*2+gr]:s->writehist[j*2+gr],maxvisible);
 							} else
 								v1=value2scale(config.f.processes?s->writehist_p[j]:s->writehist[j],maxvisible);
 							break;
 						case E_GR_RW:
 							if (has_unicode&&config.f.unicode) {
-								v1=value2scale(config.f.processes?s->readhist_p[j*2]+s->writehist_p[j*2]:s->readhist[j*2]+s->writehist[j*2],maxvisible);
-								v2=value2scale(config.f.processes?s->readhist_p[j*2+gi]+s->writehist_p[j*2+gi]:s->readhist[j*2+gi]+s->writehist[j*2+gi],maxvisible);
+								v1=value2scale(config.f.processes?s->readhist_p[j*2+gl]+s->writehist_p[j*2+gl]:s->readhist[j*2+gl]+s->writehist[j*2+gl],maxvisible);
+								v2=value2scale(config.f.processes?s->readhist_p[j*2+gr]+s->writehist_p[j*2+gr]:s->readhist[j*2+gr]+s->writehist[j*2+gr],maxvisible);
 							} else
 								v1=value2scale(config.f.processes?s->readhist_p[j]+s->writehist_p[j]:s->readhist[j]+s->writehist[j],maxvisible);
 							break;
 						case E_GR_SW:
 							if (has_unicode&&config.f.unicode) {
-								v1=config.f.processes?s->sihist_p[j*2]:s->sihist[j*2];
-								v2=config.f.processes?s->sihist_p[j*2+gi]:s->sihist[j*2+gi];
+								v1=config.f.processes?s->sihist_p[j*2+gl]:s->sihist[j*2+gl];
+								v2=config.f.processes?s->sihist_p[j*2+gr]:s->sihist[j*2+gr];
 							} else
 								v1=config.f.processes?s->sihist_p[j]:s->sihist[j];
 							break;
