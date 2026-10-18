@@ -272,12 +272,9 @@ inline void ucell_utf_feed_s(ucell *uc,const char *s) { // {{{
 	sl=strlen(s);
 	if (mbtowc(NULL,NULL,0)) {
 	}
-	for (;;) {
+	while (si<sl) {
 		int cl;
 		int tw;
-
-		if (!s[si])
-			break;
 
 		cl=mbtowc(&w,s+si,sl-si);
 		if (cl<=0) {
