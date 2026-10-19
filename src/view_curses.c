@@ -757,7 +757,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	char pg_t_w[HISTORY_POS*5]={0};
 	char pg_a_r[HISTORY_POS*5]={0};
 	char pg_a_w[HISTORY_POS*5]={0};
-	int promptx=0,prompty=0,show;
+	int promptx=0,prompty=0,show=FALSE;
 	char *head1row_format="";
 	double maxvisible=0.0;
 	double mx_t_r=1000.0;
