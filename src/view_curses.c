@@ -2673,6 +2673,8 @@ inline void view_curses_loop(void) {
 			has_tda=1;
 		}
 		if (bef+params.delay_ms<now&&!dontrefresh) {
+			if ((params.iter>-1)&&((params.iter--)==0)) // the last iteration was shown for a full delay
+				break;
 			bef=now;
 			if (ps)
 				arr_free(ps);
@@ -2711,8 +2713,6 @@ inline void view_curses_loop(void) {
 				refresh=0;
 			}
 		}
-		if ((params.iter>-1)&&((--params.iter)==0))
-			break;
 		k=getch();
 	}
 	clear_uid_cache();
