@@ -394,9 +394,7 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	char uid_str[32];
 	int prio;
 
-	if (!is_a_process(tid))
-		return NULL;
-
+	// a task that is already gone fails the queries below and is checked for at the end
 	s=calloc(1,sizeof *s);
 	if (!s)
 		return NULL;
