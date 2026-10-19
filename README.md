@@ -227,7 +227,7 @@ cd iotop && git checkout master && git pull && make clean && make -j
         --unicode          use Unicode drawing chars
     -N, --inverse          use inverse interface (black on white)
         --filter=REGEX     filter processes by TID and COMMAND
-        --uid2name=METHOD  set method to convert UID to user name ([always], none, cyclic, static)
+        --uid2name=METHOD  set method to convert UID to user name (always, none, cyclic, [static])
     -W, --write            write preceding options to the config and exit
 
 ## Contribute

@@ -88,7 +88,7 @@ inline void init_config(void) {
 	config.f.base=1024; // use non-SI units by default
 	config.f.threshold=2; // default threshold is 2*base
 	config.f.unicode=1; // default is unicode
-	config.f.uid2name=E_UID2NAME_ALWAYS; // default is always
+	config.f.uid2name=E_UID2NAME_STATIC; // default is static
 }
 
 static const char str_opt[]="boPaktqc123456789xelRTAN";
@@ -165,7 +165,7 @@ static inline void print_help(void) {
 		"      --unicode          use Unicode drawing chars\n"
 		"  -N, --inverse          use inverse interface (black on white)\n"
 		"      --filter=REGEX     filter processes by TID and COMMAND\n"
-		"      --uid2name=METHOD  set method to convert UID to user name ([always], none, cyclic, static)\n"
+		"      --uid2name=METHOD  set method to convert UID to user name (always, none, cyclic, [static])\n"
 		"  -W, --write            write preceding options to the config and exit\n",
 		progname
 	);
