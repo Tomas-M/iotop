@@ -120,6 +120,7 @@ struct xxxid_stats_arr {
 	int length;
 	int size;
 	int diffed; // create_diff was already applied
+	unsigned sort_gen; // the curses view generation that sor was made for, 0 for none
 };
 
 // history aggregated in main process; it uses pos and cnt of the struct xxxid_hist it belongs to

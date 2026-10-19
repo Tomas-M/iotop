@@ -303,6 +303,51 @@ static int is_main(const struct xxxid_stats *s) {
 	return s->pid==s->tid;
 }
 
+// the inputs of the filters and of the sort; the data itself changes only with a new cycle
+struct view_key {
+	struct _flags f;
+	int width;
+	int has_tda;
+	int has_unicode;
+	int user_id;
+	int pid;
+	int search_regx_ok;
+};
+
+static unsigned view_gen=1; // generation of the visible count and of the sorted lists
+
+// start a new generation if any input changed since the last redraw
+static inline void view_key_check(int width) {
+	static struct view_key last;
+	static char *last_search=NULL;
+	struct view_key k;
+
+	memset(&k,0,sizeof k);
+	k.f=config.f;
+	k.width=width;
+	k.has_tda=has_tda;
+	k.has_unicode=has_unicode;
+	k.user_id=params.user_id;
+	k.pid=params.pid;
+	k.search_regx_ok=params.search_regx_ok;
+	if (!memcmp(&k,&last,sizeof k)&&!strcmp(last_search?last_search:"",params.search_str?params.search_str:""))
+		return;
+	last=k;
+	if (last_search)
+		free(last_search);
+	last_search=params.search_str?strdup(params.search_str):NULL;
+	if (!++view_gen) // 0 is the generation of the lists that were never sorted
+		view_gen=1;
+}
+
+// sort a for the view, unless it is already sorted for the current generation
+static inline void view_sort(struct xxxid_stats_arr *a,int (*keep)(const struct xxxid_stats *s)) {
+	if (a->sort_gen==view_gen&&a->sor) // changing the list drops sor
+		return;
+	arr_sort(a,iotop_sort_cb,keep);
+	a->sort_gen=view_gen;
+}
+
 static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	// apply uid/pid filter
 	if (filter1(s))
@@ -819,7 +864,12 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 	create_diff(cs,ps,time_s,act->ts_c);
 	hist_window(cs,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
-	dispcount=count_visible(cs,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
+	view_key_check((has_unicode&&config.f.unicode)?gr_width*2:gr_width);
+	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&config.f.unicode)?gr_width*2:gr_width));
+	if (cs->sort_gen!=view_gen||!cs->sor) { // count and sort only for new data or changed view
+		dispcount=count_visible(cs,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
+		view_sort(cs,is_main);
+	}
 
 	calc_total(cs,&total_read,&total_write);
 	calc_a_total(act,&total_a_read,&total_a_write,time_s);
@@ -1047,9 +1097,6 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 	maxcmdline--; // vertical scroller
 
-	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&config.f.unicode)?gr_width*2:gr_width));
-	arr_sort(cs,iotop_sort_cb,is_main);
-
 	if (maxy<10)
 		noinlinehelp=1;
 	else
@@ -1079,7 +1126,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			struct xxxid_stats *ms=cs->sor[i],*s;
 
 			if (ms->threads)
-				arr_sort(ms->threads,iotop_sort_cb,NULL);
+				view_sort(ms->threads,NULL);
 			// show only processes, if configured
 			for (k=-1;k<(config.f.processes?0:(ms->threads?ms->threads->length:0));k++) {
 				const double *rh,*wh; // the histories that are drawn: aggregated for processes
@@ -1146,7 +1193,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 
 		if (ms->threads)
 			if (!(masked_grtype(0)!=E_GR_IO&&masked_grtype(0)!=E_GR_SW&&!config.f.hidegraph))
-				arr_sort(ms->threads,iotop_sort_cb,NULL);
+				view_sort(ms->threads,NULL);
 		// check if threads use the same prio as the main process
 		// scan for hidden threads
 		th_first=1;
