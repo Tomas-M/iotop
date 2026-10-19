@@ -224,12 +224,14 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 						stats->swapin_delay_total=t14->swapin_delay_total;
 						stats->blkio_delay_total=t14->blkio_delay_total;
 						stats->euid=t14->ac_uid;
+						stats->io_prio=ioprio_from_sched(t14->ac_sched,(int8_t)t14->ac_nice);
 					} else { // exception for v15 only
 						stats->read_bytes=t15->read_bytes;
 						stats->write_bytes=t15->write_bytes;
 						stats->swapin_delay_total=t15->swapin_delay_total;
 						stats->blkio_delay_total=t15->blkio_delay_total;
 						stats->euid=t15->ac_uid;
+						stats->io_prio=ioprio_from_sched(t15->ac_sched,(int8_t)t15->ac_nice);
 					}
 				}
 				len2+=NLA_ALIGN(na2->nla_len);
@@ -399,12 +401,12 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	if (!s)
 		return NULL;
 	s->hist=&hist_none; // own history is allocated when the first value is stored
+	s->io_prio=-1; // nl_xxxid_info stores here the io priority derived from the scheduling policy and nice value
 
 	if (nl_xxxid_info(tid,pid,s))
 		s->error_x=1;
 
-
-	prio=get_ioprio(tid);
+	prio=get_ioprio(tid,s->error_x?-1:s->io_prio);
 	if (prio==-1) {
 		s->error_i=1;
 		s->io_prio=0;

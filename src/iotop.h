@@ -311,7 +311,8 @@ enum {
 
 extern const char *str_ioprio_class[];
 
-inline int get_ioprio(pid_t pid);
+inline int ioprio_from_sched(int policy,int nice);
+inline int get_ioprio(pid_t pid,int sched_prio);
 inline const char *str_ioprio(int io_prio);
 inline int ioprio_value(int class,int prio);
 inline int set_ioprio(int which,int who,int ioprio_class,int ioprio_prio);

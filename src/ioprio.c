@@ -25,19 +25,19 @@ You should have received a copy of the GNU General Public License along with thi
 
 const char *str_ioprio_class[]={"-","rt","be","id"};
 
-inline int get_ioprio_from_sched(pid_t pid) {
-	int scheduler=sched_getscheduler(pid);
-	int nice=getpriority(PRIO_PROCESS,pid);
+// io priority of a task without own one, derived from its scheduling policy and nice value
+inline int ioprio_from_sched(int policy,int nice) {
 	int ioprio_nice=(nice+20)/5;
 
-	if (scheduler==SCHED_FIFO||scheduler==SCHED_RR)
+	if (policy==SCHED_FIFO||policy==SCHED_RR)
 		return (IOPRIO_CLASS_RT<<IOPRIO_CLASS_SHIFT)+ioprio_nice;
-	if (scheduler==SCHED_IDLE)
+	if (policy==SCHED_IDLE)
 		return IOPRIO_CLASS_IDLE<<IOPRIO_CLASS_SHIFT;
 	return (IOPRIO_CLASS_BE<<IOPRIO_CLASS_SHIFT)+ioprio_nice;
 }
 
-inline int get_ioprio(pid_t pid) {
+// sched_prio is ioprio_from_sched of pid when already known, -1 to query it
+inline int get_ioprio(pid_t pid,int sched_prio) {
 	int io_prio,io_class;
 
 	io_prio=syscall(SYS_ioprio_get,IOPRIO_WHO_PROCESS,pid);
@@ -45,7 +45,7 @@ inline int get_ioprio(pid_t pid) {
 		return -1;
 	io_class=io_prio>>IOPRIO_CLASS_SHIFT;
 	if (!io_class)
-		return get_ioprio_from_sched(pid);
+		return sched_prio!=-1?sched_prio:ioprio_from_sched(sched_getscheduler(pid),getpriority(PRIO_PROCESS,pid));
 	return io_prio;
 }
 
