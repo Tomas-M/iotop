@@ -104,6 +104,7 @@ extern params_t params;
 extern int maxpidlen;
 extern unsigned taskstats_ver;
 extern struct xxxid_hist hist_none;
+extern int hist_w;
 
 #define IOTOP_TASKSTATS_MINVER 4
 #define IOTOP_TASKSTATS_VERSION 15
@@ -124,6 +125,15 @@ struct xxxid_stats_arr {
 struct xxxid_hist {
 	int pos; // index of the newest value
 	int cnt; // count of the stored values; the older ones are all zero
+	// sums of the newest hist_w values of each array
+	int iosum;
+	int sisum;
+	double readsum;
+	double writesum;
+	int iosum_p;
+	int sisum_p;
+	double readsum_p;
+	double writesum_p;
 	uint8_t iohist[HISTORY_CNT]; // io history data
 	uint8_t sihist[HISTORY_CNT]; // swapin history data
 	double readhist[HISTORY_CNT]; // read history data
@@ -139,6 +149,9 @@ struct xxxid_hist {
 #define HIST_IDX(h,k) (((h)->pos+HISTORY_CNT-(k))%HISTORY_CNT)
 // the k-th newest value of history array a of item s
 #define HISTV(s,a,k) ((s)->hist->a[HIST_IDX((s)->hist,(k))])
+// sum of the newest cnt values of history a (io, si, read or write) of h, the aggregated one if p is set
+#define HIST_SUM(h,a,p,cnt) ((cnt)==hist_w?((p)?(h)->a##sum_p:(h)->a##sum):hist_sum((h),(p)?(h)->a##hist_p:(h)->a##hist,(cnt)))
+#define HIST_SUM8(h,a,p,cnt) ((cnt)==hist_w?((p)?(h)->a##sum_p:(h)->a##sum):hist_sum8((h),(p)?(h)->a##hist_p:(h)->a##hist,(cnt)))
 
 struct xxxid_stats {
 	pid_t pid;
@@ -329,6 +342,7 @@ inline int count_visible(struct xxxid_stats_arr *cs,filter_callback_w cb,int wid
 inline int value2scale(double val,double mx);
 inline double hist_sum(const struct xxxid_hist *h,const double *a,int cnt);
 inline int hist_sum8(const struct xxxid_hist *h,const uint8_t *a,int cnt);
+inline void hist_window(struct xxxid_stats_arr *cs,int w);
 inline int filter1(struct xxxid_stats *s);
 
 /* delayacct.c */

@@ -78,6 +78,7 @@ inline int value2scale(double val,double mx) {
 }
 
 struct xxxid_hist hist_none; // shared empty history, never written
+int hist_w=HISTORY_CNT; // count of the newest values that the sums in struct xxxid_hist cover
 
 // make sure s has own history to store values in; returns 0 if it can not be allocated
 static inline int hist_own(struct xxxid_stats *s) {
@@ -117,6 +118,44 @@ inline int hist_sum8(const struct xxxid_hist *h,const uint8_t *a,int cnt) {
 	for (i=HISTORY_CNT-1;n<cnt;i--,n++) // the older part after wrapping around
 		sum+=a[i];
 	return sum;
+}
+
+// store v as the newest value of a after pos was advanced, keeping the sum of the newest hist_w values
+static inline void hist_put(struct xxxid_hist *h,double *a,double *sum,double v) {
+	*sum+=v-a[(h->pos+HISTORY_CNT-hist_w)%HISTORY_CNT]; // the value that just left the window
+	a[h->pos]=v;
+}
+
+static inline void hist_put8(struct xxxid_hist *h,uint8_t *a,int *sum,uint8_t v) {
+	*sum+=v-a[(h->pos+HISTORY_CNT-hist_w)%HISTORY_CNT]; // the value that just left the window
+	a[h->pos]=v;
+}
+
+// make the sums of all histories cover the newest w values; they all belong to the items of cs
+inline void hist_window(struct xxxid_stats_arr *cs,int w) {
+	int n;
+
+	if (w<1)
+		w=1;
+	if (w>HISTORY_CNT)
+		w=HISTORY_CNT;
+	if (w==hist_w)
+		return;
+	hist_w=w;
+	for (n=0;cs->arr&&n<cs->length;n++) {
+		struct xxxid_hist *h=cs->arr[n]->hist;
+
+		if (h==&hist_none)
+			continue;
+		h->iosum=hist_sum8(h,h->iohist,w);
+		h->sisum=hist_sum8(h,h->sihist,w);
+		h->readsum=hist_sum(h,h->readhist,w);
+		h->writesum=hist_sum(h,h->writehist,w);
+		h->iosum_p=hist_sum8(h,h->iohist_p,w);
+		h->sisum_p=hist_sum8(h,h->sihist_p,w);
+		h->readsum_p=hist_sum(h,h->readhist_p,w);
+		h->writesum_p=hist_sum(h,h->writehist_p,w);
+	}
 }
 
 // keep the longest tid length for the display
@@ -160,6 +199,8 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		memset(h->sihist_p,0,sizeof h->sihist_p);
 		memset(h->readhist_p,0,sizeof h->readhist_p);
 		memset(h->writehist_p,0,sizeof h->writehist_p);
+		h->iosum_p=h->sisum_p=0;
+		h->readsum_p=h->writesum_p=0;
 	}
 
 	// round robin value
@@ -187,10 +228,10 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		h->pos=(h->pos+1)%HISTORY_CNT;
 		if (h->cnt<HISTORY_CNT)
 			h->cnt++;
-		h->iohist[h->pos]=value2scale(c->blkio_val,100.0);
-		h->sihist[h->pos]=value2scale(c->swapin_val,100.0);
-		h->readhist[h->pos]=rv;
-		h->writehist[h->pos]=wv;
+		hist_put8(h,h->iohist,&h->iosum,value2scale(c->blkio_val,100.0));
+		hist_put8(h,h->sihist,&h->sisum,value2scale(c->swapin_val,100.0));
+		hist_put(h,h->readhist,&h->readsum,rv);
+		hist_put(h,h->writehist,&h->writesum,wv);
 	}
 
 	if (c->pid==c->tid) {
@@ -215,10 +256,10 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		c->write_val_abw_p=c->write_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 
 		if (h) { // pos was already advanced above
-			h->iohist_p[h->pos]=value2scale(c->blkio_val_p,100.0);
-			h->sihist_p[h->pos]=value2scale(c->swapin_val_p,100.0);
-			h->readhist_p[h->pos]=rv;
-			h->writehist_p[h->pos]=wv;
+			hist_put8(h,h->iohist_p,&h->iosum_p,value2scale(c->blkio_val_p,100.0));
+			hist_put8(h,h->sihist_p,&h->sisum_p,value2scale(c->swapin_val_p,100.0));
+			hist_put(h,h->readhist_p,&h->readsum_p,rv);
+			hist_put(h,h->writehist_p,&h->writesum_p,wv);
 		}
 	}
 }
@@ -254,15 +295,15 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 		h->pos=(h->pos+1)%HISTORY_CNT;
 		if (h->cnt<HISTORY_CNT)
 			h->cnt++;
-		h->iohist[h->pos]=0;
-		h->sihist[h->pos]=0;
-		h->readhist[h->pos]=0.0;
-		h->writehist[h->pos]=0.0;
+		hist_put8(h,h->iohist,&h->iosum,0);
+		hist_put8(h,h->sihist,&h->sisum,0);
+		hist_put(h,h->readhist,&h->readsum,0.0);
+		hist_put(h,h->writehist,&h->writesum,0.0);
 		if (p->tid==p->pid) { // process aggregated data, only for main process
-			h->iohist_p[h->pos]=0;
-			h->sihist_p[h->pos]=0;
-			h->readhist_p[h->pos]=0.0;
-			h->writehist_p[h->pos]=0.0;
+			hist_put8(h,h->iohist_p,&h->iosum_p,0);
+			hist_put8(h,h->sihist_p,&h->sisum_p,0);
+			hist_put(h,h->readhist_p,&h->readsum_p,0.0);
+			hist_put(h,h->writehist_p,&h->writesum_p,0.0);
 		}
 	}
 	return p;
@@ -404,15 +445,15 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_IO:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					aa=hist_sum8(pa->hist,config.f.processes?pa->hist->iohist_p:pa->hist->iohist,grlen);
-					ab=hist_sum8(pb->hist,config.f.processes?pb->hist->iohist_p:pb->hist->iohist,grlen);
+					aa=HIST_SUM8(pa->hist,io,config.f.processes,grlen);
+					ab=HIST_SUM8(pb->hist,io,config.f.processes,grlen);
 					res=aa-ab;
 					break;
 				case E_GR_R:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					da=hist_sum(pa->hist,config.f.processes?pa->hist->readhist_p:pa->hist->readhist,grlen);
-					db=hist_sum(pb->hist,config.f.processes?pb->hist->readhist_p:pb->hist->readhist,grlen);
+					da=HIST_SUM(pa->hist,read,config.f.processes,grlen);
+					db=HIST_SUM(pb->hist,read,config.f.processes,grlen);
 					if (da>db)
 						res=1;
 					else if (da<db)
@@ -423,8 +464,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_W:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					da=hist_sum(pa->hist,config.f.processes?pa->hist->writehist_p:pa->hist->writehist,grlen);
-					db=hist_sum(pb->hist,config.f.processes?pb->hist->writehist_p:pb->hist->writehist,grlen);
+					da=HIST_SUM(pa->hist,write,config.f.processes,grlen);
+					db=HIST_SUM(pb->hist,write,config.f.processes,grlen);
 					if (da>db)
 						res=1;
 					else if (da<db)
@@ -435,10 +476,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_RW:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					da=hist_sum(pa->hist,config.f.processes?pa->hist->readhist_p:pa->hist->readhist,grlen);
-					da+=hist_sum(pa->hist,config.f.processes?pa->hist->writehist_p:pa->hist->writehist,grlen);
-					db=hist_sum(pb->hist,config.f.processes?pb->hist->readhist_p:pb->hist->readhist,grlen);
-					db+=hist_sum(pb->hist,config.f.processes?pb->hist->writehist_p:pb->hist->writehist,grlen);
+					da=HIST_SUM(pa->hist,read,config.f.processes,grlen)+HIST_SUM(pa->hist,write,config.f.processes,grlen);
+					db=HIST_SUM(pb->hist,read,config.f.processes,grlen)+HIST_SUM(pb->hist,write,config.f.processes,grlen);
 					if (da>db)
 						res=1;
 					else if (da<db)
@@ -449,8 +488,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_SW:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					aa=hist_sum8(pa->hist,config.f.processes?pa->hist->sihist_p:pa->hist->sihist,grlen);
-					ab=hist_sum8(pb->hist,config.f.processes?pb->hist->sihist_p:pb->hist->sihist,grlen);
+					aa=HIST_SUM8(pa->hist,si,config.f.processes,grlen);
+					ab=HIST_SUM8(pb->hist,si,config.f.processes,grlen);
 					res=aa-ab;
 					break;
 			}

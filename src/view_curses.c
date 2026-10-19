@@ -334,27 +334,26 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 
 			switch (masked_grtype(0)) {
 				case E_GR_IO:
-					if (!hist_sum8(s->hist,config.f.processes?s->hist->iohist_p:s->hist->iohist,gr_width))
+					if (!HIST_SUM8(s->hist,io,config.f.processes,gr_width))
 						goto dohide;
 					break;
 				case E_GR_R:
-					su=hist_sum(s->hist,config.f.processes?s->hist->readhist_p:s->hist->readhist,gr_width);
+					su=HIST_SUM(s->hist,read,config.f.processes,gr_width);
 					if (su<=0)
 						goto dohide;
 					break;
 				case E_GR_W:
-					su=hist_sum(s->hist,config.f.processes?s->hist->writehist_p:s->hist->writehist,gr_width);
+					su=HIST_SUM(s->hist,write,config.f.processes,gr_width);
 					if (su<=0)
 						goto dohide;
 					break;
 				case E_GR_RW:
-					su=hist_sum(s->hist,config.f.processes?s->hist->readhist_p:s->hist->readhist,gr_width);
-					su+=hist_sum(s->hist,config.f.processes?s->hist->writehist_p:s->hist->writehist,gr_width);
+					su=HIST_SUM(s->hist,read,config.f.processes,gr_width)+HIST_SUM(s->hist,write,config.f.processes,gr_width);
 					if (su<=0)
 						goto dohide;
 					break;
 				case E_GR_SW:
-					if (!hist_sum8(s->hist,config.f.processes?s->hist->sihist_p:s->hist->sihist,gr_width))
+					if (!HIST_SUM8(s->hist,si,config.f.processes,gr_width))
 						goto dohide;
 					break;
 			}
@@ -815,6 +814,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		maxcmdline=0;
 
 	diff_len=create_diff(cs,ps,time_s,act->ts_c);
+	hist_window(cs,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 	dispcount=count_visible(cs,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 
 	calc_total(cs,&total_read,&total_write);
