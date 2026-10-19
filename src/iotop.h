@@ -103,6 +103,7 @@ extern config_t config;
 extern params_t params;
 extern int maxpidlen;
 extern unsigned taskstats_ver;
+extern struct xxxid_hist hist_none;
 
 #define IOTOP_TASKSTATS_MINVER 4
 #define IOTOP_TASKSTATS_VERSION 15
@@ -116,6 +117,19 @@ struct xxxid_stats_arr {
 	int length;
 	int size;
 	int diffed; // create_diff was already applied
+};
+
+// history of the GRAPH column; it is handed over to the item of the next cycle instead of being copied
+struct xxxid_hist {
+	uint8_t iohist[HISTORY_CNT]; // io history data
+	uint8_t sihist[HISTORY_CNT]; // swapin history data
+	double readhist[HISTORY_CNT]; // read history data
+	double writehist[HISTORY_CNT]; // write history data
+
+	uint8_t iohist_p[HISTORY_CNT]; // io history data (aggregated in main process)
+	uint8_t sihist_p[HISTORY_CNT]; // swapin history data (aggregated in main process)
+	double readhist_p[HISTORY_CNT]; // read history data (aggregated in main process)
+	double writehist_p[HISTORY_CNT]; // write history data (aggregated in main process)
 };
 
 struct xxxid_stats {
@@ -158,15 +172,7 @@ struct xxxid_stats {
 	char *cmdline_comm;
 	char *pw_name;
 
-	uint8_t iohist[HISTORY_CNT]; // io history data
-	uint8_t sihist[HISTORY_CNT]; // swapin history data
-	double readhist[HISTORY_CNT]; // read history data
-	double writehist[HISTORY_CNT]; // write history data
-
-	uint8_t iohist_p[HISTORY_CNT]; // io history data (aggregated in main process)
-	uint8_t sihist_p[HISTORY_CNT]; // swapin history data (aggregated in main process)
-	double readhist_p[HISTORY_CNT]; // read history data (aggregated in main process)
-	double writehist_p[HISTORY_CNT]; // write history data (aggregated in main process)
+	struct xxxid_hist *hist; // never NULL, items without own history point to hist_none
 
 	int exited; // exited>0 shows for how many refresh cycles the process is gone
 	int error_x; // netlink api did not return valid data

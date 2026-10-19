@@ -77,6 +77,20 @@ inline int value2scale(double val,double mx) {
 	return 0;
 }
 
+struct xxxid_hist hist_none; // shared empty history, never written
+
+// make sure s has own history to store values in; returns 0 if it can not be allocated
+static inline int hist_own(struct xxxid_stats *s) {
+	if (s->hist==&hist_none) {
+		struct xxxid_hist *h=calloc(1,sizeof *h);
+
+		if (!h)
+			return 0;
+		s->hist=h;
+	}
+	return 1;
+}
+
 // keep the longest tid length for the display
 static inline void update_maxpidlen(pid_t tid) {
 	int len=1;
@@ -103,10 +117,22 @@ static inline void stats_new(struct xxxid_stats *c,uint64_t ts_c) {
 
 // calculate the values of the current cycle from the previous data in p
 static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double time_s,uint64_t ts_c) {
+	struct xxxid_hist *h;
 	double rv,wv;
 
 	c->ts_s=p->ts_s; // update end ts
 	c->ts_e=ts_c; // update end ts
+
+	// take over the history of the previous cycle
+	c->hist=p->hist;
+	p->hist=&hist_none;
+	h=hist_own(c)?c->hist:NULL;
+	if (h&&c->pid!=c->tid&&p->pid==p->tid) { // tid of a main process reused by a thread - its aggregated history does not apply
+		memset(h->iohist_p,0,sizeof h->iohist_p);
+		memset(h->sihist_p,0,sizeof h->sihist_p);
+		memset(h->readhist_p,0,sizeof h->readhist_p);
+		memset(h->writehist_p,0,sizeof h->writehist_p);
+	}
 
 	// round robin value
 	c->blkio_val=(double)rrv(c->blkio_delay_total,p->blkio_delay_total)/(time_s*10000000.0);
@@ -129,14 +155,16 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	c->read_val_abw=c->read_val_acc/timediff_in_s(c->ts_s,c->ts_e);
 	c->write_val_abw=c->write_val_acc/timediff_in_s(c->ts_s,c->ts_e);
 
-	memcpy(c->iohist+1,p->iohist,sizeof c->iohist-sizeof *c->iohist);
-	c->iohist[0]=value2scale(c->blkio_val,100.0);
-	memcpy(c->sihist+1,p->sihist,sizeof c->sihist-sizeof *c->sihist);
-	c->sihist[0]=value2scale(c->swapin_val,100.0);
-	memcpy(c->readhist+1,p->readhist,sizeof c->readhist-sizeof *c->readhist);
-	c->readhist[0]=rv;
-	memcpy(c->writehist+1,p->writehist,sizeof c->writehist-sizeof *c->writehist);
-	c->writehist[0]=wv;
+	if (h) { // shift history one step
+		memmove(h->iohist+1,h->iohist,sizeof h->iohist-sizeof *h->iohist);
+		h->iohist[0]=value2scale(c->blkio_val,100.0);
+		memmove(h->sihist+1,h->sihist,sizeof h->sihist-sizeof *h->sihist);
+		h->sihist[0]=value2scale(c->swapin_val,100.0);
+		memmove(h->readhist+1,h->readhist,sizeof h->readhist-sizeof *h->readhist);
+		h->readhist[0]=rv;
+		memmove(h->writehist+1,h->writehist,sizeof h->writehist-sizeof *h->writehist);
+		h->writehist[0]=wv;
+	}
 
 	if (c->pid==c->tid) {
 		c->blkio_val_p=(double)rrv(c->blkio_delay_total_p,p->blkio_delay_total_p)/(time_s*10000000.0);
@@ -159,25 +187,31 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		c->read_val_abw_p=c->read_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 		c->write_val_abw_p=c->write_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 
-		memcpy(c->iohist_p+1,p->iohist_p,sizeof c->iohist_p-sizeof *c->iohist_p);
-		c->iohist_p[0]=value2scale(c->blkio_val_p,100.0);
-		memcpy(c->sihist_p+1,p->sihist_p,sizeof c->sihist_p-sizeof *c->sihist_p);
-		c->sihist_p[0]=value2scale(c->swapin_val_p,100.0);
-		memcpy(c->readhist_p+1,p->readhist_p,sizeof c->readhist_p-sizeof *c->readhist_p);
-		c->readhist_p[0]=rv;
-		memcpy(c->writehist_p+1,p->writehist_p,sizeof c->writehist_p-sizeof *c->writehist_p);
-		c->writehist_p[0]=wv;
+		if (h) {
+			memmove(h->iohist_p+1,h->iohist_p,sizeof h->iohist_p-sizeof *h->iohist_p);
+			h->iohist_p[0]=value2scale(c->blkio_val_p,100.0);
+			memmove(h->sihist_p+1,h->sihist_p,sizeof h->sihist_p-sizeof *h->sihist_p);
+			h->sihist_p[0]=value2scale(c->swapin_val_p,100.0);
+			memmove(h->readhist_p+1,h->readhist_p,sizeof h->readhist_p-sizeof *h->readhist_p);
+			h->readhist_p[0]=rv;
+			memmove(h->writehist_p+1,h->writehist_p,sizeof h->writehist_p-sizeof *h->writehist_p);
+			h->writehist_p[0]=wv;
+		}
 	}
 }
 
 // exited process or task - make a copy of o that keeps only the history
 static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 	struct xxxid_stats *p=malloc(sizeof *p);
+	struct xxxid_hist *h;
 
 	if (!p)
 		return NULL;
 	*p=*o; // WARNING - all dynamic data inside should always be initialized below
 	p->threads=NULL;
+	// take over the history
+	o->hist=&hist_none;
+	h=p->hist!=&hist_none?p->hist:NULL;
 	p->exited++;
 	// last state is zero, only history remains
 	p->blkio_val=0;
@@ -193,24 +227,25 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 		p->cmdline_comm=strdup(o->cmdline_comm);
 	if (p->pw_name)
 		p->pw_name=strdup(o->pw_name);
-	// shift history one step
-	memmove(p->iohist+1,p->iohist,sizeof p->iohist-sizeof *p->iohist);
-	p->iohist[0]=0;
-	memmove(p->sihist+1,p->sihist,sizeof p->sihist-sizeof *p->sihist);
-	p->sihist[0]=0;
-	memmove(p->readhist+1,p->readhist,sizeof p->readhist-sizeof *p->readhist);
-	p->readhist[0]=0.0;
-	memmove(p->writehist+1,p->writehist,sizeof p->writehist-sizeof *p->writehist);
-	p->writehist[0]=0.0;
-	if (p->tid==p->pid) { // shift process aggregated data, only for main process
-		memmove(p->iohist_p+1,p->iohist_p,sizeof p->iohist_p-sizeof *p->iohist_p);
-		p->iohist_p[0]=0;
-		memmove(p->sihist_p+1,p->sihist_p,sizeof p->sihist_p-sizeof *p->sihist_p);
-		p->sihist_p[0]=0;
-		memmove(p->readhist_p+1,p->readhist_p,sizeof p->readhist_p-sizeof *p->readhist_p);
-		p->readhist_p[0]=0.0;
-		memmove(p->writehist_p+1,p->writehist_p,sizeof p->writehist_p-sizeof *p->writehist_p);
-		p->writehist_p[0]=0.0;
+	if (h) { // shift history one step; without own history it is all zero anyway
+		memmove(h->iohist+1,h->iohist,sizeof h->iohist-sizeof *h->iohist);
+		h->iohist[0]=0;
+		memmove(h->sihist+1,h->sihist,sizeof h->sihist-sizeof *h->sihist);
+		h->sihist[0]=0;
+		memmove(h->readhist+1,h->readhist,sizeof h->readhist-sizeof *h->readhist);
+		h->readhist[0]=0.0;
+		memmove(h->writehist+1,h->writehist,sizeof h->writehist-sizeof *h->writehist);
+		h->writehist[0]=0.0;
+		if (p->tid==p->pid) { // shift process aggregated data, only for main process
+			memmove(h->iohist_p+1,h->iohist_p,sizeof h->iohist_p-sizeof *h->iohist_p);
+			h->iohist_p[0]=0;
+			memmove(h->sihist_p+1,h->sihist_p,sizeof h->sihist_p-sizeof *h->sihist_p);
+			h->sihist_p[0]=0;
+			memmove(h->readhist_p+1,h->readhist_p,sizeof h->readhist_p-sizeof *h->readhist_p);
+			h->readhist_p[0]=0.0;
+			memmove(h->writehist_p+1,h->writehist_p,sizeof h->writehist_p-sizeof *h->writehist_p);
+			h->writehist_p[0]=0.0;
+		}
 	}
 	return p;
 }
@@ -353,8 +388,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					for (i=0;i<grlen;i++) {
-						aa+=config.f.processes?pa->iohist_p[i]:pa->iohist[i];
-						ab+=config.f.processes?pb->iohist_p[i]:pb->iohist[i];
+						aa+=config.f.processes?pa->hist->iohist_p[i]:pa->hist->iohist[i];
+						ab+=config.f.processes?pb->hist->iohist_p[i]:pb->hist->iohist[i];
 					}
 					res=aa-ab;
 					break;
@@ -362,8 +397,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					for (i=0;i<grlen;i++) {
-						da+=config.f.processes?pa->readhist_p[i]:pa->readhist[i];
-						db+=config.f.processes?pb->readhist_p[i]:pb->readhist[i];
+						da+=config.f.processes?pa->hist->readhist_p[i]:pa->hist->readhist[i];
+						db+=config.f.processes?pb->hist->readhist_p[i]:pb->hist->readhist[i];
 					}
 					if (da>db)
 						res=1;
@@ -376,8 +411,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					for (i=0;i<grlen;i++) {
-						da+=config.f.processes?pa->writehist_p[i]:pa->writehist[i];
-						db+=config.f.processes?pb->writehist_p[i]:pb->writehist[i];
+						da+=config.f.processes?pa->hist->writehist_p[i]:pa->hist->writehist[i];
+						db+=config.f.processes?pb->hist->writehist_p[i]:pb->hist->writehist[i];
 					}
 					if (da>db)
 						res=1;
@@ -390,10 +425,10 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					for (i=0;i<grlen;i++) {
-						da+=config.f.processes?pa->readhist_p[i]:pa->readhist[i];
-						db+=config.f.processes?pb->readhist_p[i]:pb->readhist[i];
-						da+=config.f.processes?pa->writehist_p[i]:pa->writehist[i];
-						db+=config.f.processes?pb->writehist_p[i]:pb->writehist[i];
+						da+=config.f.processes?pa->hist->readhist_p[i]:pa->hist->readhist[i];
+						db+=config.f.processes?pb->hist->readhist_p[i]:pb->hist->readhist[i];
+						da+=config.f.processes?pa->hist->writehist_p[i]:pa->hist->writehist[i];
+						db+=config.f.processes?pb->hist->writehist_p[i]:pb->hist->writehist[i];
 					}
 					if (da>db)
 						res=1;
@@ -406,8 +441,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					for (i=0;i<grlen;i++) {
-						aa+=config.f.processes?pa->sihist_p[i]:pa->sihist[i];
-						ab+=config.f.processes?pb->sihist_p[i]:pb->sihist[i];
+						aa+=config.f.processes?pa->hist->sihist_p[i]:pa->hist->sihist[i];
+						ab+=config.f.processes?pb->hist->sihist_p[i]:pb->hist->sihist[i];
 					}
 					res=aa-ab;
 					break;

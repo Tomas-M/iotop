@@ -249,6 +249,8 @@ inline void free_stats(struct xxxid_stats *s) {
 		free(s->cmdline_comm);
 	if (s->pw_name)
 		free(s->pw_name);
+	if (s->hist!=&hist_none)
+		free(s->hist);
 	arr_free_noitem(s->threads);
 
 	free(s);
@@ -363,6 +365,7 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	s=calloc(1,sizeof *s);
 	if (!s)
 		return NULL;
+	s->hist=&hist_none; // own history is allocated when the first value is stored
 
 	if (nl_xxxid_info(tid,pid,s))
 		s->error_x=1;
