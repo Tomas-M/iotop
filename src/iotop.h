@@ -115,7 +115,8 @@ extern int hist_w;
 
 struct xxxid_stats_arr {
 	struct xxxid_stats **arr;
-	struct xxxid_stats **sor;
+	struct xxxid_stats **sor; // the items that arr_sort kept, sorted
+	int sor_length;
 	int length;
 	int size;
 	int diffed; // create_diff was already applied
@@ -335,7 +336,7 @@ inline int arr_merge(struct xxxid_stats_arr *a,struct xxxid_stats **items,int cn
 inline struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa,pid_t tid);
 inline void arr_free(struct xxxid_stats_arr *pa);
 inline void arr_free_noitem(struct xxxid_stats_arr *pa);
-inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b));
+inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b),int (*keep)(const struct xxxid_stats *s));
 
 #define HEADER1_FORMAT "  Total DISK READ: %7.2f %s%s |   Total DISK WRITE: %7.2f %s%s"
 #define HEADER2_FORMAT "Current DISK READ: %7.2f %s%s | Current DISK WRITE: %7.2f %s%s"

@@ -20,9 +20,13 @@ You should have received a copy of the GNU General Public License along with thi
 #include <string.h>
 #include <unistd.h>
 
+// the batch view never shows exited tasks, and threads only when processes are not aggregated
+static int batch_keep(const struct xxxid_stats *s) {
+	return !s->exited&&(!config.f.processes||s->pid==s->tid);
+}
+
 static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act) {
 	double time_s=timediff_in_s(act->ts_o,act->ts_c);
-	int diff_len=create_diff(cs,ps,time_s,act->ts_c);
 	double total_a_read,total_a_write;
 	char str_a_read[4],str_a_write[4];
 	double total_read,total_write;
@@ -33,6 +37,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	time_t t;
 	int i;
 
+	create_diff(cs,ps,time_s,act->ts_c);
 	calc_total(cs,&total_read,&total_write);
 	calc_a_total(act,&total_a_read,&total_a_write,time_s);
 
@@ -62,9 +67,9 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		printf("%s%6s %4s %8s %11s %11s %6s %6s %s\n",config.f.timestamp?"    TIME ":"",config.f.processes?"PID":"TID","PRIO","USER","DISK READ","DISK WRITE","SWAPIN","IO","COMMAND");
 	}
 
-	arr_sort(cs,iotop_sort_cb);
+	arr_sort(cs,iotop_sort_cb,batch_keep);
 
-	for (i=0;cs->sor&&i<diff_len;i++) {
+	for (i=0;cs->sor&&i<cs->sor_length;i++) {
 		struct xxxid_stats *s=cs->sor[i];
 		char read_str[4],write_str[4];
 		double swapin_val;
@@ -87,12 +92,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		swapin_val=config.f.processes?s->swapin_val_p:s->swapin_val;
 		blkio_val=config.f.processes?s->blkio_val_p:s->blkio_val;
 
-		// show only processes, if configured
-		if (config.f.processes&&s->pid!=s->tid)
-			continue;
 		if (config.f.only&&!read_val&&!write_val&&!swapin_val&&!blkio_val)
-			continue;
-		if (s->exited) // do not show exited processes in batch view
 			continue;
 		if (params.search_regx_ok) {
 			int ma_long,ma_short,ma_comm,ma_tid;

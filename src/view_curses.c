@@ -298,6 +298,11 @@ inline int masked_sort_by(int isforward) {
 	return config.f.sort_by;
 }
 
+// always start showing from processes, threads are kept on the main list for easier search
+static int is_main(const struct xxxid_stats *s) {
+	return s->pid==s->tid;
+}
+
 static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	// apply uid/pid filter
 	if (filter1(s))
@@ -770,7 +775,6 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	int maxcmdline;
 	int gr_width_h;
 	int gr_width;
-	int diff_len;
 	int saveskip;
 	int gs,ge,gi,gl,gr;
 	int i,j,k;
@@ -813,7 +817,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	if (maxcmdline<0)
 		maxcmdline=0;
 
-	diff_len=create_diff(cs,ps,time_s,act->ts_c);
+	create_diff(cs,ps,time_s,act->ts_c);
 	hist_window(cs,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 	dispcount=count_visible(cs,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 
@@ -1044,7 +1048,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	maxcmdline--; // vertical scroller
 
 	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&config.f.unicode)?gr_width*2:gr_width));
-	arr_sort(cs,iotop_sort_cb);
+	arr_sort(cs,iotop_sort_cb,is_main);
 
 	if (maxy<10)
 		noinlinehelp=1;
@@ -1071,13 +1075,11 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	if (masked_grtype(0)!=E_GR_IO&&masked_grtype(0)!=E_GR_SW&&!config.f.hidegraph) {
 		int saveline=line;
 
-		for (i=0;cs->sor&&i<diff_len;i++) {
+		for (i=0;cs->sor&&i<cs->sor_length;i++) {
 			struct xxxid_stats *ms=cs->sor[i],*s;
 
-			if (ms->pid!=ms->tid)
-				continue;
 			if (ms->threads)
-				arr_sort(ms->threads,iotop_sort_cb);
+				arr_sort(ms->threads,iotop_sort_cb,NULL);
 			// show only processes, if configured
 			for (k=-1;k<(config.f.processes?0:(ms->threads?ms->threads->length:0));k++) {
 				const double *rh,*wh; // the histories that are drawn: aggregated for processes
@@ -1132,7 +1134,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		line=saveline;
 		skip=saveskip;
 	}
-	for (i=0;cs->sor&&i<diff_len;i++) {
+	for (i=0;cs->sor&&i<cs->sor_length;i++) {
 		int th_prio_diff,th_first,th_have_filtered,th_first_id,th_last_id;
 		struct xxxid_stats *ms=cs->sor[i],*s;
 		char read_str[4],write_str[4];
@@ -1142,12 +1144,9 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		char *pwt,*cmdt;
 		int hrevpos;
 
-		// always start showing from processes, threads are kept on the main list for easier search
-		if (ms->pid!=ms->tid)
-			continue;
 		if (ms->threads)
 			if (!(masked_grtype(0)!=E_GR_IO&&masked_grtype(0)!=E_GR_SW&&!config.f.hidegraph))
-				arr_sort(ms->threads,iotop_sort_cb);
+				arr_sort(ms->threads,iotop_sort_cb,NULL);
 		// check if threads use the same prio as the main process
 		// scan for hidden threads
 		th_first=1;

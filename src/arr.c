@@ -247,19 +247,31 @@ inline void arr_free_noitem(struct xxxid_stats_arr *pa) {
 	_arr_free(pa,0);
 }
 
-inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b)) {
+// sort the items for which keep returns nonzero, all of them if keep is NULL
+inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b),int (*keep)(const struct xxxid_stats *s)) {
+	int i,n;
+
 	if (!pa)
 		return;
 	if (pa->sor)
 		free(pa->sor);
 	pa->sor=NULL;
+	pa->sor_length=0;
 	if (!pa->length)
 		return;
 	pa->sor=calloc(pa->length,sizeof *pa->arr);
 	if (!pa->sor)
 		return;
 
-	memcpy(pa->sor,pa->arr,pa->length*sizeof *pa->arr);
-	qsort(pa->sor,pa->length,sizeof *pa->sor,cb);
+	if (keep) {
+		for (i=n=0;i<pa->length;i++)
+			if (keep(pa->arr[i]))
+				pa->sor[n++]=pa->arr[i];
+	} else {
+		memcpy(pa->sor,pa->arr,pa->length*sizeof *pa->arr);
+		n=pa->length;
+	}
+	pa->sor_length=n;
+	qsort(pa->sor,n,sizeof *pa->sor,cb);
 }
 
