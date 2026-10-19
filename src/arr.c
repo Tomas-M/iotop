@@ -109,6 +109,40 @@ inline int arr_add(struct xxxid_stats_arr *pa,struct xxxid_stats *ps) {
 	return 0; // SUCCESS
 }
 
+// merge cnt items, sorted by tid, into pa; none of them may be already present there
+inline int arr_merge(struct xxxid_stats_arr *pa,struct xxxid_stats **items,int cnt) {
+	int i,j,k,res;
+
+	if (!pa)
+		return EINVAL;
+	if (!items)
+		return EINVAL;
+	if (cnt<1)
+		return 0;
+
+	res=arr_resize(pa,pa->length+cnt);
+	if (res)
+		return res;
+
+	if (pa->sor) {
+		free(pa->sor);
+		pa->sor=NULL;
+	}
+
+	// merge backwards, the items left in place at the end are already in order
+	i=pa->length-1;
+	j=cnt-1;
+	k=pa->length+cnt-1;
+	while (j>=0)
+		if (i>=0&&pa->arr[i]->tid>items[j]->tid)
+			pa->arr[k--]=pa->arr[i--];
+		else
+			pa->arr[k--]=items[j--];
+	pa->length+=cnt;
+
+	return 0; // SUCCESS
+}
+
 inline struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa,pid_t tid) {
 	int i,s,e,r;
 

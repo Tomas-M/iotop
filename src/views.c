@@ -77,162 +77,188 @@ inline int value2scale(double val,double mx) {
 	return 0;
 }
 
+// keep the longest tid length for the display
+static inline void update_maxpidlen(pid_t tid) {
+	char temp[12];
+
+	snprintf(temp,sizeof temp,"%i",tid);
+	maxpidlen=maxpidlen<(int)strlen(temp)?(int)strlen(temp):maxpidlen;
+}
+
+// new process or task - there is no previous data to diff against
+static inline void stats_new(struct xxxid_stats *c,uint64_t ts_c) {
+	c->blkio_val=0;
+	c->swapin_val=0;
+	c->read_val=0;
+	c->write_val=0;
+	c->read_val_acc=0;
+	c->write_val_acc=0;
+	c->read_val_abw=0;
+	c->write_val_abw=0;
+	c->ts_s=ts_c; // keep start ts
+	c->ts_e=ts_c; // keep end ts
+}
+
+// calculate the values of the current cycle from the previous data in p
+static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double time_s,uint64_t ts_c) {
+	double rv,wv;
+
+	c->ts_s=p->ts_s; // update end ts
+	c->ts_e=ts_c; // update end ts
+
+	// round robin value
+	c->blkio_val=(double)rrv(c->blkio_delay_total,p->blkio_delay_total)/(time_s*10000000.0);
+	if (c->blkio_val>100)
+		c->blkio_val=100;
+
+	c->swapin_val=(double)rrv(c->swapin_delay_total,p->swapin_delay_total)/(time_s*10000000.0);
+	if (c->swapin_val>100)
+		c->swapin_val=100;
+
+	rv=(double)rrv(c->read_bytes,p->read_bytes);
+	wv=(double)rrv(c->write_bytes,p->write_bytes);
+
+	c->read_val=rv/time_s;
+	c->write_val=wv/time_s;
+
+	c->read_val_acc=p->read_val_acc+rv;
+	c->write_val_acc=p->write_val_acc+wv;
+
+	c->read_val_abw=c->read_val_acc/timediff_in_s(c->ts_s,c->ts_e);
+	c->write_val_abw=c->write_val_acc/timediff_in_s(c->ts_s,c->ts_e);
+
+	memcpy(c->iohist+1,p->iohist,sizeof c->iohist-sizeof *c->iohist);
+	c->iohist[0]=value2scale(c->blkio_val,100.0);
+	memcpy(c->sihist+1,p->sihist,sizeof c->sihist-sizeof *c->sihist);
+	c->sihist[0]=value2scale(c->swapin_val,100.0);
+	memcpy(c->readhist+1,p->readhist,sizeof c->readhist-sizeof *c->readhist);
+	c->readhist[0]=rv;
+	memcpy(c->writehist+1,p->writehist,sizeof c->writehist-sizeof *c->writehist);
+	c->writehist[0]=wv;
+
+	if (c->pid==c->tid) {
+		c->blkio_val_p=(double)rrv(c->blkio_delay_total_p,p->blkio_delay_total_p)/(time_s*10000000.0);
+		if (c->blkio_val_p>100)
+			c->blkio_val_p=100;
+
+		c->swapin_val_p=(double)rrv(c->swapin_delay_total_p,p->swapin_delay_total_p)/(time_s*10000000.0);
+		if (c->swapin_val_p>100)
+			c->swapin_val_p=100;
+
+		rv=(double)rrv(c->read_bytes_p,p->read_bytes_p);
+		wv=(double)rrv(c->write_bytes_p,p->write_bytes_p);
+
+		c->read_val_p=rv/time_s;
+		c->write_val_p=wv/time_s;
+
+		c->read_val_acc_p=p->read_val_acc_p+rv;
+		c->write_val_acc_p=p->write_val_acc_p+wv;
+
+		c->read_val_abw_p=c->read_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
+		c->write_val_abw_p=c->write_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
+
+		memcpy(c->iohist_p+1,p->iohist_p,sizeof c->iohist_p-sizeof *c->iohist_p);
+		c->iohist_p[0]=value2scale(c->blkio_val_p,100.0);
+		memcpy(c->sihist_p+1,p->sihist_p,sizeof c->sihist_p-sizeof *c->sihist_p);
+		c->sihist_p[0]=value2scale(c->swapin_val_p,100.0);
+		memcpy(c->readhist_p+1,p->readhist_p,sizeof c->readhist_p-sizeof *c->readhist_p);
+		c->readhist_p[0]=rv;
+		memcpy(c->writehist_p+1,p->writehist_p,sizeof c->writehist_p-sizeof *c->writehist_p);
+		c->writehist_p[0]=wv;
+	}
+}
+
+// exited process or task - make a copy of o that keeps only the history
+static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
+	struct xxxid_stats *p=malloc(sizeof *p);
+
+	if (!p)
+		return NULL;
+	*p=*o; // WARNING - all dynamic data inside should always be initialized below
+	p->threads=NULL;
+	p->exited++;
+	// last state is zero, only history remains
+	p->blkio_val=0;
+	p->swapin_val=0;
+	p->read_val=0;
+	p->write_val=0;
+	// copy dynamic data to avoid double free; in the unlikely event when strdup fails, filter1 will skip this item
+	if (p->cmdline_short)
+		p->cmdline_short=strdup(o->cmdline_short);
+	if (p->cmdline_long)
+		p->cmdline_long=strdup(o->cmdline_long);
+	if (p->cmdline_comm)
+		p->cmdline_comm=strdup(o->cmdline_comm);
+	if (p->pw_name)
+		p->pw_name=strdup(o->pw_name);
+	// shift history one step
+	memmove(p->iohist+1,p->iohist,sizeof p->iohist-sizeof *p->iohist);
+	p->iohist[0]=0;
+	memmove(p->sihist+1,p->sihist,sizeof p->sihist-sizeof *p->sihist);
+	p->sihist[0]=0;
+	memmove(p->readhist+1,p->readhist,sizeof p->readhist-sizeof *p->readhist);
+	p->readhist[0]=0.0;
+	memmove(p->writehist+1,p->writehist,sizeof p->writehist-sizeof *p->writehist);
+	p->writehist[0]=0.0;
+	if (p->tid==p->pid) { // shift process aggregated data, only for main process
+		memmove(p->iohist_p+1,p->iohist_p,sizeof p->iohist_p-sizeof *p->iohist_p);
+		p->iohist_p[0]=0;
+		memmove(p->sihist_p+1,p->sihist_p,sizeof p->sihist_p-sizeof *p->sihist_p);
+		p->sihist_p[0]=0;
+		memmove(p->readhist_p+1,p->readhist_p,sizeof p->readhist_p-sizeof *p->readhist_p);
+		p->readhist_p[0]=0.0;
+		memmove(p->writehist_p+1,p->writehist_p,sizeof p->writehist_p-sizeof *p->writehist_p);
+		p->writehist_p[0]=0.0;
+	}
+	return p;
+}
+
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,filter_callback_w cb,int width,int *cnt) {
-	int n=0;
+	struct xxxid_stats **ex=NULL; // copies of the processes and tasks that exited
+	int exn=0;
+	int ncs,nps;
+	int n,x,y;
 
 	if (cnt)
 		*cnt=0;
-	for (n=0;cs->arr&&n<cs->length;n++) {
-		struct xxxid_stats *c;
-		struct xxxid_stats *p;
-		double rv,wv;
-		char temp[12];
 
-		c=cs->arr[n];
-		p=arr_find(ps,c->tid);
+	ncs=cs->arr?cs->length:0;
+	nps=ps&&ps->arr?ps->length:0;
 
-		if (!p) { // new process or task
-			c->blkio_val=0;
-			c->swapin_val=0;
-			c->read_val=0;
-			c->write_val=0;
-			c->read_val_acc=0;
-			c->write_val_acc=0;
-			c->read_val_abw=0;
-			c->write_val_abw=0;
-			c->ts_s=ts_c; // keep start ts
-			c->ts_e=ts_c; // keep end ts
-
-			snprintf(temp,sizeof temp,"%i",c->tid);
-			maxpidlen=maxpidlen<(int)strlen(temp)?(int)strlen(temp):maxpidlen;
+	// both arrays are kept sorted by tid, walk them together to find the pairs
+	for (x=0,y=0;x<ncs||y<nps;) {
+		if (x<ncs&&(y>=nps||cs->arr[x]->tid<ps->arr[y]->tid)) { // new process or task
+			stats_new(cs->arr[x],ts_c);
+			update_maxpidlen(cs->arr[x]->tid);
+			x++;
 			continue;
 		}
-		c->ts_s=p->ts_s; // update end ts
-		c->ts_e=ts_c; // update end ts
+		if (x>=ncs||ps->arr[y]->tid<cs->arr[x]->tid) { // exited process or task
+			// there is no point to keep data for the ones gone for more than HISTORY_CNT cycles
+			if (ps->arr[y]->exited<HISTORY_CNT) {
+				struct xxxid_stats *e;
 
-		// round robin value
-		c->blkio_val=(double)rrv(c->blkio_delay_total,p->blkio_delay_total)/(time_s*10000000.0);
-		if (c->blkio_val>100)
-			c->blkio_val=100;
-
-		c->swapin_val=(double)rrv(c->swapin_delay_total,p->swapin_delay_total)/(time_s*10000000.0);
-		if (c->swapin_val>100)
-			c->swapin_val=100;
-
-		rv=(double)rrv(c->read_bytes,p->read_bytes);
-		wv=(double)rrv(c->write_bytes,p->write_bytes);
-
-		c->read_val=rv/time_s;
-		c->write_val=wv/time_s;
-
-		c->read_val_acc=p->read_val_acc+rv;
-		c->write_val_acc=p->write_val_acc+wv;
-
-		c->read_val_abw=c->read_val_acc/timediff_in_s(c->ts_s,c->ts_e);
-		c->write_val_abw=c->write_val_acc/timediff_in_s(c->ts_s,c->ts_e);
-
-		memcpy(c->iohist+1,p->iohist,sizeof c->iohist-sizeof *c->iohist);
-		c->iohist[0]=value2scale(c->blkio_val,100.0);
-		memcpy(c->sihist+1,p->sihist,sizeof c->sihist-sizeof *c->sihist);
-		c->sihist[0]=value2scale(c->swapin_val,100.0);
-		memcpy(c->readhist+1,p->readhist,sizeof c->readhist-sizeof *c->readhist);
-		c->readhist[0]=rv;
-		memcpy(c->writehist+1,p->writehist,sizeof c->writehist-sizeof *c->writehist);
-		c->writehist[0]=wv;
-
-		if (c->pid==c->tid) {
-			c->blkio_val_p=(double)rrv(c->blkio_delay_total_p,p->blkio_delay_total_p)/(time_s*10000000.0);
-			if (c->blkio_val_p>100)
-				c->blkio_val_p=100;
-
-			c->swapin_val_p=(double)rrv(c->swapin_delay_total_p,p->swapin_delay_total_p)/(time_s*10000000.0);
-			if (c->swapin_val_p>100)
-				c->swapin_val_p=100;
-
-			rv=(double)rrv(c->read_bytes_p,p->read_bytes_p);
-			wv=(double)rrv(c->write_bytes_p,p->write_bytes_p);
-
-			c->read_val_p=rv/time_s;
-			c->write_val_p=wv/time_s;
-
-			c->read_val_acc_p=p->read_val_acc_p+rv;
-			c->write_val_acc_p=p->write_val_acc_p+wv;
-
-			c->read_val_abw_p=c->read_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
-			c->write_val_abw_p=c->write_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
-
-			memcpy(c->iohist_p+1,p->iohist_p,sizeof c->iohist_p-sizeof *c->iohist_p);
-			c->iohist_p[0]=value2scale(c->blkio_val_p,100.0);
-			memcpy(c->sihist_p+1,p->sihist_p,sizeof c->sihist_p-sizeof *c->sihist_p);
-			c->sihist_p[0]=value2scale(c->swapin_val_p,100.0);
-			memcpy(c->readhist_p+1,p->readhist_p,sizeof c->readhist_p-sizeof *c->readhist_p);
-			c->readhist_p[0]=rv;
-			memcpy(c->writehist_p+1,p->writehist_p,sizeof c->writehist_p-sizeof *c->writehist_p);
-			c->writehist_p[0]=wv;
-		}
-
-		snprintf(temp,sizeof temp,"%i",c->tid);
-		maxpidlen=maxpidlen<(int)strlen(temp)?(int)strlen(temp):maxpidlen;
-	}
-	for (n=0;ps&&ps->arr&&n<ps->length;n++) { // copy old data for exited processes
-		if (ps->arr[n]->exited||!arr_find(cs,ps->arr[n]->tid)) {
-			struct xxxid_stats *p;
-
-			ps->arr[n]->exited++;
-			if (ps->arr[n]->exited>HISTORY_CNT)
-				continue;
-			// last state is zero, only history remains
-			ps->arr[n]->blkio_val=0;
-			ps->arr[n]->swapin_val=0;
-			ps->arr[n]->read_val=0;
-			ps->arr[n]->write_val=0;
-			// copy process data to cs
-			p=malloc(sizeof *p);
-			if (p) {
-				*p=*ps->arr[n]; // WARNING - all dynamic data inside should always be initialized below
-				p->threads=NULL;
-				// copy dynamic data to avoid double free; in the unlikely event when strdup fails, filter1 will skip this item
-				if (p->cmdline_short)
-					p->cmdline_short=strdup(ps->arr[n]->cmdline_short);
-				if (p->cmdline_long)
-					p->cmdline_long=strdup(ps->arr[n]->cmdline_long);
-				if (p->cmdline_comm)
-					p->cmdline_comm=strdup(ps->arr[n]->cmdline_comm);
-				if (p->pw_name)
-					p->pw_name=strdup(ps->arr[n]->pw_name);
-				// shift history one step
-				memmove(p->iohist+1,p->iohist,sizeof p->iohist-sizeof *p->iohist);
-				p->iohist[0]=0;
-				memmove(p->sihist+1,p->sihist,sizeof p->sihist-sizeof *p->sihist);
-				p->sihist[0]=0;
-				memmove(p->readhist+1,p->readhist,sizeof p->readhist-sizeof *p->readhist);
-				p->readhist[0]=0.0;
-				memmove(p->writehist+1,p->writehist,sizeof p->writehist-sizeof *p->writehist);
-				p->writehist[0]=0.0;
-				if (p->tid==p->pid) { // shift process aggregated data, only for main process
-					memmove(p->iohist_p+1,p->iohist_p,sizeof p->iohist_p-sizeof *p->iohist_p);
-					p->iohist_p[0]=0;
-					memmove(p->sihist_p+1,p->sihist_p,sizeof p->sihist_p-sizeof *p->sihist_p);
-					p->sihist_p[0]=0;
-					memmove(p->readhist_p+1,p->readhist_p,sizeof p->readhist_p-sizeof *p->readhist_p);
-					p->readhist_p[0]=0.0;
-					memmove(p->writehist_p+1,p->writehist_p,sizeof p->writehist_p-sizeof *p->writehist_p);
-					p->writehist_p[0]=0.0;
-				}
-				if (arr_add(cs,p)) { // free the data in case add fails
-					if (p->cmdline_short)
-						free(p->cmdline_short);
-					if (p->cmdline_long)
-						free(p->cmdline_long);
-					if (p->cmdline_comm)
-						free(p->cmdline_comm);
-					if (p->pw_name)
-						free(p->pw_name);
-					free(p);
-				}
+				if (!ex) // at most the remaining items of ps can exit
+					ex=malloc((nps-y)*sizeof *ex);
+				if (ex&&(e=stats_exited(ps->arr[y])))
+					ex[exn++]=e;
 			}
+			y++;
+			continue;
 		}
+		// present in both cycles
+		stats_diff(cs->arr[x],ps->arr[y],time_s,ts_c);
+		update_maxpidlen(cs->arr[x]->tid);
+		x++;
+		y++;
 	}
+
+	if (exn&&arr_merge(cs,ex,exn)) // the copies are in tid order and none of them is in cs
+		for (n=0;n<exn;n++) // free the data in case merge fails
+			free_stats(ex[n]);
+	if (ex)
+		free(ex);
+
 	// reattach exited threads back to their original process
 	for (n=0;cs->arr&&n<cs->length;n++) {
 		struct xxxid_stats *c;
