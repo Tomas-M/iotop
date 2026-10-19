@@ -250,6 +250,7 @@ The iotop community gathers in #iotop on libera.chat:
 
 Notable contributions (ordered by time of last contribution):
 
+-   Masatake YAMATO &lt;[yamato@redhat.com](mailto:yamato@redhat.com)&gt; - UID to user name resolution methods and caching
 -   Renan Rodrigo &lt;[rr@ubuntu.com](mailto:rr@ubuntu.com)&gt; - Contributed autopkgtests
 -   Roshless &lt;[me@roshless.com](mailto:me@roshless.com)&gt; - Alpine Linux installation instructions
 -   Michal Hlavinka &lt;[mhlavink@redhat.com](mailto:mhlavink@redhat.com)&gt; - Fedora/RedHat packaging and testing
