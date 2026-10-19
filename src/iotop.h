@@ -199,7 +199,7 @@ struct xxxid_stats {
 	char *cmdline_long;
 	char *cmdline_short;
 	char *cmdline_comm;
-	char *pw_name;
+	const char *pw_name; // interned or static, never freed
 
 	struct xxxid_hist *hist; // never NULL, items without own history point to hist_none
 
@@ -260,7 +260,7 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,ch
 
 inline int64_t monotime(void);
 inline char *u8strpadt(const char *s,ssize_t len);
-inline char *esc_low_ascii(char *p);
+inline char *esc_low_ascii(const char *p);
 
 typedef void (*pg_cb)(pid_t pid,pid_t tid,struct xxxid_stats_arr *hint1,filter_callback hint2);
 inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hint2);

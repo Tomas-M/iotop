@@ -267,8 +267,9 @@ inline const char *esc_low_ascii1(char c) {
 	}
 }
 
-inline char *esc_low_ascii(char *p) {
-	char *s=p,*res,*rp;
+inline char *esc_low_ascii(const char *p) {
+	const char *s=p;
+	char *res,*rp;
 	int rc=0;
 
 	if (!p)

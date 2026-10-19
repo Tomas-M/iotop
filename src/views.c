@@ -323,8 +323,7 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 		p->cmdline_long=strdup(o->cmdline_long);
 	if (p->cmdline_comm)
 		p->cmdline_comm=strdup(o->cmdline_comm);
-	if (p->pw_name)
-		p->pw_name=strdup(o->pw_name);
+	// pw_name is interned, the pointer is enough
 	if (h) { // store zero as the newest values; without own history it is all zero anyway
 		h->pos=(h->pos+1)%HISTORY_CNT;
 		if (h->cnt<HISTORY_CNT)

@@ -256,8 +256,7 @@ inline void free_stats(struct xxxid_stats *s) {
 		free(s->cmdline_long);
 	if (s->cmdline_comm)
 		free(s->cmdline_comm);
-	if (s->pw_name)
-		free(s->pw_name);
+	// pw_name is interned, not owned
 	if (s->hist!=&hist_none) {
 		if (s->hist->proc!=&hist_p_none)
 			free(s->hist->proc);
@@ -275,9 +274,32 @@ static const char *get_user_name_pwuid(uid_t uid,const char *unknown) {
 	return pwd&&pwd->pw_name?pwd->pw_name:unknown;
 }
 
+static int pw_cmp(const void *a,const void *b) {
+	return strcmp(a,b);
+}
+
+// user names are kept until exit and shared by the tasks and the uid cache; there are as many of them as distinct users
+static const char *pw_intern(const char *name) {
+	static void *pw_tree=NULL;
+	char **f;
+	char *s;
+
+	f=tfind(name,&pw_tree,pw_cmp);
+	if (f)
+		return *f;
+	s=strdup(name);
+	if (!s)
+		return NULL;
+	if (!tsearch(s,&pw_tree,pw_cmp)) {
+		free(s);
+		return NULL;
+	}
+	return s;
+}
+
 struct uid_cache_entry {
 	uid_t uid;
-	char *pw_name;
+	const char *pw_name; // interned
 	uint64_t valid_until_cycle;
 };
 
@@ -295,72 +317,51 @@ static int uid_cache_cmp(const void *a,const void *b) {
 	return 0;
 }
 
-static void free_uid_cache_entry(void *nodep) {
-	struct uid_cache_entry *e=nodep;
-
-	free(e->pw_name);
-	free(e);
-}
-
-static const char *get_user_name_ttl(uid_t uid,const char *unknown, int ttl_cycles) {
+static const char *get_user_name_ttl(uid_t uid,const char *unknown,int ttl_cycles) {
 	struct uid_cache_entry key={.uid=uid,.pw_name=NULL};
-	struct uid_cache_entry *e = NULL;
+	struct uid_cache_entry *e=NULL;
 	void *node=tfind(&key,&uid_tree,uid_cache_cmp);
 	const char *pw_name;
 
 	if (node) {
 		e=*(struct uid_cache_entry **)node;
-		if (current_cycle < e->valid_until_cycle)
-			return e->pw_name ? e->pw_name : unknown;
+		if (current_cycle<e->valid_until_cycle)
+			return e->pw_name;
 	}
 
-	pw_name=get_user_name_pwuid(uid,unknown);
+	// a uid without user name is cached as unknown
+	pw_name=pw_intern(get_user_name_pwuid(uid,unknown));
+	if (!pw_name)
+		return unknown;
 
 	if (!e) {
-		e=calloc(1, sizeof *e);
+		e=calloc(1,sizeof *e);
 		if (!e)
-			return unknown;
+			return pw_name;
 		e->uid=uid;
 		if (!tsearch(e,&uid_tree,uid_cache_cmp)) {
 			free(e);
-			return unknown;
+			return pw_name;
 		}
 	}
 
-	if (pw_name == unknown) {
-		/* Negative cache: UID has no username */
-		if (e->pw_name) {
-			free(e->pw_name);
-			e->pw_name=NULL;
-		}
-		e->valid_until_cycle=ttl_cycles ? (current_cycle + ttl_cycles) : UINT64_MAX;
-		return unknown;
-	}
-
-	/* Positive cache: update username if changed */
-	if (!e->pw_name || strcmp(e->pw_name, pw_name)) {
-		char *new_name=strdup(pw_name);
-		if (new_name) {
-			free(e->pw_name);
-			e->pw_name=new_name;
-		}
-	}
-
-	e->valid_until_cycle=ttl_cycles ? (current_cycle + ttl_cycles) : UINT64_MAX;
-	return e->pw_name ? e->pw_name : unknown;
+	e->pw_name=pw_name;
+	e->valid_until_cycle=ttl_cycles?(current_cycle+ttl_cycles):UINT64_MAX;
+	return e->pw_name;
 }
 
 static const char *get_user_name_cyclic(uid_t uid,const char *unknown) {
-	return get_user_name_ttl(uid, unknown, 1);
+	return get_user_name_ttl(uid,unknown,1);
 }
 
 static const char *get_user_name_static(uid_t uid,const char *unknown) {
-	return get_user_name_ttl(uid, unknown, 0);
+	return get_user_name_ttl(uid,unknown,0);
 }
 
+// the names stay interned, the tasks still point to them
 void clear_uid_cache(void) {
 	if (uid_tree) {
-		tdestroy(uid_tree,free_uid_cache_entry);
+		tdestroy(uid_tree,free);
 		uid_tree=NULL;
 	}
 }
@@ -428,13 +429,15 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	// cmdline_comm can be NULL
 	if (config.f.uid2name==E_UID2NAME_NONE) {
 		snprintf(uid_str,sizeof uid_str,"%4u",s->euid);
-		s->pw_name=strdup(uid_str);
+		s->pw_name=pw_intern(uid_str);
 	} else if (config.f.uid2name==E_UID2NAME_CYCLIC)
-		s->pw_name=strdup(get_user_name_cyclic(s->euid,unknown));
+		s->pw_name=get_user_name_cyclic(s->euid,unknown);
 	else if (config.f.uid2name==E_UID2NAME_STATIC)
-		s->pw_name=strdup(get_user_name_static(s->euid,unknown));
+		s->pw_name=get_user_name_static(s->euid,unknown);
 	else
-		s->pw_name=strdup(get_user_name_pwuid(s->euid,unknown));
+		s->pw_name=pw_intern(get_user_name_pwuid(s->euid,unknown));
+	if (!s->pw_name) // pw_name is never freed, a static string is fine
+		s->pw_name=unknown;
 
 	if ((s->error_x||s->error_i||!s->cmdline_long||!s->cmdline_short)&&!is_a_process(tid)) { // process exited in the meantime
 		free_stats(s);
