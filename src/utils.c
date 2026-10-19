@@ -55,29 +55,15 @@ static inline void comm_apply(char *buf,ssize_t len,char **cmd_long,char **cmd_s
 	}
 }
 
-// proc_long and proc_short, when given, are the already read cmdline of the process that pid belongs to
-// comm, when not empty, is the task name that is already known and is not read again
+// read the cmdline of process pid into cmd_long and cmd_short
 // returns 1 if the cmdline was read and is not empty
-inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,const char *comm,char **cmd_long,char **cmd_short,char **cmd_comm) {
+inline int read_cmdline(int pid,char **cmd_long,char **cmd_short) {
 	char path[30];
 	int res=0;
 	int fd;
 
-	if (!cmd_long||!cmd_short||!cmd_comm)
-		return 0;
-
-	*cmd_long=*cmd_short=*cmd_comm=NULL;
-
-	if (proc_long&&proc_short) { // all threads of a process have the same cmdline
-		*cmd_long=strdup(proc_long);
-		*cmd_short=strdup(proc_short);
-		if (*cmd_long&&*cmd_short)
-			res=1;
-		fd=-1;
-	} else {
-		snprintf(path,sizeof path,"/proc/%d/cmdline",pid);
-		fd=open(path,O_RDONLY);
-	}
+	snprintf(path,sizeof path,"/proc/%d/cmdline",pid);
+	fd=open(path,O_RDONLY);
 	if (fd!=-1) {
 		char *dbuf=malloc(BUFSIZ+1);
 		ssize_t n,p=0,sz=BUFSIZ;
@@ -141,12 +127,21 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,co
 		close(fd);
 	}
 
+	return res;
+}
+
+// apply the name of task pid to its cmdlines; comm, when not empty, is the name that is already known
+// and is not read again; a task without cmdline gets its name as one
+inline void read_comm(int pid,const char *comm,char **cmd_long,char **cmd_short,char **cmd_comm) {
+	char path[30];
+	int fd;
+
 	if (comm&&*comm) {
 		char *dbuf=strdup(comm);
 
 		if (dbuf)
 			comm_apply(dbuf,(ssize_t)strlen(dbuf),cmd_long,cmd_short,cmd_comm);
-		return res;
+		return;
 	}
 
 	snprintf(path,sizeof path,"/proc/%d/comm",pid);
@@ -157,7 +152,7 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,co
 
 		if (!dbuf) {
 			close(fd);
-			return res;
+			return;
 		}
 
 		do {
@@ -168,7 +163,7 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,co
 				if (!t) {
 					close(fd);
 					free(dbuf);
-					return res;
+					return;
 				}
 				dbuf=t;
 				sz+=BUFSIZ;
@@ -187,7 +182,6 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,co
 			free(dbuf);
 		close(fd);
 	}
-	return res;
 }
 
 inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hint2) {

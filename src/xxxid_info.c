@@ -249,11 +249,13 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 						stats->blkio_delay_total=t14->blkio_delay_total;
 						stats->euid=t14->ac_uid;
 						stats->io_prio=ioprio_from_sched(t14->ac_sched,(int8_t)t14->ac_nice);
-						if (ts->version>=12&&t14->ac_exe_inode) { // the exe fields are there since v12, zero for kernel threads
-							memcpy(comm,t14->ac_comm,TS_COMM_LEN);
-							comm[TS_COMM_LEN]=0;
+						if (ts->version>=12) { // the exe fields are there since v12, zero for kernel threads
 							stats->btime=t14->ac_btime64;
 							stats->exe=exe_id(t14->ac_exe_dev,t14->ac_exe_inode);
+							if (t14->ac_exe_inode) {
+								memcpy(comm,t14->ac_comm,TS_COMM_LEN);
+								comm[TS_COMM_LEN]=0;
+							}
 						}
 					} else { // exception for v15 only
 						stats->read_bytes=t15->read_bytes;
@@ -262,11 +264,11 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 						stats->blkio_delay_total=t15->blkio_delay_total;
 						stats->euid=t15->ac_uid;
 						stats->io_prio=ioprio_from_sched(t15->ac_sched,(int8_t)t15->ac_nice);
+						stats->btime=t15->ac_btime64;
+						stats->exe=exe_id(t15->ac_exe_dev,t15->ac_exe_inode);
 						if (t15->ac_exe_inode) { // zero for kernel threads
 							memcpy(comm,t15->ac_comm,TS_COMM_LEN);
 							comm[TS_COMM_LEN]=0;
-							stats->btime=t15->ac_btime64;
-							stats->exe=exe_id(t15->ac_exe_dev,t15->ac_exe_inode);
 						}
 					}
 				}
@@ -454,6 +456,13 @@ static struct xxxid_stats *cmdline_prev(struct xxxid_stats *s,const char *comm) 
 	return o;
 }
 
+// copy the cmdline that is already known to s; returns 1 if both copies are made
+static int cmdline_copy(struct xxxid_stats *s,const char *cmd_long,const char *cmd_short) {
+	s->cmdline_long=strdup(cmd_long);
+	s->cmdline_short=strdup(cmd_short);
+	return s->cmdline_long&&s->cmdline_short;
+}
+
 inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	static const char unknown[]="<unknown>";
 	struct xxxid_stats *s;
@@ -478,16 +487,22 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	} else
 		s->io_prio=prio;
 
-	if (tid!=pid&&pid==pcmd.pid)
-		read_cmdlines(tid,pcmd.cmd_long,pcmd.cmd_short,comm,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
+	if (tid!=pid&&pid==pcmd.pid) // all threads of a process have the same cmdline
+		cmdline_copy(s,pcmd.cmd_long,pcmd.cmd_short);
 	else {
 		struct xxxid_stats *o=tid==pid?cmdline_prev(s,comm):NULL;
-		int res=read_cmdlines(tid,o?o->cmdline_long:NULL,o?o->cmdline_short:NULL,comm,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
+		int res=0;
+
+		if (o)
+			res=cmdline_copy(s,o->cmdline_long,o->cmdline_short);
+		else if (!(s->btime&&!*comm)) // a kernel thread has no cmdline; taskstats tells it since v12
+			res=read_cmdline(tid,&s->cmdline_long,&s->cmdline_short);
 
 		// an exited main thread has empty cmdline while the rest of the threads still have it, so keep only a real one
 		if (tid==pid)
 			pcmd_set(res?pid:-1,s->cmdline_long,s->cmdline_short);
 	}
+	read_comm(tid,comm,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
 
 	if (!s->cmdline_long)
 		s->cmdline_long=strdup(unknown);

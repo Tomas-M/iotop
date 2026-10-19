@@ -261,7 +261,8 @@ inline int masked_sort_by(int isforward);
 
 /* utils.c */
 
-inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,const char *comm,char **cmd_long,char **cmd_short,char **cmd_comm);
+inline int read_cmdline(int pid,char **cmd_long,char **cmd_short);
+inline void read_comm(int pid,const char *comm,char **cmd_long,char **cmd_short,char **cmd_comm);
 
 inline int64_t monotime(void);
 inline char *u8strpadt(const char *s,ssize_t len);
