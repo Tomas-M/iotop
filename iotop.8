@@ -314,9 +314,9 @@ Use inverse interface (black on white)
 Filter processes by TID and COMMAND. This will only show processes where TID
 or COMMAND are matching the REGEX.
 .TP
-\fB\-\-uid2name\fR=\fIMETHOD\fR
-Set the method used to convert UID to user name for the USER column.
-Accepted values for \fIMETHOD\fR are \fBalways\fR (always resolve UID to
+\fB\-\-uid2name\fR=\fIMODE\fR
+Set the UID to user name resolution mode for the USER column.
+Accepted values for \fIMODE\fR are \fBalways\fR (always resolve UID to
 username using getpwuid(3)), \fBnone\fR (do not resolve UID, show numeric
 UID instead), \fBcyclic\fR (cache resolved usernames internally for each
 refresh cycle to avoid repetitive getpwuid(3) lookups), and \fBstatic\fR

@@ -192,7 +192,7 @@ static inline void print_help(void) {
 		"      --unicode          use Unicode drawing chars\n"
 		"  -N, --inverse          use inverse interface (black on white)\n"
 		"      --filter=REGEX     filter processes by TID and COMMAND\n"
-		"      --uid2name=METHOD  set method to convert UID to user name (always, none, cyclic, [static])\n"
+		"      --uid2name=MODE    set UID to user name resolution mode (always, none, cyclic, [static])\n"
 		"  -W, --write            write preceding options to the config and exit\n",
 		progname
 	);
