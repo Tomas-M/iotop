@@ -226,7 +226,7 @@ static inline void parse_args(int clac,char **clav) {
 			config_file_free();
 			argc=clac;
 			argv=clav;
-			optind=1;
+			optind=0; // fully reinitialize getopt, it may still point into the freed config
 		}
 		for (;;) {
 			static struct option long_options[]={
