@@ -20,6 +20,8 @@ You should have received a copy of the GNU General Public License along with thi
 #include <sys/resource.h>
 
 #define IOPRIO_CLASS_SHIFT 13
+#define IOPRIO_CLASS_MASK 0x7
+#define IOPRIO_LEVEL_MASK 0x7
 #define IOPRIO_STR_MAXSIZ  10
 #define IOPRIO_STR_FORMAT "%2s/%1i"
 
@@ -46,7 +48,8 @@ inline int get_ioprio(pid_t pid,int sched_prio) {
 	io_class=io_prio>>IOPRIO_CLASS_SHIFT;
 	if (!io_class)
 		return sched_prio!=-1?sched_prio:ioprio_from_sched(sched_getscheduler(pid),getpriority(PRIO_PROCESS,pid));
-	return io_prio;
+	// since Linux 6.5 the bits between the level and the class are hints, they are not part of the priority
+	return io_prio&((IOPRIO_CLASS_MASK<<IOPRIO_CLASS_SHIFT)|IOPRIO_LEVEL_MASK);
 }
 
 inline int ioprio2class(int ioprio) {
