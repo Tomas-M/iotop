@@ -1,4 +1,4 @@
-.TH IOTOP "8" "January 13, 2025"
+.TH IOTOP "8" "October 19, 2026"
 .SH NAME
 iotop \- simple top\-like I/O monitor
 .SH SYNOPSIS
@@ -53,16 +53,16 @@ to quit. Any unrecognized key will be ignored.
 .PP
 All processes or threads that have exited are displayed grayed for the same time
 as is visible in the \fBGRAPH\fR column or 3 seconds when it is hidden. The
-invalid data points in the \fBGRAPHS\fR column are displayed inverse or with
+invalid data points in the \fBGRAPH\fR column are displayed inverse or with
 letter \fBx\fR (see option \fB\-\-dead\-x\fR and \fBx\fR shortcut). When using
-unicode characters each position contains two datapoints and only the positions
+Unicode characters each position contains two datapoints and only the positions
 with two invalid data points are reversed.
 .PP
 It is possible for threads of a process to have different priority from their
 main process. This is shown with \fB!\fR in the \fBPRIO\fR column of the main
 process as e.g. \fB!be/4\fR.
 .PP
-Threads activity is always aggregated with and shown inside the main process.
+Thread activity is always aggregated with and shown inside the main process.
 .PP
 When showing threads, they always appear below their main process and are sorted
 in the same way as the processes.
@@ -143,7 +143,7 @@ to be numeric are used as numeric
 \fB\-P\fR, \fB\-\-processes\fR
 Only show processes. Normally \fBiotop\fR shows processes and all threads
 .TP
-\fB\-\-no\-processes\fR
+\fB\-\-threads\fR
 Show processes and all threads
 .TP
 \fB\-a\fR, \fB\-\-accumulated\fR
@@ -158,7 +158,7 @@ Show bandwidth (useful when changing config file with \fB\-\-write\fR)
 \fB\-A\fR, \fB\-\-accum-bw\fR
 Show accumulated I/O as bandwidth for the whole sampling period. In this mode,
 \fBiotop\fR shows the amount of I/O per second for the whole period since the
-process or \fBiotop\fR started
+process or \fBiotop\fR started.
 Note that this option and \-\-accumulated are exclusive and they will turn each
 other off
 .TP
@@ -383,7 +383,7 @@ Sort by next column
 Sort by previous column
 .TP
 \fB<esc>\fR
-Cancel ionice or filter selection. In case only the help window is open then
+Cancel ionice, filter or search. In case only the help window is open then
 close it
 .TP
 \fBo\fR, \fBO\fR
@@ -400,6 +400,9 @@ Toggle showing inline help
 .TP
 \fBh\fR, \fBH\fR
 Toggle showing window help
+.TP
+\fB<\fR, \fB>\fR
+Scroll the help window up and down when it does not fit on the screen
 .TP
 \fBc\fR, \fBC\fR
 Toggle showing full command line

@@ -12,7 +12,7 @@ It could help you much more if you knew which process reads or writes
 the most data from your slow disk, so you could renice it using ionice
 or even kill it.
 
-iotop identifies processes that use high amount of input/output requests
+iotop identifies processes that use a high amount of input/output requests
 on your machine. It is similar to the well known top utility, but
 instead of showing you what consumes CPU the most, it lists
 processes by their IO usage. Inspired by iotop Python script from
@@ -100,7 +100,7 @@ Please note that the installation and the usage of this program require root acc
 
 Use the following commands (note that `-y` disables confirmation prompts):
   
-    apt install git build-essential libncurses-dev libncursesw5-dev pkg-config -y
+    apt install git build-essential libncurses-dev pkg-config -y
     git clone https://github.com/Tomas-M/iotop
     cd iotop
     make -j
@@ -159,11 +159,11 @@ Use the following commands:
 
 ### How to install as a system command
 
-sudo make install
+    sudo make install
 
 ### How to update to latest version
 
-cd iotop && git checkout master && git pull && make clean && make -j
+    cd iotop && git checkout master && git pull && make clean && make -j
 
 ## Options
 
@@ -273,6 +273,6 @@ Notable contributions (ordered by time of last contribution):
 -   alicektx &lt;[alicekot13@gmail.com](mailto:alicekot13@gmail.com)&gt; - Documentation improvements
 -   Filip Kofron &lt;[filip.kofron.cz@gmail.com](mailto:filip.kofron.cz@gmail.com)&gt; - Build system improvements
 
-**Thanks!** This project is what it is now because the steam you have put into it
+**Thanks!** This project is what it is now because of the steam you have put into it.
 
 *NB. In case you have contributed to the project and do not see your name in the list, please note that the above list is updated manually and it is an omission - notify the maintainers to fix it.*
