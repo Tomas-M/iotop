@@ -181,6 +181,8 @@ inline int ucell_app_cchar(ucell *uc,int pos,const char *c) { // {{{
 
 		strcpy(s,(uc->cells[pos].flags&UC_ALLOC)?uc->cells[pos].p:uc->cells[pos].d);
 		strcat(s,c);
+		if (uc->cells[pos].flags&UC_ALLOC)
+			free(uc->cells[pos].p);
 		uc->cells[pos].flags=UC_ALLOC;
 		uc->cells[pos].p=s;
 	}
