@@ -465,6 +465,8 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 	snprintf(str,4,"%c%s",u[p],config.f.accumulated&&allow_accum?"  ":"/s");
 }
 
+// the curses view keeps the sorted lists while struct view_key is unchanged, so any input of the sort
+// besides the compared items has to be there too
 inline int iotop_sort_cb(const void *a,const void *b) {
 	int order=config.f.sort_order?1:-1; // SORT_ASC is bit 0=1, else should reverse sort
 	struct xxxid_stats **ppa=(struct xxxid_stats **)a;
@@ -587,6 +589,7 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 	return res;
 }
 
+// any input of the filter besides s has to be in struct view_key, the curses view relies on it
 inline int filter1(struct xxxid_stats *s) {
 	if (!s->cmdline_long||!s->cmdline_short) // if strdup fails during copy, those may become NULL
 		return 1;

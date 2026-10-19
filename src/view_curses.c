@@ -305,6 +305,8 @@ static int is_main(const struct xxxid_stats *s) {
 }
 
 // the inputs of the filters and of the sort; the data itself changes only with a new cycle
+// the curses view counts and sorts again only when one of these changes, so any new input of filter_view,
+// filter1 or iotop_sort_cb that is not in config.f has to be added here too
 struct view_key {
 	struct _flags f;
 	int width;
@@ -349,6 +351,7 @@ static inline void view_sort(struct xxxid_stats_arr *a,int (*keep)(const struct 
 	a->sort_gen=view_gen;
 }
 
+// any input of the filter besides s has to be in struct view_key
 static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	// apply uid/pid filter
 	if (filter1(s))
