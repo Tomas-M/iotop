@@ -203,7 +203,8 @@ static inline void stats_new(struct xxxid_stats *c,uint64_t ts_c) {
 // calculate the values of the current cycle from the previous data in p
 static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double time_s,uint64_t ts_c) {
 	struct xxxid_hist *h;
-	double rv,wv;
+	double rv,wv,rvp=0,wvp=0;
+	int io,si,iop=0,sip=0;
 
 	c->ts_s=p->ts_s; // update end ts
 	c->ts_e=ts_c; // update end ts
@@ -211,8 +212,8 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	// take over the history of the previous cycle
 	c->hist=p->hist;
 	p->hist=&hist_none;
-	h=hist_own(c)?c->hist:NULL;
-	if (h&&c->pid!=c->tid&&h->proc!=&hist_p_none) { // tid of a main process reused by a thread - its aggregated history does not apply
+	h=c->hist;
+	if (h!=&hist_none&&c->pid!=c->tid&&h->proc!=&hist_p_none) { // tid of a main process reused by a thread - its aggregated history does not apply
 		free(h->proc);
 		h->proc=&hist_p_none;
 	}
@@ -238,15 +239,8 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	c->read_val_abw=c->read_val_acc/timediff_in_s(c->ts_s,c->ts_e);
 	c->write_val_abw=c->write_val_acc/timediff_in_s(c->ts_s,c->ts_e);
 
-	if (h) { // store the values of this cycle as the newest
-		h->pos=(h->pos+1)%HISTORY_CNT;
-		if (h->cnt<HISTORY_CNT)
-			h->cnt++;
-		hist_put8(h,h->iohist,&h->iosum,value2scale(c->blkio_val,100.0));
-		hist_put8(h,h->sihist,&h->sisum,value2scale(c->swapin_val,100.0));
-		hist_put(h,h->readhist,&h->readsum,rv);
-		hist_put(h,h->writehist,&h->writesum,wv);
-	}
+	io=value2scale(c->blkio_val,100.0);
+	si=value2scale(c->swapin_val,100.0);
 
 	if (c->pid==c->tid) {
 		c->blkio_val_p=(double)rrv(c->blkio_delay_total_p,p->blkio_delay_total_p)/(time_s*10000000.0);
@@ -257,26 +251,50 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		if (c->swapin_val_p>100)
 			c->swapin_val_p=100;
 
-		rv=(double)rrv(c->read_bytes_p,p->read_bytes_p);
-		wv=(double)rrv(c->write_bytes_p,p->write_bytes_p);
+		rvp=(double)rrv(c->read_bytes_p,p->read_bytes_p);
+		wvp=(double)rrv(c->write_bytes_p,p->write_bytes_p);
 
-		c->read_val_p=rv/time_s;
-		c->write_val_p=wv/time_s;
+		c->read_val_p=rvp/time_s;
+		c->write_val_p=wvp/time_s;
 
-		c->read_val_acc_p=p->read_val_acc_p+rv;
-		c->write_val_acc_p=p->write_val_acc_p+wv;
+		c->read_val_acc_p=p->read_val_acc_p+rvp;
+		c->write_val_acc_p=p->write_val_acc_p+wvp;
 
 		c->read_val_abw_p=c->read_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 		c->write_val_abw_p=c->write_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 
-		if (h&&hist_own_p(h)) { // pos was already advanced above
-			struct xxxid_hist_p *hp=h->proc;
+		iop=value2scale(c->blkio_val_p,100.0);
+		sip=value2scale(c->swapin_val_p,100.0);
+	}
 
-			hist_put8(h,hp->iohist_p,&hp->iosum_p,value2scale(c->blkio_val_p,100.0));
-			hist_put8(h,hp->sihist_p,&hp->sisum_p,value2scale(c->swapin_val_p,100.0));
-			hist_put(h,hp->readhist_p,&hp->readsum_p,rv);
-			hist_put(h,hp->writehist_p,&hp->writesum_p,wv);
-		}
+	// an idle task keeps the shared empty history; the older values of a history are all zero,
+	// so allocating it with the first nonzero value gives the same result as storing zeros until then
+	if (h==&hist_none&&!(io||si||rv>0||wv>0||iop||sip||rvp>0||wvp>0))
+		return;
+	if (!hist_own(c))
+		return;
+	h=c->hist;
+
+	// store the values of this cycle as the newest
+	h->pos=(h->pos+1)%HISTORY_CNT;
+	if (h->cnt<HISTORY_CNT)
+		h->cnt++;
+	hist_put8(h,h->iohist,&h->iosum,(uint8_t)io);
+	hist_put8(h,h->sihist,&h->sisum,(uint8_t)si);
+	hist_put(h,h->readhist,&h->readsum,rv);
+	hist_put(h,h->writehist,&h->writesum,wv);
+
+	if (c->pid!=c->tid)
+		return;
+	if (h->proc==&hist_p_none&&!(iop||sip||rvp>0||wvp>0)) // the same for the aggregated history
+		return;
+	if (hist_own_p(h)) { // pos was already advanced above
+		struct xxxid_hist_p *hp=h->proc;
+
+		hist_put8(h,hp->iohist_p,&hp->iosum_p,(uint8_t)iop);
+		hist_put8(h,hp->sihist_p,&hp->sisum_p,(uint8_t)sip);
+		hist_put(h,hp->readhist_p,&hp->readsum_p,rvp);
+		hist_put(h,hp->writehist_p,&hp->writesum_p,wvp);
 	}
 }
 
