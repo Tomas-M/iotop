@@ -1123,6 +1123,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					}
 				}
 
+				line++;
 				if (line>maxy-1-(noinlinehelp==0&&config.f.helptype==2?2:0)) // do not draw out of screen
 					goto donemax;
 			}
