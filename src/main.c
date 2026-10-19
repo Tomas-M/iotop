@@ -298,8 +298,6 @@ static inline void parse_args(int clac,char **clav) {
 
 			if (c==-1) {
 				if (optind<argc) {
-					int i;
-
 					for (i=optind;i<argc;i++)
 						fprintf(stderr,"%s: unknown argument: %s\n",progname,argv[i]);
 					exit(EXIT_FAILURE);

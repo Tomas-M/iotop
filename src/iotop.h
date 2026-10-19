@@ -107,7 +107,7 @@ extern struct xxxid_hist hist_none;
 extern struct xxxid_hist_p hist_p_none;
 extern int hist_w;
 
-#define IOTOP_TASKSTATS_MINVER 4
+#define IOTOP_TASKSTATS_MINVER 4U
 #define IOTOP_TASKSTATS_VERSION 15
 
 #define HISTORY_POS 60

@@ -228,7 +228,7 @@ inline const char *esc_low_ascii1(char c) {
 	if (uc>=0x20) // no escaping needed
 		return NULL;
 	if (!initialized) {
-		int i;
+		unsigned i;
 
 		for (i=0;i<0x20;i++)
 			sprintf(ehex[i],"\\0x%02x",i);

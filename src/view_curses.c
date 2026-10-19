@@ -492,8 +492,8 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 
 static inline void view_help(void) {
 	int i,a=c1w,b=c2w,c=c3w,d=cdw;
-	int hh=getmaxy(whelp);
-	int hw=getmaxx(whelp);
+	int mh=getmaxy(whelp);
+	int mw=getmaxx(whelp);
 	int helpcnt=0;
 	const s_helpitem *p;
 	int can_scroll;
@@ -623,13 +623,13 @@ static inline void view_help(void) {
 	}
 
 	// adjust scroll position
-	if (hh-2>=helpcnt) { // all fits, no scroll
+	if (mh-2>=helpcnt) { // all fits, no scroll
 		can_scroll=0;
 		helppos=0;
 	} else
 		can_scroll=1;
-	if (helpcnt-helppos<hh-2)
-		helppos=helpcnt-(hh-2);
+	if (helpcnt-helppos<mh-2)
+		helppos=helpcnt-(mh-2);
 	if (helppos<0) // can't go before start
 		helppos=0;
 
@@ -647,18 +647,18 @@ static inline void view_help(void) {
 		wattron(whelp,A_REVERSE);
 	else
 		wattroff(whelp,A_REVERSE);
-	for (i=1+strlen(" help ");i<hw;i++)
+	for (i=1+strlen(" help ");i<mw;i++)
 		wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
-	for (p=thelp+helppos,i=1;i<hh-1&&p->descr;i++,p++)
+	for (p=thelp+helppos,i=1;i<mh-1&&p->descr;i++,p++)
 		mvwprintw(whelp,i,0," %-*.*s %-*.*s %-*.*s - %-*.*s ",a,a,p->k1?p->k1:"",b,b,p->k2?p->k2:"",c,c,p->k3?p->k3:"",d,d,p->descr);
-	mvwprintw(whelp,hh-1,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
+	mvwprintw(whelp,mh-1,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	if (config.f.inverse) {
 		wattron(whelp,A_DIM);
 		wattroff(whelp,A_REVERSE);
 	} else
 		wattron(whelp,A_REVERSE|A_DIM);
-	for (i=1;i<hw&&i<1+(int)strlen(" iotop "VERSION" ");i++)
-		mvwprintw(whelp,hh-1,i,"%c",(" iotop "VERSION" ")[i-1]);
+	for (i=1;i<mw&&i<1+(int)strlen(" iotop "VERSION" ");i++)
+		mvwprintw(whelp,mh-1,i,"%c",(" iotop "VERSION" ")[i-1]);
 	if (config.f.inverse) {
 		wattroff(whelp,A_DIM);
 		wattron(whelp,A_REVERSE);
@@ -667,23 +667,23 @@ static inline void view_help(void) {
 	if (can_scroll) {
 		int vp=1+strlen(" iotop "VERSION" ");
 
-		for (i=vp;i<hw&&i<vp+2;i++)
+		for (i=vp;i<mw&&i<vp+2;i++)
 			wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 		if (config.f.inverse)
 			wattroff(whelp,A_REVERSE);
 		else
 			wattron(whelp,A_REVERSE);
-		for (i=vp+2;i<hw&&i<vp+2+(int)strlen(" < > scroll ");i++)
-			mvwprintw(whelp,hh-1,i,"%c",(" < > scroll ")[i-vp-2]);
+		for (i=vp+2;i<mw&&i<vp+2+(int)strlen(" < > scroll ");i++)
+			mvwprintw(whelp,mh-1,i,"%c",(" < > scroll ")[i-vp-2]);
 		if (config.f.inverse)
 			wattron(whelp,A_REVERSE);
 		else
 			wattroff(whelp,A_REVERSE);
 		vp+=strlen(" < > scroll ");
-		for (i=vp;i<hw;i++)
+		for (i=vp;i<mw;i++)
 			wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	} else
-		for (i=1+strlen(" iotop "VERSION" ");i<hw;i++)
+		for (i=1+strlen(" iotop "VERSION" ");i<mw;i++)
 			wprintw(whelp,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 }
 
@@ -1646,14 +1646,14 @@ donedraw:
 		if (ssize>2) {
 			int toskip=ssize-1<ucell_cursor_c(params.search_uc)?ucell_cursor_c(params.search_uc)-ssize+1:0;
 			char *ss=ucell_substr(params.search_uc,toskip,ssize);
-			char *ps=u8strpadt(ss,ssize);
+			char *pss=u8strpadt(ss,ssize);
 
 			if (config.f.inverse)
 				attroff(A_REVERSE);
 			else
 				attron(A_REVERSE);
-			if (ps)
-				printw("%s",ps);
+			if (pss)
+				printw("%s",pss);
 			else
 				printw("%*.*s",ssize,ssize,"");
 			if (config.f.inverse)
@@ -1672,8 +1672,8 @@ donedraw:
 			promptx=strlen("Search: ")+ucell_cursor_c(params.search_uc)-toskip;
 			prompty=ionice_line;
 			show=TRUE;
-			if (ps)
-				free(ps);
+			if (pss)
+				free(pss);
 			if (ss)
 				free(ss);
 		}

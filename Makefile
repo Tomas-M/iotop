@@ -62,6 +62,8 @@ HAVEWDTI:=$(shell if $(CC) -Wdate-time -xc -c /dev/null -o /dev/null >/dev/null 
 HAVEDEPS:=$(shell if $(CC) -MM -MT /dev/null -MF /dev/null /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 # old compilers do not understand C standard
 HAVECSTD:=$(shell if $(CC) --std=gnu89 -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
+# old compilers do not have -Wformat-signedness; clang only warns on unknown warning options
+HAVEWFSN:=$(shell if $(CC) -Werror -Wformat-signedness -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 # old compilers do not understand -flto=auto
 HAVEFLTA:=$(shell if $(CC) -flto=auto -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 # old compilers do not understand -flto at all
@@ -69,7 +71,7 @@ HAVEFLTO:=$(shell if $(CC) -flto -xc -c /dev/null -o /dev/null >/dev/null 2>/dev
 # old compilers do not understand -pie; clang yields error when stderr is redirected :(
 HAVELPIE:=$(shell if $(CC) -Wno-unused-command-line-argument -pie -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 
-MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -Wall -Wextra -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 --std=gnu89 -fPIE
+MYCFLAGS:=$(CPPFLAGS) $(CFLAGS) $(NCCC) -Wall -Wextra -Wformat -Wformat-signedness -Werror=format-security -Wshadow -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdate-time -D_FORTIFY_SOURCE=2 --std=gnu89 -fPIE
 MYLIBS:=$(NCLD) $(LIBS)
 MYLDFLAGS:=$(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -fPIE -pie
 
@@ -81,6 +83,10 @@ endif
 ifeq ("$(HAVEWDTI)","no")
 MYCFLAGS:=$(filter-out -Wdate-time,$(MYCFLAGS))
 MYLDFLAGS:=$(filter-out -Wdate-time,$(MYLDFLAGS))
+endif
+
+ifeq ("$(HAVEWFSN)","no")
+MYCFLAGS:=$(filter-out -Wformat-signedness,$(MYCFLAGS))
 endif
 
 ifeq ("$(HAVECSTD)","no")
@@ -187,6 +193,7 @@ pv:
 	@echo HAVESREA: $(HAVESREA)
 	@echo HAVEWDTI: $(HAVEWDTI)
 	@echo HAVEDEPS: $(HAVEDEPS)
+	@echo HAVEWFSN: $(HAVEWFSN)
 	@echo HAVECSTD: $(HAVECSTD)
 	@echo HAVEFLTA: $(HAVEFLTA)
 	@echo HAVEFLTO: $(HAVEFLTO)
