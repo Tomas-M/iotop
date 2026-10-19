@@ -282,7 +282,12 @@ inline int config_file_save(void) {
 	if (config.f.uid2name==E_UID2NAME_STATIC)
 		fprintf(cf,"--uid2name=static\n");
 
-	fclose(cf);
+	if (ferror(cf)) {
+		fclose(cf);
+		return -1;
+	}
+	if (fclose(cf)) // the buffered data is written here, e.g. a full disk shows only now
+		return -1;
 
 	return 0;
 }

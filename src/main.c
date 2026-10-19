@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include "iotop.h"
 
 #include <pwd.h>
+#include <errno.h>
 #include <getopt.h>
 #include <limits.h>
 #include <stdio.h>
@@ -328,7 +329,10 @@ static inline void parse_args(int clac,char **clav) {
 					print_help();
 					exit(EXIT_SUCCESS);
 				case 'W':
-					config_file_save();
+					if (config_file_save()) {
+						fprintf(stderr,"%s: can not save the config file: %s\n",progname,strerror(errno));
+						exit(EXIT_FAILURE);
+					}
 					exit(EXIT_SUCCESS);
 				case 'H': // below values are not partial prefixes of each other, do a relaxed match
 					if (!*optarg) // an empty value would match the first one
