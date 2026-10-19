@@ -120,7 +120,10 @@ struct xxxid_stats_arr {
 };
 
 // history of the GRAPH column; it is handed over to the item of the next cycle instead of being copied
+// each array is a ring buffer with the newest value at pos
 struct xxxid_hist {
+	int pos; // index of the newest value
+	int cnt; // count of the stored values; the older ones are all zero
 	uint8_t iohist[HISTORY_CNT]; // io history data
 	uint8_t sihist[HISTORY_CNT]; // swapin history data
 	double readhist[HISTORY_CNT]; // read history data
@@ -131,6 +134,11 @@ struct xxxid_hist {
 	double readhist_p[HISTORY_CNT]; // read history data (aggregated in main process)
 	double writehist_p[HISTORY_CNT]; // write history data (aggregated in main process)
 };
+
+// index of the k-th newest value of history h; k=0 is the newest, k<HISTORY_CNT
+#define HIST_IDX(h,k) (((h)->pos+HISTORY_CNT-(k))%HISTORY_CNT)
+// the k-th newest value of history array a of item s
+#define HISTV(s,a,k) ((s)->hist->a[HIST_IDX((s)->hist,(k))])
 
 struct xxxid_stats {
 	pid_t pid;
@@ -319,6 +327,8 @@ inline int iotop_sort_cb(const void *a,const void *b);
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c);
 inline int count_visible(struct xxxid_stats_arr *cs,filter_callback_w cb,int width);
 inline int value2scale(double val,double mx);
+inline double hist_sum(const struct xxxid_hist *h,const double *a,int cnt);
+inline int hist_sum8(const struct xxxid_hist *h,const uint8_t *a,int cnt);
 inline int filter1(struct xxxid_stats *s);
 
 /* delayacct.c */

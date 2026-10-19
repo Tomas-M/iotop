@@ -91,6 +91,34 @@ static inline int hist_own(struct xxxid_stats *s) {
 	return 1;
 }
 
+// sum of the newest cnt values of history array a of h
+inline double hist_sum(const struct xxxid_hist *h,const double *a,int cnt) {
+	double sum=0;
+	int i,n=0;
+
+	if (cnt>h->cnt) // the rest was never stored
+		cnt=h->cnt;
+	for (i=h->pos;i>=0&&n<cnt;i--,n++)
+		sum+=a[i];
+	for (i=HISTORY_CNT-1;n<cnt;i--,n++) // the older part after wrapping around
+		sum+=a[i];
+	return sum;
+}
+
+// sum of the newest cnt values of history array a of h
+inline int hist_sum8(const struct xxxid_hist *h,const uint8_t *a,int cnt) {
+	int sum=0;
+	int i,n=0;
+
+	if (cnt>h->cnt) // the rest was never stored
+		cnt=h->cnt;
+	for (i=h->pos;i>=0&&n<cnt;i--,n++)
+		sum+=a[i];
+	for (i=HISTORY_CNT-1;n<cnt;i--,n++) // the older part after wrapping around
+		sum+=a[i];
+	return sum;
+}
+
 // keep the longest tid length for the display
 static inline void update_maxpidlen(pid_t tid) {
 	int len=1;
@@ -155,15 +183,14 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	c->read_val_abw=c->read_val_acc/timediff_in_s(c->ts_s,c->ts_e);
 	c->write_val_abw=c->write_val_acc/timediff_in_s(c->ts_s,c->ts_e);
 
-	if (h) { // shift history one step
-		memmove(h->iohist+1,h->iohist,sizeof h->iohist-sizeof *h->iohist);
-		h->iohist[0]=value2scale(c->blkio_val,100.0);
-		memmove(h->sihist+1,h->sihist,sizeof h->sihist-sizeof *h->sihist);
-		h->sihist[0]=value2scale(c->swapin_val,100.0);
-		memmove(h->readhist+1,h->readhist,sizeof h->readhist-sizeof *h->readhist);
-		h->readhist[0]=rv;
-		memmove(h->writehist+1,h->writehist,sizeof h->writehist-sizeof *h->writehist);
-		h->writehist[0]=wv;
+	if (h) { // store the values of this cycle as the newest
+		h->pos=(h->pos+1)%HISTORY_CNT;
+		if (h->cnt<HISTORY_CNT)
+			h->cnt++;
+		h->iohist[h->pos]=value2scale(c->blkio_val,100.0);
+		h->sihist[h->pos]=value2scale(c->swapin_val,100.0);
+		h->readhist[h->pos]=rv;
+		h->writehist[h->pos]=wv;
 	}
 
 	if (c->pid==c->tid) {
@@ -187,15 +214,11 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		c->read_val_abw_p=c->read_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 		c->write_val_abw_p=c->write_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 
-		if (h) {
-			memmove(h->iohist_p+1,h->iohist_p,sizeof h->iohist_p-sizeof *h->iohist_p);
-			h->iohist_p[0]=value2scale(c->blkio_val_p,100.0);
-			memmove(h->sihist_p+1,h->sihist_p,sizeof h->sihist_p-sizeof *h->sihist_p);
-			h->sihist_p[0]=value2scale(c->swapin_val_p,100.0);
-			memmove(h->readhist_p+1,h->readhist_p,sizeof h->readhist_p-sizeof *h->readhist_p);
-			h->readhist_p[0]=rv;
-			memmove(h->writehist_p+1,h->writehist_p,sizeof h->writehist_p-sizeof *h->writehist_p);
-			h->writehist_p[0]=wv;
+		if (h) { // pos was already advanced above
+			h->iohist_p[h->pos]=value2scale(c->blkio_val_p,100.0);
+			h->sihist_p[h->pos]=value2scale(c->swapin_val_p,100.0);
+			h->readhist_p[h->pos]=rv;
+			h->writehist_p[h->pos]=wv;
 		}
 	}
 }
@@ -227,24 +250,19 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 		p->cmdline_comm=strdup(o->cmdline_comm);
 	if (p->pw_name)
 		p->pw_name=strdup(o->pw_name);
-	if (h) { // shift history one step; without own history it is all zero anyway
-		memmove(h->iohist+1,h->iohist,sizeof h->iohist-sizeof *h->iohist);
-		h->iohist[0]=0;
-		memmove(h->sihist+1,h->sihist,sizeof h->sihist-sizeof *h->sihist);
-		h->sihist[0]=0;
-		memmove(h->readhist+1,h->readhist,sizeof h->readhist-sizeof *h->readhist);
-		h->readhist[0]=0.0;
-		memmove(h->writehist+1,h->writehist,sizeof h->writehist-sizeof *h->writehist);
-		h->writehist[0]=0.0;
-		if (p->tid==p->pid) { // shift process aggregated data, only for main process
-			memmove(h->iohist_p+1,h->iohist_p,sizeof h->iohist_p-sizeof *h->iohist_p);
-			h->iohist_p[0]=0;
-			memmove(h->sihist_p+1,h->sihist_p,sizeof h->sihist_p-sizeof *h->sihist_p);
-			h->sihist_p[0]=0;
-			memmove(h->readhist_p+1,h->readhist_p,sizeof h->readhist_p-sizeof *h->readhist_p);
-			h->readhist_p[0]=0.0;
-			memmove(h->writehist_p+1,h->writehist_p,sizeof h->writehist_p-sizeof *h->writehist_p);
-			h->writehist_p[0]=0.0;
+	if (h) { // store zero as the newest values; without own history it is all zero anyway
+		h->pos=(h->pos+1)%HISTORY_CNT;
+		if (h->cnt<HISTORY_CNT)
+			h->cnt++;
+		h->iohist[h->pos]=0;
+		h->sihist[h->pos]=0;
+		h->readhist[h->pos]=0.0;
+		h->writehist[h->pos]=0.0;
+		if (p->tid==p->pid) { // process aggregated data, only for main process
+			h->iohist_p[h->pos]=0;
+			h->sihist_p[h->pos]=0;
+			h->readhist_p[h->pos]=0.0;
+			h->writehist_p[h->pos]=0.0;
 		}
 	}
 	return p;
@@ -381,25 +399,20 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 		case SORT_BY_GRAPH: {
 			double da=0,db=0;
 			int aa=0,ab=0;
-			int i;
 
 			switch (masked_grtype(0)) {
 				case E_GR_IO:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					for (i=0;i<grlen;i++) {
-						aa+=config.f.processes?pa->hist->iohist_p[i]:pa->hist->iohist[i];
-						ab+=config.f.processes?pb->hist->iohist_p[i]:pb->hist->iohist[i];
-					}
+					aa=hist_sum8(pa->hist,config.f.processes?pa->hist->iohist_p:pa->hist->iohist,grlen);
+					ab=hist_sum8(pb->hist,config.f.processes?pb->hist->iohist_p:pb->hist->iohist,grlen);
 					res=aa-ab;
 					break;
 				case E_GR_R:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					for (i=0;i<grlen;i++) {
-						da+=config.f.processes?pa->hist->readhist_p[i]:pa->hist->readhist[i];
-						db+=config.f.processes?pb->hist->readhist_p[i]:pb->hist->readhist[i];
-					}
+					da=hist_sum(pa->hist,config.f.processes?pa->hist->readhist_p:pa->hist->readhist,grlen);
+					db=hist_sum(pb->hist,config.f.processes?pb->hist->readhist_p:pb->hist->readhist,grlen);
 					if (da>db)
 						res=1;
 					else if (da<db)
@@ -410,10 +423,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_W:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					for (i=0;i<grlen;i++) {
-						da+=config.f.processes?pa->hist->writehist_p[i]:pa->hist->writehist[i];
-						db+=config.f.processes?pb->hist->writehist_p[i]:pb->hist->writehist[i];
-					}
+					da=hist_sum(pa->hist,config.f.processes?pa->hist->writehist_p:pa->hist->writehist,grlen);
+					db=hist_sum(pb->hist,config.f.processes?pb->hist->writehist_p:pb->hist->writehist,grlen);
 					if (da>db)
 						res=1;
 					else if (da<db)
@@ -424,12 +435,10 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_RW:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					for (i=0;i<grlen;i++) {
-						da+=config.f.processes?pa->hist->readhist_p[i]:pa->hist->readhist[i];
-						db+=config.f.processes?pb->hist->readhist_p[i]:pb->hist->readhist[i];
-						da+=config.f.processes?pa->hist->writehist_p[i]:pa->hist->writehist[i];
-						db+=config.f.processes?pb->hist->writehist_p[i]:pb->hist->writehist[i];
-					}
+					da=hist_sum(pa->hist,config.f.processes?pa->hist->readhist_p:pa->hist->readhist,grlen);
+					da+=hist_sum(pa->hist,config.f.processes?pa->hist->writehist_p:pa->hist->writehist,grlen);
+					db=hist_sum(pb->hist,config.f.processes?pb->hist->readhist_p:pb->hist->readhist,grlen);
+					db+=hist_sum(pb->hist,config.f.processes?pb->hist->writehist_p:pb->hist->writehist,grlen);
 					if (da>db)
 						res=1;
 					else if (da<db)
@@ -440,10 +449,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_SW:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					for (i=0;i<grlen;i++) {
-						aa+=config.f.processes?pa->hist->sihist_p[i]:pa->hist->sihist[i];
-						ab+=config.f.processes?pb->hist->sihist_p[i]:pb->hist->sihist[i];
-					}
+					aa=hist_sum8(pa->hist,config.f.processes?pa->hist->sihist_p:pa->hist->sihist,grlen);
+					ab=hist_sum8(pb->hist,config.f.processes?pb->hist->sihist_p:pb->hist->sihist,grlen);
 					res=aa-ab;
 					break;
 			}
