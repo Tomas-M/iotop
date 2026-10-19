@@ -90,9 +90,18 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,ch
 
 			*cmd_short=strdup(dbuf);
 			if (*cmd_short) {
-				char *ep;
+				char *ep,*sp;
 
+				// a process that rewrote its cmdline as one string (e.g. sshd: user@pts/0) has nothing after argv[0];
+				// its arguments are separated by spaces, so look for the path only before the first one
+				for (k=(ssize_t)strlen(dbuf);k<p&&!dbuf[k];k++)
+					;
+				sp=k<p?NULL:strchr(*cmd_short,' ');
+				if (sp)
+					*sp=0;
 				ep=strrchr(*cmd_short,'/');
+				if (sp)
+					*sp=' ';
 				if (ep&&ep[1]) {
 					char *t=strdup(ep+1);
 
