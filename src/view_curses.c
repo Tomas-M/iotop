@@ -160,6 +160,7 @@ static char tcol6[200]="Toggle showing SWAPIN [off]";
 static char tcol7[200]="Toggle showing IO [off]";
 static char tcol8[200]="Toggle showing GRAPH [off]";
 static char tcol9[200]="Toggle showing COMMAND [off]";
+static char tvfsc[200]="Toggle showing VFS READ and VFS WRITE [off]";
 static char cgrph[200]="Cycle GRAPH source (IO, R, W, R+W, SW) [R+W]";
 static char tgrdi[200]="Toggle reverse GRAPH direction [right]";
 static char tasci[200]="Toggle using Unicode/ASCII characters [Unicode]";
@@ -200,6 +201,7 @@ const s_helpitem thelp[]={
 	{.descr=tcol8,.t="Toggle showing GRAPH [%s]",.k2="8"},
 	{.descr=tcol9,.t="Toggle showing COMMAND [%s]",.k2="9"},
 	{.descr="Show all columns",.k2="0"},
+	{.descr=tvfsc,.t="Toggle showing VFS READ and VFS WRITE [%s]",.k2="v",.k3="V"},
 	{.descr=cgrph,.t="Cycle GRAPH source (IO, R, W, R+W, SW) [%s]",.k2="g",.k3="G"},
 	{.descr=tgrdi,.t="Toggle reverse GRAPH direction [%s]",.k2="R"},
 	{.descr="Toggle showing inline help",.k2="?"},
@@ -610,6 +612,9 @@ static inline void view_help(void) {
 					break;
 				case '9':
 					sprintf(p->descr,p->t,!config.f.hidecmd?"on":"off");
+					break;
+				case 'v':
+					sprintf(p->descr,p->t,(!config.f.hidevfsread||!config.f.hidevfswrite)?"on":"off");
 					break;
 				case 'g': {
 					char *grt;
@@ -1883,7 +1888,7 @@ donedraw:
 
 		attron(A_UNDERLINE);
 		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
-		printw("1-9");
+		printw("1-9/v");
 		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": toggle ");
@@ -2409,6 +2414,11 @@ static inline int curses_key(int ch) {
 		case 'c':
 		case 'C':
 			config.f.fullcmdline=!config.f.fullcmdline;
+			break;
+		case 'v':
+		case 'V':
+			config.f.hidevfsread=!config.f.hidevfsread;
+			config.f.hidevfswrite=config.f.hidevfsread;
 			break;
 		case 'g': // roll grtype forward
 			config.f.grtype++;
