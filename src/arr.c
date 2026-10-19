@@ -230,7 +230,8 @@ static inline void _arr_free(struct xxxid_stats_arr *pa,int freeitem) {
 			int i;
 
 			for (i=0;i<pa->length;i++)
-				free_stats(pa->arr[i]);
+				if (pa->arr[i]) // create_diff moves the exited items out
+					free_stats(pa->arr[i]);
 		}
 		free(pa->arr);
 	}

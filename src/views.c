@@ -298,32 +298,18 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	}
 }
 
-// exited process or task - make a copy of o that keeps only the history
+// exited process or task - o moves from the previous cycle to the current one and keeps only its history
 static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
-	struct xxxid_stats *p=malloc(sizeof *p);
-	struct xxxid_hist *h;
+	struct xxxid_hist *h=o->hist!=&hist_none?o->hist:NULL;
 
-	if (!p)
-		return NULL;
-	*p=*o; // WARNING - all dynamic data inside should always be initialized below
-	p->threads=NULL;
-	// take over the history
-	o->hist=&hist_none;
-	h=p->hist!=&hist_none?p->hist:NULL;
-	p->exited++;
+	arr_free_noitem(o->threads); // items of the previous cycle; the exited threads are attached again from the current one
+	o->threads=NULL;
+	o->exited++;
 	// last state is zero, only history remains
-	p->blkio_val=0;
-	p->swapin_val=0;
-	p->read_val=0;
-	p->write_val=0;
-	// copy dynamic data to avoid double free; in the unlikely event when strdup fails, filter1 will skip this item
-	if (p->cmdline_short)
-		p->cmdline_short=strdup(o->cmdline_short);
-	if (p->cmdline_long)
-		p->cmdline_long=strdup(o->cmdline_long);
-	if (p->cmdline_comm)
-		p->cmdline_comm=strdup(o->cmdline_comm);
-	// pw_name is interned, the pointer is enough
+	o->blkio_val=0;
+	o->swapin_val=0;
+	o->read_val=0;
+	o->write_val=0;
 	if (h) { // store zero as the newest values; without own history it is all zero anyway
 		h->pos=(h->pos+1)%HISTORY_CNT;
 		if (h->cnt<HISTORY_CNT)
@@ -332,7 +318,7 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 		hist_put8(h,h->sihist,&h->sisum,0);
 		hist_put(h,h->readhist,&h->readsum,0.0);
 		hist_put(h,h->writehist,&h->writesum,0.0);
-		if (p->tid==p->pid&&h->proc!=&hist_p_none) { // process aggregated data, only for main process
+		if (o->tid==o->pid&&h->proc!=&hist_p_none) { // process aggregated data, only for main process
 			struct xxxid_hist_p *hp=h->proc;
 
 			hist_put8(h,hp->iohist_p,&hp->iosum_p,0);
@@ -341,11 +327,12 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 			hist_put(h,hp->writehist_p,&hp->writesum_p,0.0);
 		}
 	}
-	return p;
+	return o;
 }
 
-inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c) {
-	struct xxxid_stats **ex=NULL; // copies of the processes and tasks that exited
+// exited tasks move to cs while their exited count stays below keep_exited; ps is only freed afterwards
+inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,int keep_exited) {
+	struct xxxid_stats **ex=NULL; // the processes and tasks that exited, moved from ps
 	int exn=0;
 	int ncs,nps;
 	int n,x,y;
@@ -366,14 +353,13 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 			continue;
 		}
 		if (x>=ncs||ps->arr[y]->tid<cs->arr[x]->tid) { // exited process or task
-			// there is no point to keep data for the ones gone for more than HISTORY_CNT cycles
-			if (ps->arr[y]->exited<HISTORY_CNT) {
-				struct xxxid_stats *e;
-
+			if (ps->arr[y]->exited+1<keep_exited) {
 				if (!ex) // at most the remaining items of ps can exit
 					ex=malloc((nps-y)*sizeof *ex);
-				if (ex&&(e=stats_exited(ps->arr[y])))
-					ex[exn++]=e;
+				if (ex) {
+					ex[exn++]=stats_exited(ps->arr[y]);
+					ps->arr[y]=NULL; // cs owns it now
+				}
 			}
 			y++;
 			continue;
@@ -385,7 +371,7 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 		y++;
 	}
 
-	if (exn&&arr_merge(cs,ex,exn)) // the copies are in tid order and none of them is in cs
+	if (exn&&arr_merge(cs,ex,exn)) // the moved items are in tid order and none of them is in cs
 		for (n=0;n<exn;n++) // free the data in case merge fails
 			free_stats(ex[n]);
 	if (ex)

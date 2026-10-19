@@ -862,7 +862,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	if (maxcmdline<0)
 		maxcmdline=0;
 
-	create_diff(cs,ps,time_s,act->ts_c);
+	create_diff(cs,ps,time_s,act->ts_c,HISTORY_CNT); // the longest any view setting can show them
 	hist_window(cs,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 	view_key_check((has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&config.f.unicode)?gr_width*2:gr_width));
@@ -2735,7 +2735,7 @@ inline void view_curses_loop(void) {
 			cs=fetch_data(NULL);
 			if (!ps) { // first cycle - take a second snapshot to diff against
 				ps=cs;
-				create_diff(ps,NULL,0,now); // set the start ts of the first snapshot
+				create_diff(ps,NULL,0,now,0); // set the start ts of the first snapshot
 				act.ts_o=now;
 				now=monotime();
 				cs=fetch_data(NULL);

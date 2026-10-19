@@ -37,7 +37,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	time_t t;
 	int i;
 
-	create_diff(cs,ps,time_s,act->ts_c);
+	create_diff(cs,ps,time_s,act->ts_c,0); // the batch view does not show exited tasks
 	calc_total(cs,&total_read,&total_write);
 	calc_a_total(act,&total_a_read,&total_a_write,time_s);
 
