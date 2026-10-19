@@ -1080,6 +1080,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				arr_sort(ms->threads,iotop_sort_cb);
 			// show only processes, if configured
 			for (k=-1;k<(config.f.processes?0:(ms->threads?ms->threads->length:0));k++) {
+				const double *rh,*wh; // the histories that are drawn: aggregated for processes
+
 				if (k<0)
 					s=ms;
 				else {
@@ -1095,27 +1097,29 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					continue;
 				}
 
+				rh=config.f.processes?s->hist->proc->readhist_p:s->hist->readhist;
+				wh=config.f.processes?s->hist->proc->writehist_p:s->hist->writehist;
 				for (j=0;j<gr_width;j++) {
 					if (masked_grtype(0)==E_GR_R) {
 						if (has_unicode&&config.f.unicode) {
-							maxvisible=mymax(maxvisible,HISTV(s,readhist,j*2));
-							maxvisible=mymax(maxvisible,HISTV(s,readhist,j*2+1));
+							maxvisible=mymax(maxvisible,rh[HIST_IDX(s->hist,j*2)]);
+							maxvisible=mymax(maxvisible,rh[HIST_IDX(s->hist,j*2+1)]);
 						} else
-							maxvisible=mymax(maxvisible,HISTV(s,readhist,j));
+							maxvisible=mymax(maxvisible,rh[HIST_IDX(s->hist,j)]);
 					}
 					if (masked_grtype(0)==E_GR_W) {
 						if (has_unicode&&config.f.unicode) {
-							maxvisible=mymax(maxvisible,HISTV(s,writehist,j*2));
-							maxvisible=mymax(maxvisible,HISTV(s,writehist,j*2+1));
+							maxvisible=mymax(maxvisible,wh[HIST_IDX(s->hist,j*2)]);
+							maxvisible=mymax(maxvisible,wh[HIST_IDX(s->hist,j*2+1)]);
 						} else
-							maxvisible=mymax(maxvisible,HISTV(s,writehist,j));
+							maxvisible=mymax(maxvisible,wh[HIST_IDX(s->hist,j)]);
 					}
 					if (masked_grtype(0)==E_GR_RW) {
 						if (has_unicode&&config.f.unicode) {
-							maxvisible=mymax(maxvisible,HISTV(s,readhist,j*2)+HISTV(s,writehist,j*2));
-							maxvisible=mymax(maxvisible,HISTV(s,readhist,j*2+1)+HISTV(s,writehist,j*2+1));
+							maxvisible=mymax(maxvisible,rh[HIST_IDX(s->hist,j*2)]+wh[HIST_IDX(s->hist,j*2)]);
+							maxvisible=mymax(maxvisible,rh[HIST_IDX(s->hist,j*2+1)]+wh[HIST_IDX(s->hist,j*2+1)]);
 						} else
-							maxvisible=mymax(maxvisible,HISTV(s,readhist,j)+HISTV(s,writehist,j));
+							maxvisible=mymax(maxvisible,rh[HIST_IDX(s->hist,j)]+wh[HIST_IDX(s->hist,j)]);
 					}
 				}
 
