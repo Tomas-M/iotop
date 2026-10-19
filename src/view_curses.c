@@ -1244,38 +1244,38 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					switch (masked_grtype(0)) {
 						case E_GR_IO:
 							if (has_unicode&&config.f.unicode) {
-								v1=config.f.processes?HISTV(s,iohist_p,j*2+gl):HISTV(s,iohist,j*2+gl);
-								v2=config.f.processes?HISTV(s,iohist_p,j*2+gr):HISTV(s,iohist,j*2+gr);
+								v1=config.f.processes?HISTV_P(s,iohist_p,j*2+gl):HISTV(s,iohist,j*2+gl);
+								v2=config.f.processes?HISTV_P(s,iohist_p,j*2+gr):HISTV(s,iohist,j*2+gr);
 							} else
-								v1=config.f.processes?HISTV(s,iohist_p,j):HISTV(s,iohist,j);
+								v1=config.f.processes?HISTV_P(s,iohist_p,j):HISTV(s,iohist,j);
 							break;
 						case E_GR_R:
 							if (has_unicode&&config.f.unicode) {
-								v1=value2scale(config.f.processes?HISTV(s,readhist_p,j*2+gl):HISTV(s,readhist,j*2+gl),maxvisible);
-								v2=value2scale(config.f.processes?HISTV(s,readhist_p,j*2+gr):HISTV(s,readhist,j*2+gr),maxvisible);
+								v1=value2scale(config.f.processes?HISTV_P(s,readhist_p,j*2+gl):HISTV(s,readhist,j*2+gl),maxvisible);
+								v2=value2scale(config.f.processes?HISTV_P(s,readhist_p,j*2+gr):HISTV(s,readhist,j*2+gr),maxvisible);
 							} else
-								v1=value2scale(config.f.processes?HISTV(s,readhist_p,j):HISTV(s,readhist,j),maxvisible);
+								v1=value2scale(config.f.processes?HISTV_P(s,readhist_p,j):HISTV(s,readhist,j),maxvisible);
 							break;
 						case E_GR_W:
 							if (has_unicode&&config.f.unicode) {
-								v1=value2scale(config.f.processes?HISTV(s,writehist_p,j*2+gl):HISTV(s,writehist,j*2+gl),maxvisible);
-								v2=value2scale(config.f.processes?HISTV(s,writehist_p,j*2+gr):HISTV(s,writehist,j*2+gr),maxvisible);
+								v1=value2scale(config.f.processes?HISTV_P(s,writehist_p,j*2+gl):HISTV(s,writehist,j*2+gl),maxvisible);
+								v2=value2scale(config.f.processes?HISTV_P(s,writehist_p,j*2+gr):HISTV(s,writehist,j*2+gr),maxvisible);
 							} else
-								v1=value2scale(config.f.processes?HISTV(s,writehist_p,j):HISTV(s,writehist,j),maxvisible);
+								v1=value2scale(config.f.processes?HISTV_P(s,writehist_p,j):HISTV(s,writehist,j),maxvisible);
 							break;
 						case E_GR_RW:
 							if (has_unicode&&config.f.unicode) {
-								v1=value2scale(config.f.processes?HISTV(s,readhist_p,j*2+gl)+HISTV(s,writehist_p,j*2+gl):HISTV(s,readhist,j*2+gl)+HISTV(s,writehist,j*2+gl),maxvisible);
-								v2=value2scale(config.f.processes?HISTV(s,readhist_p,j*2+gr)+HISTV(s,writehist_p,j*2+gr):HISTV(s,readhist,j*2+gr)+HISTV(s,writehist,j*2+gr),maxvisible);
+								v1=value2scale(config.f.processes?HISTV_P(s,readhist_p,j*2+gl)+HISTV_P(s,writehist_p,j*2+gl):HISTV(s,readhist,j*2+gl)+HISTV(s,writehist,j*2+gl),maxvisible);
+								v2=value2scale(config.f.processes?HISTV_P(s,readhist_p,j*2+gr)+HISTV_P(s,writehist_p,j*2+gr):HISTV(s,readhist,j*2+gr)+HISTV(s,writehist,j*2+gr),maxvisible);
 							} else
-								v1=value2scale(config.f.processes?HISTV(s,readhist_p,j)+HISTV(s,writehist_p,j):HISTV(s,readhist,j)+HISTV(s,writehist,j),maxvisible);
+								v1=value2scale(config.f.processes?HISTV_P(s,readhist_p,j)+HISTV_P(s,writehist_p,j):HISTV(s,readhist,j)+HISTV(s,writehist,j),maxvisible);
 							break;
 						case E_GR_SW:
 							if (has_unicode&&config.f.unicode) {
-								v1=config.f.processes?HISTV(s,sihist_p,j*2+gl):HISTV(s,sihist,j*2+gl);
-								v2=config.f.processes?HISTV(s,sihist_p,j*2+gr):HISTV(s,sihist,j*2+gr);
+								v1=config.f.processes?HISTV_P(s,sihist_p,j*2+gl):HISTV(s,sihist,j*2+gl);
+								v2=config.f.processes?HISTV_P(s,sihist_p,j*2+gr):HISTV(s,sihist,j*2+gr);
 							} else
-								v1=config.f.processes?HISTV(s,sihist_p,j):HISTV(s,sihist,j);
+								v1=config.f.processes?HISTV_P(s,sihist_p,j):HISTV(s,sihist,j);
 							break;
 					}
 					if (config.f.deadx) {

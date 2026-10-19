@@ -104,6 +104,7 @@ extern params_t params;
 extern int maxpidlen;
 extern unsigned taskstats_ver;
 extern struct xxxid_hist hist_none;
+extern struct xxxid_hist_p hist_p_none;
 extern int hist_w;
 
 #define IOTOP_TASKSTATS_MINVER 4
@@ -120,6 +121,19 @@ struct xxxid_stats_arr {
 	int diffed; // create_diff was already applied
 };
 
+// history aggregated in main process; it uses pos and cnt of the struct xxxid_hist it belongs to
+struct xxxid_hist_p {
+	// sums of the newest hist_w values of each array
+	int iosum_p;
+	int sisum_p;
+	double readsum_p;
+	double writesum_p;
+	uint8_t iohist_p[HISTORY_CNT]; // io history data (aggregated in main process)
+	uint8_t sihist_p[HISTORY_CNT]; // swapin history data (aggregated in main process)
+	double readhist_p[HISTORY_CNT]; // read history data (aggregated in main process)
+	double writehist_p[HISTORY_CNT]; // write history data (aggregated in main process)
+};
+
 // history of the GRAPH column; it is handed over to the item of the next cycle instead of being copied
 // each array is a ring buffer with the newest value at pos
 struct xxxid_hist {
@@ -130,28 +144,22 @@ struct xxxid_hist {
 	int sisum;
 	double readsum;
 	double writesum;
-	int iosum_p;
-	int sisum_p;
-	double readsum_p;
-	double writesum_p;
 	uint8_t iohist[HISTORY_CNT]; // io history data
 	uint8_t sihist[HISTORY_CNT]; // swapin history data
 	double readhist[HISTORY_CNT]; // read history data
 	double writehist[HISTORY_CNT]; // write history data
-
-	uint8_t iohist_p[HISTORY_CNT]; // io history data (aggregated in main process)
-	uint8_t sihist_p[HISTORY_CNT]; // swapin history data (aggregated in main process)
-	double readhist_p[HISTORY_CNT]; // read history data (aggregated in main process)
-	double writehist_p[HISTORY_CNT]; // write history data (aggregated in main process)
+	struct xxxid_hist_p *proc; // never NULL, only main processes get own, the rest point to hist_p_none
 };
 
 // index of the k-th newest value of history h; k=0 is the newest, k<HISTORY_CNT
 #define HIST_IDX(h,k) (((h)->pos+HISTORY_CNT-(k))%HISTORY_CNT)
 // the k-th newest value of history array a of item s
 #define HISTV(s,a,k) ((s)->hist->a[HIST_IDX((s)->hist,(k))])
-// sum of the newest cnt values of history a (io, si, read or write) of h, the aggregated one if p is set
-#define HIST_SUM(h,a,p,cnt) ((cnt)==hist_w?((p)?(h)->a##sum_p:(h)->a##sum):hist_sum((h),(p)?(h)->a##hist_p:(h)->a##hist,(cnt)))
-#define HIST_SUM8(h,a,p,cnt) ((cnt)==hist_w?((p)?(h)->a##sum_p:(h)->a##sum):hist_sum8((h),(p)?(h)->a##hist_p:(h)->a##hist,(cnt)))
+// the k-th newest value of aggregated history array a of item s
+#define HISTV_P(s,a,k) ((s)->hist->proc->a[HIST_IDX((s)->hist,(k))])
+// sum of the newest cnt values of history a (io, si, read or write) of h, the aggregated one if agg is set
+#define HIST_SUM(h,a,agg,cnt) ((cnt)==hist_w?((agg)?(h)->proc->a##sum_p:(h)->a##sum):hist_sum((h),(agg)?(h)->proc->a##hist_p:(h)->a##hist,(cnt)))
+#define HIST_SUM8(h,a,agg,cnt) ((cnt)==hist_w?((agg)?(h)->proc->a##sum_p:(h)->a##sum):hist_sum8((h),(agg)?(h)->proc->a##hist_p:(h)->a##hist,(cnt)))
 
 struct xxxid_stats {
 	pid_t pid;

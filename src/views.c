@@ -77,7 +77,8 @@ inline int value2scale(double val,double mx) {
 	return 0;
 }
 
-struct xxxid_hist hist_none; // shared empty history, never written
+struct xxxid_hist_p hist_p_none; // shared empty aggregated history, never written
+struct xxxid_hist hist_none={.proc=&hist_p_none}; // shared empty history, never written
 int hist_w=HISTORY_CNT; // count of the newest values that the sums in struct xxxid_hist cover
 
 // make sure s has own history to store values in; returns 0 if it can not be allocated
@@ -87,7 +88,20 @@ static inline int hist_own(struct xxxid_stats *s) {
 
 		if (!h)
 			return 0;
+		h->proc=&hist_p_none;
 		s->hist=h;
+	}
+	return 1;
+}
+
+// make sure h has own aggregated history to store values in; returns 0 if it can not be allocated
+static inline int hist_own_p(struct xxxid_hist *h) {
+	if (h->proc==&hist_p_none) {
+		struct xxxid_hist_p *hp=calloc(1,sizeof *hp);
+
+		if (!hp)
+			return 0;
+		h->proc=hp;
 	}
 	return 1;
 }
@@ -151,10 +165,14 @@ inline void hist_window(struct xxxid_stats_arr *cs,int w) {
 		h->sisum=hist_sum8(h,h->sihist,w);
 		h->readsum=hist_sum(h,h->readhist,w);
 		h->writesum=hist_sum(h,h->writehist,w);
-		h->iosum_p=hist_sum8(h,h->iohist_p,w);
-		h->sisum_p=hist_sum8(h,h->sihist_p,w);
-		h->readsum_p=hist_sum(h,h->readhist_p,w);
-		h->writesum_p=hist_sum(h,h->writehist_p,w);
+		if (h->proc!=&hist_p_none) {
+			struct xxxid_hist_p *hp=h->proc;
+
+			hp->iosum_p=hist_sum8(h,hp->iohist_p,w);
+			hp->sisum_p=hist_sum8(h,hp->sihist_p,w);
+			hp->readsum_p=hist_sum(h,hp->readhist_p,w);
+			hp->writesum_p=hist_sum(h,hp->writehist_p,w);
+		}
 	}
 }
 
@@ -194,13 +212,9 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	c->hist=p->hist;
 	p->hist=&hist_none;
 	h=hist_own(c)?c->hist:NULL;
-	if (h&&c->pid!=c->tid&&p->pid==p->tid) { // tid of a main process reused by a thread - its aggregated history does not apply
-		memset(h->iohist_p,0,sizeof h->iohist_p);
-		memset(h->sihist_p,0,sizeof h->sihist_p);
-		memset(h->readhist_p,0,sizeof h->readhist_p);
-		memset(h->writehist_p,0,sizeof h->writehist_p);
-		h->iosum_p=h->sisum_p=0;
-		h->readsum_p=h->writesum_p=0;
+	if (h&&c->pid!=c->tid&&h->proc!=&hist_p_none) { // tid of a main process reused by a thread - its aggregated history does not apply
+		free(h->proc);
+		h->proc=&hist_p_none;
 	}
 
 	// round robin value
@@ -255,11 +269,13 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		c->read_val_abw_p=c->read_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 		c->write_val_abw_p=c->write_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 
-		if (h) { // pos was already advanced above
-			hist_put8(h,h->iohist_p,&h->iosum_p,value2scale(c->blkio_val_p,100.0));
-			hist_put8(h,h->sihist_p,&h->sisum_p,value2scale(c->swapin_val_p,100.0));
-			hist_put(h,h->readhist_p,&h->readsum_p,rv);
-			hist_put(h,h->writehist_p,&h->writesum_p,wv);
+		if (h&&hist_own_p(h)) { // pos was already advanced above
+			struct xxxid_hist_p *hp=h->proc;
+
+			hist_put8(h,hp->iohist_p,&hp->iosum_p,value2scale(c->blkio_val_p,100.0));
+			hist_put8(h,hp->sihist_p,&hp->sisum_p,value2scale(c->swapin_val_p,100.0));
+			hist_put(h,hp->readhist_p,&hp->readsum_p,rv);
+			hist_put(h,hp->writehist_p,&hp->writesum_p,wv);
 		}
 	}
 }
@@ -299,11 +315,13 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 		hist_put8(h,h->sihist,&h->sisum,0);
 		hist_put(h,h->readhist,&h->readsum,0.0);
 		hist_put(h,h->writehist,&h->writesum,0.0);
-		if (p->tid==p->pid) { // process aggregated data, only for main process
-			hist_put8(h,h->iohist_p,&h->iosum_p,0);
-			hist_put8(h,h->sihist_p,&h->sisum_p,0);
-			hist_put(h,h->readhist_p,&h->readsum_p,0.0);
-			hist_put(h,h->writehist_p,&h->writesum_p,0.0);
+		if (p->tid==p->pid&&h->proc!=&hist_p_none) { // process aggregated data, only for main process
+			struct xxxid_hist_p *hp=h->proc;
+
+			hist_put8(h,hp->iohist_p,&hp->iosum_p,0);
+			hist_put8(h,hp->sihist_p,&hp->sisum_p,0);
+			hist_put(h,hp->readhist_p,&hp->readsum_p,0.0);
+			hist_put(h,hp->writehist_p,&hp->writesum_p,0.0);
 		}
 	}
 	return p;

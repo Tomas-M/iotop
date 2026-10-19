@@ -249,8 +249,11 @@ inline void free_stats(struct xxxid_stats *s) {
 		free(s->cmdline_comm);
 	if (s->pw_name)
 		free(s->pw_name);
-	if (s->hist!=&hist_none)
+	if (s->hist!=&hist_none) {
+		if (s->hist->proc!=&hist_p_none)
+			free(s->hist->proc);
 		free(s->hist);
+	}
 	arr_free_noitem(s->threads);
 
 	free(s);
