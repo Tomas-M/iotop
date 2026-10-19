@@ -245,6 +245,8 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 					else if (ts->version!=15) { // use v14 for v4..v14 & v16 onwards
 						stats->read_bytes=t14->read_bytes;
 						stats->write_bytes=t14->write_bytes;
+						stats->read_char=t14->read_char;
+						stats->write_char=t14->write_char;
 						stats->swapin_delay_total=t14->swapin_delay_total;
 						stats->blkio_delay_total=t14->blkio_delay_total;
 						stats->euid=t14->ac_uid;
@@ -260,6 +262,8 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 					} else { // exception for v15 only
 						stats->read_bytes=t15->read_bytes;
 						stats->write_bytes=t15->write_bytes;
+						stats->read_char=t15->read_char;
+						stats->write_char=t15->write_char;
 						stats->swapin_delay_total=t15->swapin_delay_total;
 						stats->blkio_delay_total=t15->blkio_delay_total;
 						stats->euid=t15->ac_uid;
@@ -544,6 +548,8 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 				s->blkio_delay_total_p=s->blkio_delay_total;
 				s->read_bytes_p=s->read_bytes;
 				s->write_bytes_p=s->write_bytes;
+				s->read_char_p=s->read_char;
+				s->write_char_p=s->write_char;
 			}
 			if (arr_append(a,s)) // the list is sorted once at the end by arr_finalize
 				free_stats(s);
@@ -594,6 +600,8 @@ inline struct xxxid_stats_arr *fetch_data(filter_callback filter,struct xxxid_st
 					p->blkio_delay_total_p=mymax(p->blkio_delay_total_p,s->blkio_delay_total);
 					p->read_bytes_p+=s->read_bytes;
 					p->write_bytes_p+=s->write_bytes;
+					p->read_char_p+=s->read_char;
+					p->write_char_p+=s->write_char;
 				}
 			}
 		}

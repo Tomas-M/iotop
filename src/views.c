@@ -192,10 +192,16 @@ static inline void stats_new(struct xxxid_stats *c,uint64_t ts_c) {
 	c->swapin_val=0;
 	c->read_val=0;
 	c->write_val=0;
+	c->read_char_val=0;
+	c->write_char_val=0;
 	c->read_val_acc=0;
 	c->write_val_acc=0;
+	c->read_char_val_acc=0;
+	c->write_char_val_acc=0;
 	c->read_val_abw=0;
 	c->write_val_abw=0;
+	c->read_char_val_abw=0;
+	c->write_char_val_abw=0;
 	c->ts_s=ts_c; // keep start ts
 	c->ts_e=ts_c; // keep end ts
 }
@@ -203,7 +209,7 @@ static inline void stats_new(struct xxxid_stats *c,uint64_t ts_c) {
 // calculate the values of the current cycle from the previous data in p
 static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double time_s,uint64_t ts_c) {
 	struct xxxid_hist *h;
-	double rv,wv,rvp=0,wvp=0;
+	double rv,wv,rcv,wcv,rvp=0,wvp=0;
 	int io,si,iop=0,sip=0;
 
 	c->ts_s=p->ts_s; // update end ts
@@ -229,15 +235,23 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 
 	rv=(double)rrv(c->read_bytes,p->read_bytes);
 	wv=(double)rrv(c->write_bytes,p->write_bytes);
+	rcv=(double)rrv(c->read_char,p->read_char);
+	wcv=(double)rrv(c->write_char,p->write_char);
 
 	c->read_val=rv/time_s;
 	c->write_val=wv/time_s;
+	c->read_char_val=rcv/time_s;
+	c->write_char_val=wcv/time_s;
 
 	c->read_val_acc=p->read_val_acc+rv;
 	c->write_val_acc=p->write_val_acc+wv;
+	c->read_char_val_acc=p->read_char_val_acc+rcv;
+	c->write_char_val_acc=p->write_char_val_acc+wcv;
 
 	c->read_val_abw=c->read_val_acc/timediff_in_s(c->ts_s,c->ts_e);
 	c->write_val_abw=c->write_val_acc/timediff_in_s(c->ts_s,c->ts_e);
+	c->read_char_val_abw=c->read_char_val_acc/timediff_in_s(c->ts_s,c->ts_e);
+	c->write_char_val_abw=c->write_char_val_acc/timediff_in_s(c->ts_s,c->ts_e);
 
 	io=value2scale(c->blkio_val,100.0);
 	si=value2scale(c->swapin_val,100.0);
@@ -253,15 +267,23 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 
 		rvp=(double)rrv(c->read_bytes_p,p->read_bytes_p);
 		wvp=(double)rrv(c->write_bytes_p,p->write_bytes_p);
+		rcv=(double)rrv(c->read_char_p,p->read_char_p);
+		wcv=(double)rrv(c->write_char_p,p->write_char_p);
 
 		c->read_val_p=rvp/time_s;
 		c->write_val_p=wvp/time_s;
+		c->read_char_val_p=rcv/time_s;
+		c->write_char_val_p=wcv/time_s;
 
 		c->read_val_acc_p=p->read_val_acc_p+rvp;
 		c->write_val_acc_p=p->write_val_acc_p+wvp;
+		c->read_char_val_acc_p=p->read_char_val_acc_p+rcv;
+		c->write_char_val_acc_p=p->write_char_val_acc_p+wcv;
 
 		c->read_val_abw_p=c->read_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 		c->write_val_abw_p=c->write_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
+		c->read_char_val_abw_p=c->read_char_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
+		c->write_char_val_abw_p=c->write_char_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 
 		iop=value2scale(c->blkio_val_p,100.0);
 		sip=value2scale(c->swapin_val_p,100.0);
@@ -310,6 +332,8 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 	o->swapin_val=0;
 	o->read_val=0;
 	o->write_val=0;
+	o->read_char_val=0;
+	o->write_char_val=0;
 	if (h) { // store zero as the newest values; without own history it is all zero anyway
 		h->pos=(h->pos+1)%HISTORY_CNT;
 		if (h->cnt<HISTORY_CNT)
@@ -575,6 +599,28 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 			else
 				res=(config.f.processes?pa->write_val_p:pa->write_val)>(config.f.processes?pb->write_val_p:pb->write_val)?1:
 					(config.f.processes?pa->write_val_p:pa->write_val)<(config.f.processes?pb->write_val_p:pb->write_val)?-1:0;
+			break;
+		case SORT_BY_VFS_READ:
+			if (config.f.accumbw)
+				res=(config.f.processes?pa->read_char_val_abw_p:pa->read_char_val_abw)>(config.f.processes?pb->read_char_val_abw_p:pb->read_char_val_abw)?1:
+					(config.f.processes?pa->read_char_val_abw_p:pa->read_char_val_abw)<(config.f.processes?pb->read_char_val_abw_p:pb->read_char_val_abw)?-1:0;
+			else if (config.f.accumulated)
+				res=(config.f.processes?pa->read_char_val_acc_p:pa->read_char_val_acc)>(config.f.processes?pb->read_char_val_acc_p:pb->read_char_val_acc)?1:
+					(config.f.processes?pa->read_char_val_acc_p:pa->read_char_val_acc)<(config.f.processes?pb->read_char_val_acc_p:pb->read_char_val_acc)?-1:0;
+			else
+				res=(config.f.processes?pa->read_char_val_p:pa->read_char_val)>(config.f.processes?pb->read_char_val_p:pb->read_char_val)?1:
+					(config.f.processes?pa->read_char_val_p:pa->read_char_val)<(config.f.processes?pb->read_char_val_p:pb->read_char_val)?-1:0;
+			break;
+		case SORT_BY_VFS_WRITE:
+			if (config.f.accumbw)
+				res=(config.f.processes?pa->write_char_val_abw_p:pa->write_char_val_abw)>(config.f.processes?pb->write_char_val_abw_p:pb->write_char_val_abw)?1:
+					(config.f.processes?pa->write_char_val_abw_p:pa->write_char_val_abw)<(config.f.processes?pb->write_char_val_abw_p:pb->write_char_val_abw)?-1:0;
+			else if (config.f.accumulated)
+				res=(config.f.processes?pa->write_char_val_acc_p:pa->write_char_val_acc)>(config.f.processes?pb->write_char_val_acc_p:pb->write_char_val_acc)?1:
+					(config.f.processes?pa->write_char_val_acc_p:pa->write_char_val_acc)<(config.f.processes?pb->write_char_val_acc_p:pb->write_char_val_acc)?-1:0;
+			else
+				res=(config.f.processes?pa->write_char_val_p:pa->write_char_val)>(config.f.processes?pb->write_char_val_p:pb->write_char_val)?1:
+					(config.f.processes?pa->write_char_val_p:pa->write_char_val)<(config.f.processes?pb->write_char_val_p:pb->write_char_val)?-1:0;
 			break;
 		case SORT_BY_SWAPIN:
 			res=(config.f.processes?pa->swapin_val_p:pa->swapin_val)>(config.f.processes?pb->swapin_val_p:pb->swapin_val)?1:
