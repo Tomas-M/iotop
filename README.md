@@ -186,6 +186,7 @@ cd iotop && git checkout master && git pull && make clean && make -j
     -k, --kilobytes        use kilobytes instead of a human friendly unit
         --no-kilobytes     use human friendly unit
     -t, --time             add a timestamp on each line (implies --batch)
+        --timestamp        same as --time
     -c, --fullcmdline      show full command line
         --no-fullcmdline   show program names only
     -1, --hide-pid         hide PID/TID column

@@ -150,6 +150,7 @@ static inline void print_help(void) {
 		"  -k, --kilobytes        use kilobytes instead of a human friendly unit\n"
 		"      --no-kilobytes     use human friendly unit\n"
 		"  -t, --time             add a timestamp on each line (implies --batch)\n"
+		"      --timestamp        same as --time\n"
 		"  -c, --fullcmdline      show full command line\n"
 		"      --no-fullcmdline   show program names only\n"
 		"  -1, --hide-pid         hide PID/TID column\n"
@@ -247,6 +248,7 @@ static inline void parse_args(int clac,char **clav) {
 				{"no-accum-bw",no_argument,NULL,OPT_NO_ACCUM_BW},
 				{"kilobytes",no_argument,NULL,'k'},
 				{"no-kilobytes",no_argument,NULL,OPT_NO_KILOBYTES},
+				{"time",no_argument,NULL,'t'},
 				{"timestamp",no_argument,NULL,'t'},
 				{"quiet",no_argument,NULL,'q'},
 				{"fullcmdline",no_argument,NULL,'c'},
