@@ -2,10 +2,11 @@ Source: iotop-c
 Section: admin
 Maintainer: Boian Bonev <bbonev@ipacct.com>
 Build-Depends:
- debhelper-compat (= 13),
+ debhelper-compat (= 14),
+ dh-sequence-single-binary,
  libncurses-dev,
  pkgconf,
-Standards-Version: 4.7.3
+Standards-Version: 4.7.4
 Homepage: https://github.com/Tomas-M/iotop
 Vcs-Browser: https://github.com/Tomas-M/iotop
 Vcs-Git: https://github.com/Tomas-M/iotop.git
