@@ -148,7 +148,7 @@ inline void view_batch_loop(void) {
 	struct timespec ts;
 
 	for (;;) {
-		cs=fetch_data(filter1);
+		cs=fetch_data(filter1,ps);
 		get_vm_counters(&act.read_bytes,&act.write_bytes);
 		act.ts_c=monotime();
 		view_batch(cs,ps,&act);

@@ -176,6 +176,8 @@ struct xxxid_stats {
 	uint64_t write_bytes_p;
 	uint64_t ts_s; // start timestamp for accum-bw
 	uint64_t ts_e; // end timestamp for accum-bw
+	uint64_t btime; // start time and exe of the task from taskstats, 0 if not known;
+	uint64_t exe; // they tell that a task of the next cycle is the same process
 
 	double blkio_val;
 	double swapin_val;
@@ -234,7 +236,8 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 typedef int (*filter_callback)(struct xxxid_stats *);
 typedef int (*filter_callback_w)(struct xxxid_stats *,int width);
 
-inline struct xxxid_stats_arr *fetch_data(filter_callback);
+inline struct xxxid_stats_arr *fetch_data(filter_callback filter,struct xxxid_stats_arr *prev);
+void cmdline_reread(void);
 inline void free_stats(struct xxxid_stats *s);
 
 void clear_uid_cache(void);

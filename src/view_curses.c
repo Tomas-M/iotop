@@ -2099,6 +2099,7 @@ static inline int curses_key_search(int ch) {
 			break;
 		case KEY_CTRL_L: // Ctrl-L
 			clear_uid_cache();
+			cmdline_reread();
 			redrawwin(stdscr);
 		case KEY_REFRESH:
 		case KEY_RESIZE:
@@ -2592,6 +2593,7 @@ static inline int curses_key(int ch) {
 			break;
 		case KEY_CTRL_L: // Ctrl-L
 			clear_uid_cache();
+			cmdline_reread();
 			redrawwin(stdscr);
 		case KEY_REFRESH:
 		case KEY_RESIZE:
@@ -2738,13 +2740,13 @@ inline void view_curses_loop(void) {
 				act.have_o=1;
 			act.ts_o=act.ts_c;
 
-			cs=fetch_data(NULL);
+			cs=fetch_data(NULL,ps);
 			if (!ps) { // first cycle - take a second snapshot to diff against
 				ps=cs;
 				create_diff(ps,NULL,0,now,0); // set the start ts of the first snapshot
 				act.ts_o=now;
 				now=monotime();
-				cs=fetch_data(NULL);
+				cs=fetch_data(NULL,ps);
 			}
 			get_vm_counters(&act.read_bytes,&act.write_bytes);
 			act.ts_c=now;

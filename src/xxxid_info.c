@@ -148,6 +148,14 @@ error:
 	exit(EXIT_FAILURE);
 }
 
+// one value that tells the exe of a task, to notice an exec between two cycles; it is only compared for equality
+// the device and inode are folded together to keep the task data small: multiplying by 2^64 divided by the
+// golden ratio (Fibonacci hashing) spreads the inode over all 64 bits, so a different exe almost never gives
+// the same value
+static inline uint64_t exe_id(uint64_t dev,uint64_t inode) {
+	return dev^(inode*(uint64_t)0x9e3779b97f4a7c15);
+}
+
 // comm has room for TS_COMM_LEN+1 chars; it gets the name of a user task, kernel threads are left to /proc
 // because there the name also tells the workqueue
 inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *comm) {
@@ -231,6 +239,8 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 						if (ts->version>=12&&t14->ac_exe_inode) { // the exe fields are there since v12, zero for kernel threads
 							memcpy(comm,t14->ac_comm,TS_COMM_LEN);
 							comm[TS_COMM_LEN]=0;
+							stats->btime=t14->ac_btime64;
+							stats->exe=exe_id(t14->ac_exe_dev,t14->ac_exe_inode);
 						}
 					} else { // exception for v15 only
 						stats->read_bytes=t15->read_bytes;
@@ -242,6 +252,8 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 						if (t15->ac_exe_inode) { // zero for kernel threads
 							memcpy(comm,t15->ac_comm,TS_COMM_LEN);
 							comm[TS_COMM_LEN]=0;
+							stats->btime=t15->ac_btime64;
+							stats->exe=exe_id(t15->ac_exe_dev,t15->ac_exe_inode);
 						}
 					}
 				}
@@ -400,6 +412,35 @@ static void pcmd_set(pid_t pid,const char *cmd_long,const char *cmd_short) {
 		pcmd.pid=pid;
 }
 
+// a reused cmdline is read again after this many cycles; setproctitle changes it without exec
+#define CMDLINE_REREAD 30
+
+static struct xxxid_stats_arr *cmdline_src=NULL; // the previous cycle during fetch_data, cmdlines are reused from it
+static int cmdline_force=0; // set by cmdline_reread: the next cycle reads all cmdlines instead of reusing them
+
+// make the next cycle read all cmdlines
+void cmdline_reread(void) {
+	cmdline_force=1;
+}
+
+// the item of the previous cycle to take the cmdline of main process s from, NULL to read it
+static struct xxxid_stats *cmdline_prev(struct xxxid_stats *s,const char *comm) {
+	struct xxxid_stats *o;
+
+	if (!cmdline_src||cmdline_force||!*comm||!s->btime) // comm is known only for user tasks with taskstats v12+
+		return NULL;
+	if (((uint64_t)s->tid+current_cycle)%CMDLINE_REREAD==0) // staggered, so each cycle reads a part of them
+		return NULL;
+	o=arr_find(cmdline_src,s->tid);
+	if (!o||o->exited||o->btime!=s->btime||o->exe!=s->exe) // another process or another exe
+		return NULL;
+	if (!o->cmdline_long||!o->cmdline_short)
+		return NULL;
+	if (strcmp(comm,o->cmdline_comm?o->cmdline_comm:o->cmdline_short)) // renamed, maybe by exec of the same exe
+		return NULL;
+	return o;
+}
+
 inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	static const char unknown[]="<unknown>";
 	struct xxxid_stats *s;
@@ -427,7 +468,8 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	if (tid!=pid&&pid==pcmd.pid)
 		read_cmdlines(tid,pcmd.cmd_long,pcmd.cmd_short,comm,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
 	else {
-		int res=read_cmdlines(tid,NULL,NULL,comm,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
+		struct xxxid_stats *o=tid==pid?cmdline_prev(s,comm):NULL;
+		int res=read_cmdlines(tid,o?o->cmdline_long:NULL,o?o->cmdline_short:NULL,comm,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
 
 		// an exited main thread has empty cmdline while the rest of the threads still have it, so keep only a real one
 		if (tid==pid)
@@ -480,7 +522,8 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 // count of recently found main processes kept while attaching threads; must be a power of 2
 #define PROC_CACHE_SZ 128
 
-inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
+// prev is the previous cycle, NULL if there is none
+inline struct xxxid_stats_arr *fetch_data(filter_callback filter,struct xxxid_stats_arr *prev) {
 	struct xxxid_stats *pcache[PROC_CACHE_SZ]={NULL}; // main processes, by pid
 	struct xxxid_stats_arr *a=arr_alloc();
 	int i;
@@ -490,8 +533,11 @@ inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
 	if (!a)
 		return NULL;
 
+	cmdline_src=prev;
 	pidgen_cb(pid_cb,a,filter);
 	pcmd_set(-1,NULL,NULL); // valid only during the walk
+	cmdline_src=NULL;
+	cmdline_force=0;
 	arr_finalize(a);
 
 	for (i=0;a->arr&&i<a->length;i++) {
