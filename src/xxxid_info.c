@@ -53,7 +53,8 @@ struct msgtemplate {
 static int nl_sock=-1;
 static int nl_fam_id=0;
 
-inline int send_cmd(int sock_fd,__u16 nlmsg_type,__u32 nlmsg_pid,__u8 genl_cmd,__u16 nla_type,void *nla_data,int nla_len) {
+// seq comes back in the reply and tells which request it belongs to
+inline int send_cmd(int sock_fd,__u16 nlmsg_type,__u32 nlmsg_pid,__u32 seq,__u8 genl_cmd,__u16 nla_type,void *nla_data,int nla_len) {
 	struct nlattr *na;
 	struct sockaddr_nl nladdr;
 	int r,buflen;
@@ -68,7 +69,7 @@ inline int send_cmd(int sock_fd,__u16 nlmsg_type,__u32 nlmsg_pid,__u8 genl_cmd,_
 	msg.n.nlmsg_len=NLMSG_LENGTH(GENL_HDRLEN);
 	msg.n.nlmsg_type=nlmsg_type;
 	msg.n.nlmsg_flags=NLM_F_REQUEST;
-	msg.n.nlmsg_seq=0;
+	msg.n.nlmsg_seq=seq;
 	msg.n.nlmsg_pid=nlmsg_pid;
 	msg.g.cmd=genl_cmd;
 	msg.g.version=0x1;
@@ -89,7 +90,7 @@ inline int send_cmd(int sock_fd,__u16 nlmsg_type,__u32 nlmsg_pid,__u8 genl_cmd,_
 			buf+=r;
 			buflen-=r;
 		} else
-			if (errno!=EAGAIN)
+			if (errno!=EAGAIN&&errno!=EINTR)
 				return -1;
 	}
 	return 0;
@@ -103,7 +104,7 @@ inline int get_family_id(int sock_fd) {
 	int id=0;
 
 	snprintf(name,sizeof name,"%s",TASKSTATS_GENL_NAME);
-	if (send_cmd(sock_fd,GENL_ID_CTRL,getpid(),CTRL_CMD_GETFAMILY,CTRL_ATTR_FAMILY_NAME,(void *)name,strlen(TASKSTATS_GENL_NAME)+1))
+	if (send_cmd(sock_fd,GENL_ID_CTRL,getpid(),0,CTRL_CMD_GETFAMILY,CTRL_ATTR_FAMILY_NAME,(void *)name,strlen(TASKSTATS_GENL_NAME)+1))
 		return 0;
 
 	rep_len=recv(sock_fd,&answ,sizeof answ,0);
@@ -159,6 +160,8 @@ static inline uint64_t exe_id(uint64_t dev,uint64_t inode) {
 // comm has room for TS_COMM_LEN+1 chars; it gets the name of a user task, kernel threads are left to /proc
 // because there the name also tells the workqueue
 inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *comm) {
+	static __u32 seq=0;
+
 	if (nl_sock<0) {
 		fprintf(stderr,"nl_xxxid_info: nl_sock is %d",nl_sock);
 		exit(EXIT_FAILURE);
@@ -169,7 +172,8 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 	}
 
 	*comm=0;
-	if (send_cmd(nl_sock,nl_fam_id,tid,TASKSTATS_CMD_GET,TASKSTATS_CMD_ATTR_PID,&tid,sizeof tid)) {
+	seq++;
+	if (send_cmd(nl_sock,nl_fam_id,tid,seq,TASKSTATS_CMD_GET,TASKSTATS_CMD_ATTR_PID,&tid,sizeof tid)) {
 		fprintf(stderr,"get_xxxid_info: %s\n",strerror(errno));
 		return -1;
 	}
@@ -178,14 +182,23 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 	stats->tid=tid;
 
 	struct msgtemplate msg;
-	ssize_t rv=recv(nl_sock,&msg,sizeof msg,0);
+	ssize_t rv;
 
-	if (rv<0) {
-		fprintf(stderr,"get_xxxid_info: %s\n",strerror(errno));
-		return -1;
+	for (;;) {
+		rv=recv(nl_sock,&msg,sizeof msg,0);
+		if (rv<0&&errno==EINTR) // e.g. SIGWINCH of a terminal resize; the reply is still coming
+			continue;
+		if (rv<0) {
+			fprintf(stderr,"get_xxxid_info: %s\n",strerror(errno));
+			return -1;
+		}
+		if (!NLMSG_OK((&msg.n),(size_t)rv))
+			return -1;
+		if (msg.n.nlmsg_seq==seq)
+			break;
+		// a late reply to an earlier request that was given up; reading it as the reply of this one
+		// would shift the data of all the following tasks
 	}
-	if (!NLMSG_OK((&msg.n),(size_t)rv))
-		return -1;
 	if (msg.n.nlmsg_type==NLMSG_ERROR) {
 		struct nlmsgerr *err=NLMSG_DATA(&msg);
 
