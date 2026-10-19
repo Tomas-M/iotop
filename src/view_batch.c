@@ -146,9 +146,14 @@ inline void view_batch_loop(void) {
 	struct xxxid_stats_arr *cs=NULL;
 	struct act_stats act={0,0,0,0,0,0,0,};
 	struct timespec ts;
+	int warned=0;
 
 	for (;;) {
 		cs=fetch_data(filter1,ps);
+		if (!warned&&taskstats_ver&&taskstats_ver<IOTOP_TASKSTATS_MINVER) { // known after the first query
+			fprintf(stderr,"Warning: this kernel provides struct taskstats version %u, which does not contain the required data; it should be %u or greater\n",taskstats_ver,IOTOP_TASKSTATS_MINVER);
+			warned=1;
+		}
 		get_vm_counters(&act.read_bytes,&act.write_bytes);
 		act.ts_c=monotime();
 		view_batch(cs,ps,&act);
