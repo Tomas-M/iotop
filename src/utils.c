@@ -24,6 +24,18 @@ You should have received a copy of the GNU General Public License along with thi
 #include <sys/stat.h>
 #include <sys/types.h>
 
+// the read buffers are much bigger than their usual content; return a copy of the used part of buf and free buf
+// shrinking buf with realloc instead would leave the rest of it as a hole between the kept strings
+static inline char *buf_to_str(char *buf,ssize_t len) {
+	char *t=malloc(len+1);
+
+	if (!t)
+		return buf;
+	memcpy(t,buf,len+1);
+	free(buf);
+	return t;
+}
+
 // proc_long and proc_short, when given, are the already read cmdline of the process that pid belongs to
 // returns 1 if the cmdline was read and is not empty
 inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,char **cmd_long,char **cmd_short,char **cmd_comm) {
@@ -93,7 +105,7 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,ch
 
 			for (k=0;k<p;k++)
 				dbuf[k]=dbuf[k]?dbuf[k]:' ';
-			*cmd_long=dbuf;
+			*cmd_long=buf_to_str(dbuf,p);
 			res=!!*cmd_short;
 		} else
 			free(dbuf);
@@ -135,7 +147,7 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,ch
 				dbuf[--p]=0;
 
 			if (*cmd_short&&strcmp(*cmd_short,dbuf))
-				*cmd_comm=dbuf; // thread with different name
+				*cmd_comm=buf_to_str(dbuf,p); // thread with different name
 			else {
 				if (*cmd_short) // short cmdline matches comm, discard cmd_comm
 					free(dbuf);
@@ -144,7 +156,7 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,ch
 					if (*cmd_short)
 						sprintf(*cmd_short,"[%s]",dbuf);
 					if (!*cmd_long)
-						*cmd_long=dbuf;
+						*cmd_long=buf_to_str(dbuf,p);
 					else
 						free(dbuf);
 				}
