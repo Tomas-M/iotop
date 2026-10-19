@@ -330,12 +330,23 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 	return o;
 }
 
+// order the exited threads by process, keeping them in tid order within it
+static int exited_thread_cmp(const void *a,const void *b) {
+	const struct xxxid_stats *ta=*(struct xxxid_stats * const *)a;
+	const struct xxxid_stats *tb=*(struct xxxid_stats * const *)b;
+
+	if (ta->pid!=tb->pid)
+		return ta->pid<tb->pid?-1:1;
+	return ta->tid<tb->tid?-1:ta->tid>tb->tid;
+}
+
 // exited tasks move to cs while their exited count stays below keep_exited; ps is only freed afterwards
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,int keep_exited) {
 	struct xxxid_stats **ex=NULL; // the processes and tasks that exited, moved from ps
-	int exn=0;
+	struct xxxid_stats **et=NULL; // the exited threads in cs
+	int exn=0,etn=0;
 	int ncs,nps;
-	int n,x,y;
+	int n,x,y,e;
 
 	if (cs->diffed) // the data of this cycle is already done; redraws do not need it again
 		return cs->length;
@@ -377,24 +388,37 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 	if (ex)
 		free(ex);
 
-	// reattach exited threads back to their original process
+	// reattach exited threads back to their original process; adding them one by one into a long thread list
+	// would move its tail each time, so merge all of them of a process at once
 	for (n=0;cs->arr&&n<cs->length;n++) {
-		struct xxxid_stats *c;
+		struct xxxid_stats *c=cs->arr[n];
 
-		c=cs->arr[n];
 		if (c->pid!=c->tid&&c->exited) {
-			struct xxxid_stats *p;
-
-			p=arr_find(cs,c->pid); // pid==tid for the main process
-			if (!p)
-				continue;
-			if (!p->threads)
-				p->threads=arr_alloc();
-			if (!p->threads) // ignore the old data in case of memory alloc error
-				continue;
-			arr_add(p->threads,c);
+			if (!et) // at most the remaining items of cs are exited threads
+				et=malloc((cs->length-n)*sizeof *et);
+			if (!et) // ignore the old data in case of memory alloc error
+				break;
+			et[etn++]=c;
 		}
 	}
+	if (etn>1)
+		qsort(et,etn,sizeof *et,exited_thread_cmp);
+	for (n=0;n<etn;n=e) {
+		struct xxxid_stats *p;
+
+		for (e=n+1;e<etn&&et[e]->pid==et[n]->pid;e++)
+			;
+		p=arr_find(cs,et[n]->pid); // pid==tid for the main process
+		if (!p)
+			continue;
+		if (!p->threads)
+			p->threads=arr_alloc();
+		if (!p->threads) // ignore the old data in case of memory alloc error
+			continue;
+		arr_merge(p->threads,et+n,e-n); // p has only its live threads, none of these
+	}
+	if (et)
+		free(et);
 
 	return cs->length;
 }
