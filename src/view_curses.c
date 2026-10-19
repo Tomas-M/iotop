@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define GCC_PRINTF
 
 #include <pwd.h>
+#include <errno.h>
 #include <time.h>
 #include <regex.h>
 #include <stdio.h>
@@ -132,6 +133,7 @@ static size_t c1w=0,c2w=0,c3w=0,cdw=0; // help window column widths
 static int helppos=0; // help window scroll position
 static WINDOW *wtda; // pop-up warning window
 static int whx=1,why=1,whw=2+2+20,whh=6; // warning window size and position
+static char warn_save[64]=""; // why the config file could not be saved, shown in the warning window
 static int dontrefresh=0; // flag to inhibit refresh of data
 static int initial_delayacct=0; // initial state of task_delayacct
 
@@ -763,8 +765,13 @@ static inline void view_warning(void) {
 	for (i=1+strlen(" warning ");i<whw;i++)
 		wprintw(wtda,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	mvwprintw(wtda,1,0,"%*.*s",whw,whw,"");
-	mvwprintw(wtda,2,0," task_delayacct is %s  ",read_task_delayacct()?"ON ":"OFF");
-	mvwprintw(wtda,3,0," press Ctrl-T to toggle ");
+	if (*warn_save) {
+		mvwprintw(wtda,2,0,"%-*s",whw," can not save the config file");
+		mvwprintw(wtda,3,0," %-*s",whw-1,warn_save);
+	} else {
+		mvwprintw(wtda,2,0," task_delayacct is %s  ",read_task_delayacct()?"ON ":"OFF");
+		mvwprintw(wtda,3,0," press Ctrl-T to toggle ");
+	}
 	mvwprintw(wtda,4,0,"%*.*s",whw,whw,"");
 	mvwprintw(wtda,whh-1,0,"%s",(has_unicode&&config.f.unicode)?"─":"_");
 	for (i=1;i<whw;i++)
@@ -1913,9 +1920,12 @@ donedraw:
 		view_help();
 		wnoutrefresh(whelp);
 	}
-	if (showtda) {
+	if (showtda||*warn_save) {
 		int rhh,rhw;
 
+		whw=2+2+20;
+		if (*warn_save) // fit the message
+			whw=mymax(whw,mymax((int)strlen(" can not save the config file "),(int)strlen(warn_save)+2));
 		if (whw+2>=maxx)
 			whx=1;
 		else
@@ -2157,6 +2167,8 @@ static inline int curses_key(int ch) {
 	int k2;
 
 	key_log(ch,0);
+	if (ch!=KEY_REFRESH&&ch!=KEY_RESIZE) // any key hides it
+		*warn_save=0;
 	if (in_search)
 		return curses_key_search(ch);
 	switch (ch) {
@@ -2165,7 +2177,8 @@ static inline int curses_key(int ch) {
 			init_config();
 			break;
 		case 'W':
-			config_file_save();
+			if (config_file_save())
+				snprintf(warn_save,sizeof warn_save,"%s",strerror(errno));
 			break;
 		case 's':
 		case 'S':
