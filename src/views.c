@@ -564,7 +564,7 @@ inline int filter1(struct xxxid_stats *s) {
 	if (!s->cmdline_long||!s->cmdline_short) // if strdup fails during copy, those may become NULL
 		return 1;
 
-	if ((params.user_id!=-1)&&(s->euid!=params.user_id))
+	if ((params.user_id!=-1)&&(s->euid!=(uid_t)params.user_id))
 		return 1;
 
 	if ((params.pid!=-1)&&(s->tid!=params.pid))

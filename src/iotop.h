@@ -195,7 +195,7 @@ struct xxxid_stats {
 
 	int io_prio;
 
-	int euid;
+	uid_t euid;
 	char *cmdline_long;
 	char *cmdline_short;
 	char *cmdline_comm;
