@@ -109,6 +109,54 @@ inline int arr_add(struct xxxid_stats_arr *pa,struct xxxid_stats *ps) {
 	return 0; // SUCCESS
 }
 
+// add an item at the end without keeping the order; arr_finalize has to be called before any other use
+inline int arr_append(struct xxxid_stats_arr *pa,struct xxxid_stats *ps) {
+	int res;
+
+	if (!pa)
+		return EINVAL;
+	if (!ps)
+		return EINVAL;
+
+	res=arr_resize(pa,pa->length+1);
+	if (res)
+		return res;
+
+	pa->arr[pa->length++]=ps;
+
+	return 0; // SUCCESS
+}
+
+static int arr_cmp_tid(const void *a,const void *b) {
+	pid_t ta=(*(struct xxxid_stats **)a)->tid;
+	pid_t tb=(*(struct xxxid_stats **)b)->tid;
+
+	return ta<tb?-1:ta>tb;
+}
+
+// sort the items added by arr_append by tid; duplicates are dropped and freed
+inline void arr_finalize(struct xxxid_stats_arr *pa) {
+	int i,j;
+
+	if (!pa)
+		return;
+	if (pa->length<2)
+		return;
+
+	if (pa->sor) {
+		free(pa->sor);
+		pa->sor=NULL;
+	}
+
+	qsort(pa->arr,pa->length,sizeof *pa->arr,arr_cmp_tid);
+	for (i=1,j=1;i<pa->length;i++)
+		if (pa->arr[i]->tid==pa->arr[j-1]->tid)
+			free_stats(pa->arr[i]);
+		else
+			pa->arr[j++]=pa->arr[i];
+	pa->length=j;
+}
+
 // merge cnt items, sorted by tid, into pa; none of them may be already present there
 inline int arr_merge(struct xxxid_stats_arr *pa,struct xxxid_stats **items,int cnt) {
 	int i,j,k,res;

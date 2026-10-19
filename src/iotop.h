@@ -295,6 +295,8 @@ inline int system_checks(void);
 
 inline struct xxxid_stats_arr *arr_alloc(void);
 inline int arr_add(struct xxxid_stats_arr *a,struct xxxid_stats *s);
+inline int arr_append(struct xxxid_stats_arr *a,struct xxxid_stats *s);
+inline void arr_finalize(struct xxxid_stats_arr *a);
 inline int arr_merge(struct xxxid_stats_arr *a,struct xxxid_stats **items,int cnt);
 inline struct xxxid_stats *arr_find(struct xxxid_stats_arr *pa,pid_t tid);
 inline void arr_free(struct xxxid_stats_arr *pa);

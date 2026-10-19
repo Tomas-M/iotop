@@ -79,10 +79,12 @@ inline int value2scale(double val,double mx) {
 
 // keep the longest tid length for the display
 static inline void update_maxpidlen(pid_t tid) {
-	char temp[12];
+	int len=1;
 
-	snprintf(temp,sizeof temp,"%i",tid);
-	maxpidlen=maxpidlen<(int)strlen(temp)?(int)strlen(temp):maxpidlen;
+	for (;tid>=10;tid/=10)
+		len++;
+	if (maxpidlen<len)
+		maxpidlen=len;
 }
 
 // new process or task - there is no previous data to diff against

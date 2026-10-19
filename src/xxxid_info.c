@@ -412,7 +412,8 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 				s->read_bytes_p=s->read_bytes;
 				s->write_bytes_p=s->write_bytes;
 			}
-			arr_add(a,s);
+			if (arr_append(a,s)) // the list is sorted once at the end by arr_finalize
+				free_stats(s);
 		}
 	}
 }
@@ -427,6 +428,7 @@ inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
 		return NULL;
 
 	pidgen_cb(pid_cb,a,filter);
+	arr_finalize(a);
 
 	for (i=0;a->arr&&i<a->length;i++) {
 		struct xxxid_stats *s=a->arr[i];
