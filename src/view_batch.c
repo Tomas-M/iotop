@@ -28,6 +28,9 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	double total_read,total_write;
 	char str_read[4],str_write[4];
 	static int firsthdr=1;
+	char tstr[16]=""; // time prefix of each line with --time
+	struct tm *tm;
+	time_t t;
 	int i;
 
 	calc_total(cs,&total_read,&total_write);
@@ -38,23 +41,25 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	humanize_val(&total_a_read,str_a_read,0);
 	humanize_val(&total_a_write,str_a_write,0);
 
+	if (config.f.timestamp) { // the same time for all lines of the iteration
+		t=time(NULL);
+		tm=localtime(&t);
+		if (tm)
+			strftime(tstr,sizeof tstr,"%H:%M:%S ",tm);
+	}
+
 	if (config.f.quiet<3) {
+		printf("%s",tstr);
 		printf(HEADER1_FORMAT,total_read,str_read,"",total_write,str_write,"");
-
-		if (config.f.timestamp) {
-			time_t t=time(NULL);
-
-			printf(" | %s",ctime(&t));
-		} else
-			printf("\n");
-
+		printf("\n");
+		printf("%s",tstr);
 		printf(HEADER2_FORMAT,total_a_read,str_a_read,"",total_a_write,str_a_write,"");
 		printf("\n");
 	}
 
 	if (config.f.quiet==0||(config.f.quiet==1&&firsthdr)) {
 		firsthdr=0;
-		printf("%6s %4s %8s %11s %11s %6s %6s %s\n",config.f.processes?"PID":"TID","PRIO","USER","DISK READ","DISK WRITE","SWAPIN","IO","COMMAND");
+		printf("%s%6s %4s %8s %11s %11s %6s %6s %s\n",config.f.timestamp?"    TIME ":"",config.f.processes?"PID":"TID","PRIO","USER","DISK READ","DISK WRITE","SWAPIN","IO","COMMAND");
 	}
 
 	arr_sort(cs,iotop_sort_cb);
@@ -118,7 +123,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		} else
 			cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline_long:s->cmdline_short);
 
-		printf("%6i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str,write_val,write_str,swapin_val,blkio_val,cmdt?cmdt:"(null)");
+		printf("%s%6i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",tstr,s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str,write_val,write_str,swapin_val,blkio_val,cmdt?cmdt:"(null)");
 
 		if (cmdt)
 			free(cmdt);
