@@ -113,6 +113,7 @@ static char filter_pid[50];
 static int filter_col=0; // select what to edit uid(0), pid(1)
 static int in_search=0; // search by regex interface flag
 static struct xxxid_stats *ionice_pos_data=NULL;
+static struct xxxid_stats_arr *ionice_pos_arr=NULL; // the cycle that ionice_pos_data belongs to
 static int has_unicode=0;
 static double hist_t_r[HISTORY_CNT]={0};
 static double hist_t_w[HISTORY_CNT]={0};
@@ -1360,6 +1361,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			if (in_ionice&&ionice_pos==line) {
 				attron(A_UNDERLINE);
 				ionice_pos_data=s;
+				ionice_pos_arr=cs;
 			}
 			if (s->exited)
 				attron(A_DIM);
@@ -2722,6 +2724,10 @@ inline void view_curses_loop(void) {
 			if ((params.iter>-1)&&((params.iter--)==0)) // the last iteration was shown for a full delay
 				break;
 			bef=now;
+			if (ps==ionice_pos_arr) { // keys may come without a redraw in between, do not keep a freed item
+				ionice_pos_data=NULL;
+				ionice_pos_arr=NULL;
+			}
 			if (ps)
 				arr_free(ps);
 
