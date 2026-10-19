@@ -169,10 +169,17 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 	struct msgtemplate msg;
 	ssize_t rv=recv(nl_sock,&msg,sizeof msg,0);
 
-	if (rv<0||!NLMSG_OK((&msg.n),(size_t)rv)||msg.n.nlmsg_type==NLMSG_ERROR) {
+	if (rv<0) {
+		fprintf(stderr,"get_xxxid_info: %s\n",strerror(errno));
+		return -1;
+	}
+	if (!NLMSG_OK((&msg.n),(size_t)rv))
+		return -1;
+	if (msg.n.nlmsg_type==NLMSG_ERROR) {
 		struct nlmsgerr *err=NLMSG_DATA(&msg);
 
-		if (err->error!=-ESRCH)
+		// the error code is there only in a complete error message
+		if ((size_t)rv>=NLMSG_LENGTH(sizeof *err)&&err->error!=-ESRCH)
 			fprintf(stderr,"fatal reply error, %d\n",err->error);
 		return -1;
 	}
