@@ -821,7 +821,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	if (maxcmdline<0)
 		maxcmdline=0;
 
-	diff_len=create_diff(cs,ps,time_s,act->ts_c,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width,&dispcount);
+	diff_len=create_diff(cs,ps,time_s,act->ts_c);
+	dispcount=count_visible(cs,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 
 	calc_total(cs,&total_read,&total_write);
 	calc_a_total(act,&total_a_read,&total_a_write,time_s);

@@ -213,14 +213,15 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 	return p;
 }
 
-inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,filter_callback_w cb,int width,int *cnt) {
+inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c) {
 	struct xxxid_stats **ex=NULL; // copies of the processes and tasks that exited
 	int exn=0;
 	int ncs,nps;
 	int n,x,y;
 
-	if (cnt)
-		*cnt=0;
+	if (cs->diffed) // the data of this cycle is already done; redraws do not need it again
+		return cs->length;
+	cs->diffed=1;
 
 	ncs=cs->arr?cs->length:0;
 	nps=ps&&ps->arr?ps->length:0;
@@ -276,12 +277,31 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 				continue;
 			arr_add(p->threads,c);
 		}
-		if (cb&&!cb(c,width))
-			if (cnt)
-				(*cnt)++;
 	}
 
 	return cs->length;
+}
+
+// count the lines that the view shows - the processes and their threads that pass the filter
+inline int count_visible(struct xxxid_stats_arr *cs,filter_callback_w cb,int width) {
+	int cnt=0;
+	int n,k;
+
+	for (n=0;cs->arr&&n<cs->length;n++) {
+		struct xxxid_stats *c=cs->arr[n];
+
+		if (c->pid!=c->tid) // threads are shown only below their process
+			continue;
+		if (!cb(c,width))
+			cnt++;
+		if (config.f.processes)
+			continue;
+		for (k=0;c->threads&&c->threads->arr&&k<c->threads->length;k++)
+			if (!cb(c->threads->arr[k],width))
+				cnt++;
+	}
+
+	return cnt;
 }
 
 inline void humanize_val(double *value,char *str,int allow_accum) {
