@@ -418,7 +418,11 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 	}
 }
 
+// count of recently found main processes kept while attaching threads; must be a power of 2
+#define PROC_CACHE_SZ 128
+
 inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
+	struct xxxid_stats *pcache[PROC_CACHE_SZ]={NULL}; // main processes, by pid
 	struct xxxid_stats_arr *a=arr_alloc();
 	int i;
 
@@ -434,8 +438,14 @@ inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
 		struct xxxid_stats *s=a->arr[i];
 
 		if (s->pid!=s->tid) { // maintain a thread list for each process
-			struct xxxid_stats *p=arr_find(a,s->pid); // main process' tid=thread's pid
+			struct xxxid_stats **pc=&pcache[s->pid&(PROC_CACHE_SZ-1)];
+			struct xxxid_stats *p=*pc;
 
+			if (!p||p->tid!=s->pid) { // the threads of a process mostly get close tids, so it is usually cached
+				p=arr_find(a,s->pid); // main process' tid=thread's pid
+				if (p)
+					*pc=p;
+			}
 			if (p) {
 				// aggregate thread data into the main process
 				if (!p->threads)
