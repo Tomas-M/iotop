@@ -36,9 +36,29 @@ static inline char *buf_to_str(char *buf,ssize_t len) {
 	return t;
 }
 
+// apply the task name in buf of len chars to the cmdlines, buf is consumed
+static inline void comm_apply(char *buf,ssize_t len,char **cmd_long,char **cmd_short,char **cmd_comm) {
+	if (*cmd_short&&strcmp(*cmd_short,buf))
+		*cmd_comm=buf_to_str(buf,len); // thread with different name
+	else {
+		if (*cmd_short) // short cmdline matches comm, discard cmd_comm
+			free(buf);
+		else { // if there is no memory alloc error, both cmd_long and cmd_short should be NULL or non-NULL
+			*cmd_short=malloc(strlen(buf)+3);
+			if (*cmd_short)
+				sprintf(*cmd_short,"[%s]",buf);
+			if (!*cmd_long)
+				*cmd_long=buf_to_str(buf,len);
+			else
+				free(buf);
+		}
+	}
+}
+
 // proc_long and proc_short, when given, are the already read cmdline of the process that pid belongs to
+// comm, when not empty, is the task name that is already known and is not read again
 // returns 1 if the cmdline was read and is not empty
-inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,char **cmd_long,char **cmd_short,char **cmd_comm) {
+inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,const char *comm,char **cmd_long,char **cmd_short,char **cmd_comm) {
 	char path[30];
 	int res=0;
 	int fd;
@@ -121,6 +141,14 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,ch
 		close(fd);
 	}
 
+	if (comm&&*comm) {
+		char *dbuf=strdup(comm);
+
+		if (dbuf)
+			comm_apply(dbuf,(ssize_t)strlen(dbuf),cmd_long,cmd_short,cmd_comm);
+		return res;
+	}
+
 	snprintf(path,sizeof path,"/proc/%d/comm",pid);
 	fd=open(path,O_RDONLY);
 	if (fd!=-1) {
@@ -154,22 +182,7 @@ inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,ch
 
 			while (p>0&&dbuf[p-1]=='\n') // trim newline(s) from the end
 				dbuf[--p]=0;
-
-			if (*cmd_short&&strcmp(*cmd_short,dbuf))
-				*cmd_comm=buf_to_str(dbuf,p); // thread with different name
-			else {
-				if (*cmd_short) // short cmdline matches comm, discard cmd_comm
-					free(dbuf);
-				else { // if there is no memory alloc error, both cmd_long and cmd_short should be NULL or non-NULL
-					*cmd_short=malloc(strlen(dbuf)+3);
-					if (*cmd_short)
-						sprintf(*cmd_short,"[%s]",dbuf);
-					if (!*cmd_long)
-						*cmd_long=buf_to_str(dbuf,p);
-					else
-						free(dbuf);
-				}
-			}
+			comm_apply(dbuf,p,cmd_long,cmd_short,cmd_comm);
 		} else
 			free(dbuf);
 		close(fd);

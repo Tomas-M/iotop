@@ -229,7 +229,7 @@ struct act_stats {
 inline void nl_init(void);
 inline void nl_fini(void);
 
-inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats);
+inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *comm);
 
 typedef int (*filter_callback)(struct xxxid_stats *);
 typedef int (*filter_callback_w)(struct xxxid_stats *,int width);
@@ -258,7 +258,7 @@ inline int masked_sort_by(int isforward);
 
 /* utils.c */
 
-inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,char **cmd_long,char **cmd_short,char **cmd_comm);
+inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,const char *comm,char **cmd_long,char **cmd_short,char **cmd_comm);
 
 inline int64_t monotime(void);
 inline char *u8strpadt(const char *s,ssize_t len);

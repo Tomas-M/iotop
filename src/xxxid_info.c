@@ -148,7 +148,9 @@ error:
 	exit(EXIT_FAILURE);
 }
 
-inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
+// comm has room for TS_COMM_LEN+1 chars; it gets the name of a user task, kernel threads are left to /proc
+// because there the name also tells the workqueue
+inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *comm) {
 	if (nl_sock<0) {
 		fprintf(stderr,"nl_xxxid_info: nl_sock is %d",nl_sock);
 		exit(EXIT_FAILURE);
@@ -158,6 +160,7 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 		exit(EXIT_FAILURE);
 	}
 
+	*comm=0;
 	if (send_cmd(nl_sock,nl_fam_id,tid,TASKSTATS_CMD_GET,TASKSTATS_CMD_ATTR_PID,&tid,sizeof tid)) {
 		fprintf(stderr,"get_xxxid_info: %s\n",strerror(errno));
 		return -1;
@@ -225,6 +228,10 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 						stats->blkio_delay_total=t14->blkio_delay_total;
 						stats->euid=t14->ac_uid;
 						stats->io_prio=ioprio_from_sched(t14->ac_sched,(int8_t)t14->ac_nice);
+						if (ts->version>=12&&t14->ac_exe_inode) { // the exe fields are there since v12, zero for kernel threads
+							memcpy(comm,t14->ac_comm,TS_COMM_LEN);
+							comm[TS_COMM_LEN]=0;
+						}
 					} else { // exception for v15 only
 						stats->read_bytes=t15->read_bytes;
 						stats->write_bytes=t15->write_bytes;
@@ -232,6 +239,10 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats) {
 						stats->blkio_delay_total=t15->blkio_delay_total;
 						stats->euid=t15->ac_uid;
 						stats->io_prio=ioprio_from_sched(t15->ac_sched,(int8_t)t15->ac_nice);
+						if (t15->ac_exe_inode) { // zero for kernel threads
+							memcpy(comm,t15->ac_comm,TS_COMM_LEN);
+							comm[TS_COMM_LEN]=0;
+						}
 					}
 				}
 				len2+=NLA_ALIGN(na2->nla_len);
@@ -392,6 +403,7 @@ static void pcmd_set(pid_t pid,const char *cmd_long,const char *cmd_short) {
 inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	static const char unknown[]="<unknown>";
 	struct xxxid_stats *s;
+	char comm[TS_COMM_LEN+1];
 	char uid_str[32];
 	int prio;
 
@@ -402,7 +414,7 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	s->hist=&hist_none; // own history is allocated when the first value is stored
 	s->io_prio=-1; // nl_xxxid_info stores here the io priority derived from the scheduling policy and nice value
 
-	if (nl_xxxid_info(tid,pid,s))
+	if (nl_xxxid_info(tid,pid,s,comm))
 		s->error_x=1;
 
 	prio=get_ioprio(tid,s->error_x?-1:s->io_prio);
@@ -413,9 +425,9 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 		s->io_prio=prio;
 
 	if (tid!=pid&&pid==pcmd.pid)
-		read_cmdlines(tid,pcmd.cmd_long,pcmd.cmd_short,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
+		read_cmdlines(tid,pcmd.cmd_long,pcmd.cmd_short,comm,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
 	else {
-		int res=read_cmdlines(tid,NULL,NULL,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
+		int res=read_cmdlines(tid,NULL,NULL,comm,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
 
 		// an exited main thread has empty cmdline while the rest of the threads still have it, so keep only a real one
 		if (tid==pid)
