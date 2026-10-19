@@ -232,9 +232,9 @@ cd iotop && git checkout master && git pull && make clean && make -j
 
 ## Contribute
 
-iotop was originally written by Vyacheslav Trushkin in 2014, distributed by Tomas Matejicek and later improved by Boian Bonev.
+iotop was started in 2014 by Vyacheslav Trushkin as a C rewrite of the Python iotop by Guillaume Chazarain. Tomas Matejicek published and maintained it from 2014, and since 2020 it has been developed and maintained by Boian Bonev.
 
-iotop is maintaned on GitHub at https://github.com/Tomas-M/iotop
+iotop is maintained on GitHub at https://github.com/Tomas-M/iotop
 
 The preferred way to contribute to the project is to file a pull request at GitHub.
 
