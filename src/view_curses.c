@@ -2684,8 +2684,11 @@ inline void view_curses_loop(void) {
 			act.ts_o=act.ts_c;
 
 			cs=fetch_data(NULL);
-			if (!ps) {
+			if (!ps) { // first cycle - take a second snapshot to diff against
 				ps=cs;
+				create_diff(ps,NULL,0,now); // set the start ts of the first snapshot
+				act.ts_o=now;
+				now=monotime();
 				cs=fetch_data(NULL);
 			}
 			get_vm_counters(&act.read_bytes,&act.write_bytes);
