@@ -2607,7 +2607,7 @@ inline void view_curses_init(void) {
 		exit(1);
 	}
 	wtda=newwin(whh,whw,whx,why);
-	if (!whelp) {
+	if (!wtda) {
 		view_curses_fini();
 		nl_fini();
 		fprintf(stderr,"Error: can not allocate warning window\n");
