@@ -58,13 +58,17 @@ static inline FILE *config_file_open(const char *mode) {
 	xdgconfig=getenv("XDG_CONFIG_HOME");
 	home=getenv("HOME");
 
-	if (xdgconfig)
+	// an empty XDG_CONFIG_HOME is treated as unset; without a home do not put the config in /
+	if (xdgconfig&&*xdgconfig)
 		len=snprintf(dir,sizeof dir,"%s%s",xdgconfig,CONFIG_DIR2);
+	else if (home&&*home)
+		len=snprintf(dir,sizeof dir,"%s%s%s",home,CONFIG_DIR1,CONFIG_DIR2);
 	else
-		len=snprintf(dir,sizeof dir,"%s%s%s",home?home:"",CONFIG_DIR1,CONFIG_DIR2);
+		return NULL;
 	if (len<0||(size_t)len>=sizeof dir) // do not create or open a truncated path
 		return NULL;
-	mkdir_p(dir);
+	if (*mode=='w') // only writing the config needs the directories
+		mkdir_p(dir);
 	len=snprintf(path,sizeof path,"%s%s",dir,CONFIG_NAME);
 	if (len<0||(size_t)len>=sizeof path)
 		return NULL;
