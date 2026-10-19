@@ -2139,6 +2139,17 @@ static inline int curses_key_search(int ch) {
 	return 0;
 }
 
+// move the view by d lines; the list may have shrunk since scrollpos was set, so start from where the view is
+static inline void scroll_by(int d) {
+	if (scrollpos>dispcount-viewsizey)
+		scrollpos=dispcount-viewsizey;
+	scrollpos+=d;
+	if (scrollpos>dispcount-viewsizey)
+		scrollpos=dispcount-viewsizey;
+	if (scrollpos<0)
+		scrollpos=0;
+}
+
 static inline int curses_key(int ch) {
 	int k2;
 
@@ -2184,16 +2195,10 @@ static inline int curses_key(int ch) {
 				scrollpos=0;
 			break;
 		case KEY_PPAGE:
-			scrollpos-=viewsizey;
-			if (scrollpos<0)
-				scrollpos=0;
+			scroll_by(-viewsizey);
 			break;
 		case KEY_NPAGE:
-			scrollpos+=viewsizey;
-			if (scrollpos>dispcount-viewsizey)
-				scrollpos=dispcount-viewsizey;
-			if (scrollpos<0)
-				scrollpos=0;
+			scroll_by(viewsizey);
 			break;
 		case KEY_RIGHT:
 			if (in_ionice) {
@@ -2258,11 +2263,8 @@ static inline int curses_key(int ch) {
 					}
 				}
 			}
-			if (!in_ionice&&!in_filter) {
-				scrollpos--;
-				if (scrollpos<0)
-					scrollpos=0;
-			}
+			if (!in_ionice&&!in_filter)
+				scroll_by(-1);
 			break;
 		case KEY_DOWN:
 			if (in_ionice) {
@@ -2301,13 +2303,8 @@ static inline int curses_key(int ch) {
 					}
 				}
 			}
-			if (!in_ionice&&!in_filter) {
-				scrollpos++;
-				if (scrollpos>dispcount-viewsizey)
-					scrollpos=dispcount-viewsizey;
-				if (scrollpos<0)
-					scrollpos=0;
-			}
+			if (!in_ionice&&!in_filter)
+				scroll_by(1);
 			break;
 		case 'o':
 		case 'O':
