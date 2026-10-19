@@ -24,24 +24,35 @@ You should have received a copy of the GNU General Public License along with thi
 #include <sys/stat.h>
 #include <sys/types.h>
 
-inline void read_cmdlines(int pid,char **cmd_long,char **cmd_short,char **cmd_comm) {
+// proc_long and proc_short, when given, are the already read cmdline of the process that pid belongs to
+// returns 1 if the cmdline was read and is not empty
+inline int read_cmdlines(int pid,const char *proc_long,const char *proc_short,char **cmd_long,char **cmd_short,char **cmd_comm) {
 	char path[30];
+	int res=0;
 	int fd;
 
 	if (!cmd_long||!cmd_short||!cmd_comm)
-		return;
+		return 0;
 
 	*cmd_long=*cmd_short=*cmd_comm=NULL;
 
-	snprintf(path,sizeof path,"/proc/%d/cmdline",pid);
-	fd=open(path,O_RDONLY);
+	if (proc_long&&proc_short) { // all threads of a process have the same cmdline
+		*cmd_long=strdup(proc_long);
+		*cmd_short=strdup(proc_short);
+		if (*cmd_long&&*cmd_short)
+			res=1;
+		fd=-1;
+	} else {
+		snprintf(path,sizeof path,"/proc/%d/cmdline",pid);
+		fd=open(path,O_RDONLY);
+	}
 	if (fd!=-1) {
 		char *dbuf=malloc(BUFSIZ+1);
 		ssize_t n,p=0,sz=BUFSIZ;
 
 		if (!dbuf) {
 			close(fd);
-			return;
+			return res;
 		}
 
 		do {
@@ -52,7 +63,7 @@ inline void read_cmdlines(int pid,char **cmd_long,char **cmd_short,char **cmd_co
 				if (!t) {
 					close(fd);
 					free(dbuf);
-					return;
+					return res;
 				}
 				dbuf=t;
 				sz+=BUFSIZ;
@@ -83,6 +94,7 @@ inline void read_cmdlines(int pid,char **cmd_long,char **cmd_short,char **cmd_co
 			for (k=0;k<p;k++)
 				dbuf[k]=dbuf[k]?dbuf[k]:' ';
 			*cmd_long=dbuf;
+			res=!!*cmd_short;
 		} else
 			free(dbuf);
 		close(fd);
@@ -96,7 +108,7 @@ inline void read_cmdlines(int pid,char **cmd_long,char **cmd_short,char **cmd_co
 
 		if (!dbuf) {
 			close(fd);
-			return;
+			return res;
 		}
 
 		do {
@@ -107,7 +119,7 @@ inline void read_cmdlines(int pid,char **cmd_long,char **cmd_short,char **cmd_co
 				if (!t) {
 					close(fd);
 					free(dbuf);
-					return;
+					return res;
 				}
 				dbuf=t;
 				sz+=BUFSIZ;
@@ -141,6 +153,7 @@ inline void read_cmdlines(int pid,char **cmd_long,char **cmd_short,char **cmd_co
 			free(dbuf);
 		close(fd);
 	}
+	return res;
 }
 
 inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hint2) {

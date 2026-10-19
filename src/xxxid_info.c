@@ -353,6 +353,29 @@ void clear_uid_cache(void) {
 	}
 }
 
+// cmdline of the last read main process; its threads that follow it in the /proc walk get it from here
+static struct {
+	pid_t pid;
+	char *cmd_long;
+	char *cmd_short;
+} pcmd={-1,NULL,NULL};
+
+// remember the cmdline of process pid or forget it with pid=-1
+static void pcmd_set(pid_t pid,const char *cmd_long,const char *cmd_short) {
+	if (pcmd.cmd_long)
+		free(pcmd.cmd_long);
+	if (pcmd.cmd_short)
+		free(pcmd.cmd_short);
+	pcmd.pid=-1;
+	pcmd.cmd_long=pcmd.cmd_short=NULL;
+	if (pid==-1)
+		return;
+	pcmd.cmd_long=strdup(cmd_long);
+	pcmd.cmd_short=strdup(cmd_short);
+	if (pcmd.cmd_long&&pcmd.cmd_short)
+		pcmd.pid=pid;
+}
+
 inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	static const char unknown[]="<unknown>";
 	struct xxxid_stats *s;
@@ -378,7 +401,15 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	} else
 		s->io_prio=prio;
 
-	read_cmdlines(tid,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
+	if (tid!=pid&&pid==pcmd.pid)
+		read_cmdlines(tid,pcmd.cmd_long,pcmd.cmd_short,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
+	else {
+		int res=read_cmdlines(tid,NULL,NULL,&s->cmdline_long,&s->cmdline_short,&s->cmdline_comm);
+
+		// an exited main thread has empty cmdline while the rest of the threads still have it, so keep only a real one
+		if (tid==pid)
+			pcmd_set(res?pid:-1,s->cmdline_long,s->cmdline_short);
+	}
 
 	if (!s->cmdline_long)
 		s->cmdline_long=strdup(unknown);
@@ -435,6 +466,7 @@ inline struct xxxid_stats_arr *fetch_data(filter_callback filter) {
 		return NULL;
 
 	pidgen_cb(pid_cb,a,filter);
+	pcmd_set(-1,NULL,NULL); // valid only during the walk
 	arr_finalize(a);
 
 	for (i=0;a->arr&&i<a->length;i++) {
