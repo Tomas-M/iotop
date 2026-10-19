@@ -14,7 +14,6 @@ You should have received a copy of the GNU General Public License along with thi
 #include "iotop.h"
 
 #include <pwd.h>
-#include <ctype.h>
 #include <getopt.h>
 #include <limits.h>
 #include <stdio.h>
@@ -115,6 +114,22 @@ static inline int parse_delay(const char *s) {
 	if (*s||!digits||ms>INT_MAX)
 		return -1;
 	return ms;
+}
+
+// parse a non-negative decimal number; returns -1 for an invalid value or one that does not fit in an int
+static inline int parse_num(const char *s) {
+	int64_t v=0;
+
+	if (!*s)
+		return -1;
+	for (;*s>='0'&&*s<='9';s++) {
+		v=v*10+*s-'0';
+		if (v>INT_MAX)
+			return -1;
+	}
+	if (*s)
+		return -1;
+	return v;
 }
 
 static const char str_opt[]="boPaktqc123456789xelRTAN";
@@ -316,6 +331,8 @@ static inline void parse_args(int clac,char **clav) {
 					config_file_save();
 					exit(EXIT_SUCCESS);
 				case 'H': // below values are not partial prefixes of each other, do a relaxed match
+					if (!*optarg) // an empty value would match the first one
+						goto bad_helptype;
 					if (!strncmp(optarg,"none",strlen(optarg)))
 						config.f.helptype=0;
 					else if (!strncmp(optarg,"win",strlen(optarg)))
@@ -323,6 +340,7 @@ static inline void parse_args(int clac,char **clav) {
 					else if (!strncmp(optarg,"inline",strlen(optarg)))
 						config.f.helptype=2;
 					else {
+					bad_helptype:
 						fprintf(stderr,"%s: invalid value %s for interactive help type\n",progname,optarg);
 						exit(EXIT_FAILURE);
 					}
@@ -357,7 +375,11 @@ static inline void parse_args(int clac,char **clav) {
 						config.f.quiet=3;
 					break;
 				case 'n':
-					params.iter=atoi(optarg);
+					params.iter=parse_num(optarg);
+					if (params.iter<1) {
+						fprintf(stderr,"%s: invalid value %s for iterations\n",progname,optarg);
+						exit(EXIT_FAILURE);
+					}
 					break;
 				case 'd':
 					params.delay_ms=parse_delay(optarg);
@@ -367,11 +389,17 @@ static inline void parse_args(int clac,char **clav) {
 					}
 					break;
 				case 'p':
-					params.pid=atoi(optarg);
+					params.pid=parse_num(optarg);
+					if (params.pid<1) {
+						fprintf(stderr,"%s: invalid value %s for pid\n",progname,optarg);
+						exit(EXIT_FAILURE);
+					}
 					break;
 				case 'g': // below values are not partial prefixes of each other, do a relaxed match
 					// except r is a prefix of rw, but r is matched first
 					// do an exact match for r and w - there is no point in relaxed match for single letter values
+					if (!*optarg) // an empty value would match the first one
+						goto bad_grtype;
 					if (!strncmp(optarg,"io",strlen(optarg)))
 						config.f.grtype=E_GR_IO;
 					else if (!strcmp(optarg,"r"))
@@ -383,21 +411,25 @@ static inline void parse_args(int clac,char **clav) {
 					else if (!strncmp(optarg,"sw",strlen(optarg)))
 						config.f.grtype=E_GR_SW;
 					else {
+					bad_grtype:
 						fprintf(stderr,"%s: invalid value %s for graph type\n",progname,optarg);
 						exit(EXIT_FAILURE);
 					}
 					break;
 				case 'u':
-					if (optarg[0]=='+') // always interpret as numeric uid
-						params.user_id=atoi(optarg+1);
-					else {
+					if (optarg[0]=='+') { // always interpret as numeric uid
+						params.user_id=parse_num(optarg+1);
+						if (params.user_id<0) {
+							fprintf(stderr,"%s: invalid uid %s\n",progname,optarg+1);
+							exit(EXIT_FAILURE);
+						}
+					} else {
 						struct passwd *pwd=getpwnam(optarg);
 
 						if (!pwd) {
-							if (isdigit(optarg[0])) { // fallback to numeric uid
-								params.user_id=atoi(optarg);
+							params.user_id=parse_num(optarg);
+							if (params.user_id>=0) // fallback to numeric uid
 								break;
-							}
 							fprintf(stderr,"%s: user %s not found\n",progname,optarg);
 							exit(EXIT_FAILURE);
 						}
@@ -408,7 +440,7 @@ static inline void parse_args(int clac,char **clav) {
 					config.f.base=1000;
 					break;
 				case OPT_THR:
-					v=atoi(optarg);
+					v=parse_num(optarg);
 					if (v<1||v>10) {
 						fprintf(stderr,"%s: threshold %s is not between 1 and 10\n",progname,optarg);
 						exit(EXIT_FAILURE);
