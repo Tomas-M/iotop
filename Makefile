@@ -68,6 +68,8 @@ HAVEWFSN:=$(shell if $(CC) -Werror -Wformat-signedness -xc -c /dev/null -o /dev/
 HAVEFLTA:=$(shell if $(CC) -flto=auto -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 # old compilers do not understand -flto at all
 HAVEFLTO:=$(shell if $(CC) -flto -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
+# gcc needs fat lto objects to emit the late warnings (e.g. -Wformat-truncation) at compile time; clang only warns on unsupported optimization flags
+HAVEFFLO:=$(shell if $(CC) -Werror -ffat-lto-objects -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 # old compilers do not understand -pie; clang yields error when stderr is redirected :(
 HAVELPIE:=$(shell if $(CC) -Wno-unused-command-line-argument -pie -xc -c /dev/null -o /dev/null >/dev/null 2>/dev/null;then echo yes;else echo no;fi)
 
@@ -107,6 +109,12 @@ MYLDFLAGS:=$(filter-out -flto=auto,$(MYLDFLAGS))
 MYCFLAGS+=-flto
 MYLDFLAGS+=-flto
 endif
+endif
+endif
+
+ifndef NO_FLTO
+ifeq ("$(HAVEFFLO)","yes")
+MYCFLAGS+=-ffat-lto-objects
 endif
 endif
 
@@ -197,6 +205,7 @@ pv:
 	@echo HAVECSTD: $(HAVECSTD)
 	@echo HAVEFLTA: $(HAVEFLTA)
 	@echo HAVEFLTO: $(HAVEFLTO)
+	@echo HAVEFFLO: $(HAVEFFLO)
 	@echo HAVELPIE: $(HAVELPIE)
 	@echo MYCFLAGS: $(MYCFLAGS)
 	@echo MYLDFLAGS: $(MYLDFLAGS)
