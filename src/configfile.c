@@ -13,7 +13,6 @@ You should have received a copy of the GNU General Public License along with thi
 
 #include "iotop.h"
 
-#include <errno.h>
 #include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -92,8 +91,9 @@ inline int config_file_load(int *pac,char ***pav) {
 		fclose(cf);
 		return -1;
 	}
-	rewind(cf);
-	if (errno) {
+	if (fseek(cf,0,SEEK_SET)) {
+		fclose(cf);
+		return -1;
 	}
 	ss=calloc(1,sz+1);
 	if (!ss) {
