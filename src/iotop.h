@@ -211,10 +211,8 @@ struct xxxid_stats {
 };
 
 // arrays are used both for main process/thread list and for inner thread list belonging to a process
-// always start small
+// always start small, afterwards double the size
 #define PROC_LIST_SZ_INI 16
-// afterwards grow big
-#define PROC_LIST_SZ_INC 2048
 
 struct act_stats {
 	uint64_t read_bytes;

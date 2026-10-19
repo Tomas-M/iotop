@@ -43,8 +43,8 @@ static inline int arr_resize(struct xxxid_stats_arr *a,int newsize) {
 	if (a->size>=newsize)
 		return 0;
 
-	newsize=(newsize+PROC_LIST_SZ_INC-1)/PROC_LIST_SZ_INC;
-	newsize*=PROC_LIST_SZ_INC;
+	if (newsize<a->size*2) // grow geometrically, a thread list of 17 does not need 2048 items
+		newsize=a->size*2;
 	t=realloc(a->arr,newsize*sizeof(struct xxxid_stats *));
 	if (!t)
 		return ENOMEM;
