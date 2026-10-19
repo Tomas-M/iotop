@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include "iotop.h"
 
 #include <time.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -139,6 +140,7 @@ inline void view_batch_loop(void) {
 	struct xxxid_stats_arr *ps=NULL;
 	struct xxxid_stats_arr *cs=NULL;
 	struct act_stats act={0,0,0,0,0,0,0,};
+	struct timespec ts;
 
 	for (;;) {
 		cs=fetch_data(filter1);
@@ -158,7 +160,10 @@ inline void view_batch_loop(void) {
 		if ((params.iter>-1)&&((--params.iter)==0))
 			break;
 		fflush(stdout);
-		sleep(params.delay);
+		ts.tv_sec=params.delay_ms/1000;
+		ts.tv_nsec=params.delay_ms%1000*1000000L;
+		while (nanosleep(&ts,&ts)==-1&&errno==EINTR) // sleep the rest after a signal
+			;
 	}
 	clear_uid_cache();
 	arr_free(cs);

@@ -90,7 +90,7 @@ typedef union {
 
 typedef struct {
 	int iter;
-	int delay;
+	int delay_ms; // delay between iterations in milliseconds
 	int pid;
 	int user_id;
 	char *search_str; // search regex string

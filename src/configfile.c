@@ -172,7 +172,7 @@ inline int config_file_save(void) {
 		fprintf(cf,"--only\n");
 	// --iter is ignored
 	// --delay
-	fprintf(cf,"--delay=%d\n",params.delay);
+	fprintf(cf,"--delay=%d.%03d\n",params.delay_ms/1000,params.delay_ms%1000);
 	// --pid is ignored
 	// --user is ignored
 	// --processes

@@ -2667,7 +2667,7 @@ inline void view_curses_loop(void) {
 			showtda=0;
 			has_tda=1;
 		}
-		if (bef+1000*params.delay<now&&!dontrefresh) {
+		if (bef+params.delay_ms<now&&!dontrefresh) {
 			bef=now;
 			if (ps)
 				arr_free(ps);
@@ -2687,7 +2687,7 @@ inline void view_curses_loop(void) {
 			get_vm_counters(&act.read_bytes,&act.write_bytes);
 			act.ts_c=now;
 			refresh=1;
-		} else if (bef+1000*params.delay<now&&dontrefresh&&!config.f.hideclock) {
+		} else if (bef+params.delay_ms<now&&dontrefresh&&!config.f.hideclock) {
 			bef=now;
 			refresh=1;
 		}

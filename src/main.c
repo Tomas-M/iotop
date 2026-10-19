@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <pwd.h>
 #include <ctype.h>
 #include <getopt.h>
+#include <limits.h>
 #include <stdio.h>
 #include <locale.h>
 #include <signal.h>
@@ -72,7 +73,7 @@ inline void init_params(void) {
 		ucell_free(params.search_uc);
 	memset(&params,0,sizeof params);
 	params.iter=-1;
-	params.delay=1;
+	params.delay_ms=1000;
 	params.pid=-1;
 	params.user_id=-1;
 	params.search_str=NULL;
@@ -89,6 +90,31 @@ inline void init_config(void) {
 	config.f.threshold=2; // default threshold is 2*base
 	config.f.unicode=1; // default is unicode
 	config.f.uid2name=E_UID2NAME_STATIC; // default is static
+}
+
+// parse seconds with an optional fraction (always with '.' regardless of the locale) into milliseconds
+// returns -1 for an invalid value; digits beyond the milliseconds are ignored
+static inline int parse_delay(const char *s) {
+	int64_t ms=0;
+	int digits=0;
+
+	for (;*s>='0'&&*s<='9';s++,digits++) {
+		ms=ms*10+*s-'0';
+		if (ms>INT_MAX/1000)
+			return -1;
+	}
+	ms*=1000;
+	if (*s=='.') {
+		int scale=100;
+
+		for (s++;*s>='0'&&*s<='9';s++,digits++) {
+			ms+=(*s-'0')*scale;
+			scale/=10;
+		}
+	}
+	if (*s||!digits||ms>INT_MAX)
+		return -1;
+	return ms;
 }
 
 static const char str_opt[]="boPaktqc123456789xelRTAN";
@@ -334,7 +360,11 @@ static inline void parse_args(int clac,char **clav) {
 					params.iter=atoi(optarg);
 					break;
 				case 'd':
-					params.delay=atoi(optarg);
+					params.delay_ms=parse_delay(optarg);
+					if (params.delay_ms<0) {
+						fprintf(stderr,"%s: invalid value %s for delay\n",progname,optarg);
+						exit(EXIT_FAILURE);
+					}
 					break;
 				case 'p':
 					params.pid=atoi(optarg);
