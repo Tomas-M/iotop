@@ -447,7 +447,11 @@ static struct xxxid_stats *cmdline_prev(struct xxxid_stats *s,const char *comm) 
 	if (((uint64_t)s->tid+current_cycle)%CMDLINE_REREAD==0) // staggered, so each cycle reads a part of them
 		return NULL;
 	o=arr_find(cmdline_src,s->tid);
-	if (!o||o->exited||o->btime!=s->btime||o->exe!=s->exe) // another process or another exe
+	if (!o||o->exited||o->exe!=s->exe) // another process or another exe
+		return NULL;
+	// the kernel gives the start time as the current second minus the elapsed seconds, both rounded down,
+	// so for the same task it may differ by one between two cycles
+	if (o->btime+1<s->btime||s->btime+1<o->btime) // another process with the same tid
 		return NULL;
 	if (!o->cmdline_long||!o->cmdline_short)
 		return NULL;
