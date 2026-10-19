@@ -53,16 +53,21 @@ static inline FILE *config_file_open(const char *mode) {
 	char dir[PATH_MAX];
 	char *xdgconfig;
 	char *home;
+	int len;
 
 	xdgconfig=getenv("XDG_CONFIG_HOME");
 	home=getenv("HOME");
 
 	if (xdgconfig)
-		snprintf(dir,sizeof dir,"%s%s",xdgconfig,CONFIG_DIR2);
+		len=snprintf(dir,sizeof dir,"%s%s",xdgconfig,CONFIG_DIR2);
 	else
-		snprintf(dir,sizeof dir,"%s%s%s",home?home:"",CONFIG_DIR1,CONFIG_DIR2);
+		len=snprintf(dir,sizeof dir,"%s%s%s",home?home:"",CONFIG_DIR1,CONFIG_DIR2);
+	if (len<0||(size_t)len>=sizeof dir) // do not create or open a truncated path
+		return NULL;
 	mkdir_p(dir);
-	snprintf(path,sizeof path,"%s%s",dir,CONFIG_NAME);
+	len=snprintf(path,sizeof path,"%s%s",dir,CONFIG_NAME);
+	if (len<0||(size_t)len>=sizeof path)
+		return NULL;
 
 	return fopen(path,mode);
 }
