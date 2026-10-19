@@ -79,7 +79,7 @@ static inline FILE *config_file_open(const char *mode) {
 inline int config_file_load(int *pac,char ***pav) {
 	FILE *cf=config_file_open("r");
 	ssize_t sz;
-	char *s;
+	char *s,*e;
 
 	if (!cf)
 		return -1;
@@ -112,6 +112,8 @@ inline int config_file_load(int *pac,char ***pav) {
 	while (*s) {
 		while (*s&&(*s==' '||*s=='\t'||*s=='\r')) // skip ws
 			s++;
+		if (!*s) // only ws till the end
+			break;
 		if (*s=='\n') { // skip empty lines
 			s++;
 			continue;
@@ -135,10 +137,13 @@ inline int config_file_load(int *pac,char ***pav) {
 		ac++;
 		while (*s&&*s!='\n')
 			s++;
+		e=s;
 		if (*s) {
 			*s=0;
 			s++;
 		}
+		while (e>av[ac-1]&&(e[-1]==' '||e[-1]=='\t'||e[-1]=='\r')) // trim trailing ws, e.g. the CR of CRLF line ends
+			*--e=0;
 	}
 
 	fclose(cf);
