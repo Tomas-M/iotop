@@ -51,6 +51,12 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_SHOW_TIME 0x118
 #define OPT_FILTER 0x119
 #define OPT_UID2NAME 0x11a
+#define OPT_SHOW_VFS 0x11b
+#define OPT_HIDE_VFS 0x11c
+#define OPT_SHOW_VFS_READ 0x11d
+#define OPT_HIDE_VFS_READ 0x11e
+#define OPT_SHOW_VFS_WRITE 0x11f
+#define OPT_HIDE_VFS_WRITE 0x120
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -90,6 +96,8 @@ inline void init_config(void) {
 	config.f.threshold=2; // default threshold is 2*base
 	config.f.unicode=1; // default is unicode
 	config.f.uid2name=E_UID2NAME_STATIC; // default is static
+	config.f.hidevfsread=1; // default is hide VFS columns
+	config.f.hidevfswrite=1;
 }
 
 // parse seconds with an optional fraction (always with '.' regardless of the locale) into milliseconds
@@ -177,8 +185,14 @@ static inline void print_help(void) {
 		"      --show-user        show USER column\n"
 		"  -4, --hide-read        hide DISK READ column\n"
 		"      --show-read        show DISK READ column\n"
+		"      --show-vfs-read    show VFS READ column\n"
+		"      --hide-vfs-read    hide VFS READ column\n"
 		"  -5, --hide-write       hide DISK WRITE column\n"
 		"      --show-write       show DISK WRITE column\n"
+		"      --show-vfs-write   show VFS WRITE column\n"
+		"      --hide-vfs-write   hide VFS WRITE column\n"
+		"      --show-vfs         show VFS READ and VFS WRITE columns\n"
+		"      --hide-vfs         hide VFS READ and VFS WRITE columns\n"
 		"  -6, --hide-swapin      hide SWAPIN column\n"
 		"      --show-swapin      show SWAPIN column\n"
 		"  -7, --hide-io          hide IO column\n"
@@ -279,6 +293,12 @@ static inline void parse_args(int clac,char **clav) {
 				{"show-read",no_argument,NULL,OPT_SHOW_READ},
 				{"hide-write",no_argument,NULL,'5'},
 				{"show-write",no_argument,NULL,OPT_SHOW_WRITE},
+				{"show-vfs",no_argument,NULL,OPT_SHOW_VFS},
+				{"hide-vfs",no_argument,NULL,OPT_HIDE_VFS},
+				{"show-vfs-read",no_argument,NULL,OPT_SHOW_VFS_READ},
+				{"hide-vfs-read",no_argument,NULL,OPT_HIDE_VFS_READ},
+				{"show-vfs-write",no_argument,NULL,OPT_SHOW_VFS_WRITE},
+				{"hide-vfs-write",no_argument,NULL,OPT_HIDE_VFS_WRITE},
 				{"hide-swapin",no_argument,NULL,'6'},
 				{"show-swapin",no_argument,NULL,OPT_SHOW_SWAPIN},
 				{"hide-io",no_argument,NULL,'7'},
@@ -483,6 +503,26 @@ static inline void parse_args(int clac,char **clav) {
 					break;
 				case OPT_SHOW_WRITE:
 					config.f.hidewrite=0;
+					break;
+				case OPT_SHOW_VFS:
+					config.f.hidevfsread=0;
+					config.f.hidevfswrite=0;
+					break;
+				case OPT_HIDE_VFS:
+					config.f.hidevfsread=1;
+					config.f.hidevfswrite=1;
+					break;
+				case OPT_SHOW_VFS_READ:
+					config.f.hidevfsread=0;
+					break;
+				case OPT_HIDE_VFS_READ:
+					config.f.hidevfsread=1;
+					break;
+				case OPT_SHOW_VFS_WRITE:
+					config.f.hidevfswrite=0;
+					break;
+				case OPT_HIDE_VFS_WRITE:
+					config.f.hidevfswrite=1;
 					break;
 				case OPT_SHOW_SWAPIN:
 					config.f.hideswapin=0;

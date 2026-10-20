@@ -64,7 +64,13 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 	if (config.f.quiet==0||(config.f.quiet==1&&firsthdr)) {
 		firsthdr=0;
-		printf("%s%6s %4s %8s %11s %11s %6s %6s %s\n",config.f.timestamp?"    TIME ":"",config.f.processes?"PID":"TID","PRIO","USER","DISK READ","DISK WRITE","SWAPIN","IO","COMMAND");
+		printf("%s%6s %4s %8s %11s",config.f.timestamp?"    TIME ":"",config.f.processes?"PID":"TID","PRIO","USER","DISK READ");
+		if (!config.f.hidevfsread)
+			printf(" %11s","VFS READ");
+		printf(" %11s","DISK WRITE");
+		if (!config.f.hidevfswrite)
+			printf(" %11s","VFS WRITE");
+		printf(" %6s %6s %s\n","SWAPIN","IO","COMMAND");
 	}
 
 	arr_sort(cs,iotop_sort_cb,batch_keep);
@@ -72,22 +78,31 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	for (i=0;cs->sor&&i<cs->sor_length;i++) {
 		struct xxxid_stats *s=cs->sor[i];
 		char read_str[4],write_str[4];
+		char vfs_read_str[4],vfs_write_str[4];
 		double swapin_val;
 		double blkio_val;
 		double write_val;
 		double read_val;
+		double vfs_write_val;
+		double vfs_read_val;
 		char *pw_name;
 		char *cmdt;
 
 		if (config.f.accumbw) {
 			read_val=config.f.processes?s->read_val_abw_p:s->read_val_abw;
 			write_val=config.f.processes?s->write_val_abw_p:s->write_val_abw;
+			vfs_read_val=config.f.processes?s->read_char_val_abw_p:s->read_char_val_abw;
+			vfs_write_val=config.f.processes?s->write_char_val_abw_p:s->write_char_val_abw;
 		} else if (config.f.accumulated) {
 			read_val=config.f.processes?s->read_val_acc_p:s->read_val_acc;
 			write_val=config.f.processes?s->write_val_acc_p:s->write_val_acc;
+			vfs_read_val=config.f.processes?s->read_char_val_acc_p:s->read_char_val_acc;
+			vfs_write_val=config.f.processes?s->write_char_val_acc_p:s->write_char_val_acc;
 		} else {
 			read_val=config.f.processes?s->read_val_p:s->read_val;
 			write_val=config.f.processes?s->write_val_p:s->write_val;
+			vfs_read_val=config.f.processes?s->read_char_val_p:s->read_char_val;
+			vfs_write_val=config.f.processes?s->write_char_val_p:s->write_char_val;
 		}
 		swapin_val=config.f.processes?s->swapin_val_p:s->swapin_val;
 		blkio_val=config.f.processes?s->blkio_val_p:s->blkio_val;
@@ -112,6 +127,8 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 		humanize_val(&read_val,read_str,1);
 		humanize_val(&write_val,write_str,1);
+		humanize_val(&vfs_read_val,vfs_read_str,1);
+		humanize_val(&vfs_write_val,vfs_write_str,1);
 
 		pw_name=u8strpadt(s->pw_name,10);
 
@@ -123,7 +140,13 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		} else
 			cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline_long:s->cmdline_short);
 
-		printf("%s%6i %4s %s %7.2f %-3.3s %7.2f %-3.3s %2.2f %% %2.2f %% %s\n",tstr,s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str,write_val,write_str,swapin_val,blkio_val,cmdt?cmdt:"(null)");
+		printf("%s%6i %4s %s %7.2f %-3.3s",tstr,s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str);
+		if (!config.f.hidevfsread)
+			printf(" %7.2f %-3.3s",vfs_read_val,vfs_read_str);
+		printf(" %7.2f %-3.3s",write_val,write_str);
+		if (!config.f.hidevfswrite)
+			printf(" %7.2f %-3.3s",vfs_write_val,vfs_write_str);
+		printf(" %2.2f %% %2.2f %% %s\n",swapin_val,blkio_val,cmdt?cmdt:"(null)");
 
 		if (cmdt)
 			free(cmdt);

@@ -221,6 +221,15 @@ inline int config_file_save(void) {
 	// --hide-write
 	if (config.f.hidewrite)
 		fprintf(cf,"--hide-write\n");
+	// --show-vfs
+	if (!config.f.hidevfsread && !config.f.hidevfswrite)
+		fprintf(cf,"--show-vfs\n");
+	else {
+		if (!config.f.hidevfsread)
+			fprintf(cf,"--show-vfs-read\n");
+		if (!config.f.hidevfswrite)
+			fprintf(cf,"--show-vfs-write\n");
+	}
 	// --hide-swapin
 	if (config.f.hideswapin)
 		fprintf(cf,"--hide-swapin\n");

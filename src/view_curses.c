@@ -160,6 +160,7 @@ static char tcol6[200]="Toggle showing SWAPIN [off]";
 static char tcol7[200]="Toggle showing IO [off]";
 static char tcol8[200]="Toggle showing GRAPH [off]";
 static char tcol9[200]="Toggle showing COMMAND [off]";
+static char tvfsc[200]="Toggle showing VFS READ and VFS WRITE [off]";
 static char cgrph[200]="Cycle GRAPH source (IO, R, W, R+W, SW) [R+W]";
 static char tgrdi[200]="Toggle reverse GRAPH direction [right]";
 static char tasci[200]="Toggle using Unicode/ASCII characters [Unicode]";
@@ -200,6 +201,7 @@ const s_helpitem thelp[]={
 	{.descr=tcol8,.t="Toggle showing GRAPH [%s]",.k2="8"},
 	{.descr=tcol9,.t="Toggle showing COMMAND [%s]",.k2="9"},
 	{.descr="Show all columns",.k2="0"},
+	{.descr=tvfsc,.t="Toggle showing VFS READ and VFS WRITE [%s]",.k2="v",.k3="V"},
 	{.descr=cgrph,.t="Cycle GRAPH source (IO, R, W, R+W, SW) [%s]",.k2="g",.k3="G"},
 	{.descr=tgrdi,.t="Toggle reverse GRAPH direction [%s]",.k2="R"},
 	{.descr="Toggle showing inline help",.k2="?"},
@@ -236,7 +238,9 @@ static const char *column_name[]={
 	" PRIO",
 	"USER",
 	"DISK READ",
+	"VFS READ",
 	"DISK WRITE",
+	"VFS WRITE",
 	"SWAPIN",
 	"IO",
 	"xxxxx[xxx]",
@@ -272,7 +276,9 @@ static const int column_width[]={
 	6,  // PRIO
 	10, // USER
 	12, // READ
+	12, // VFS READ
 	12, // WRITE
+	12, // VFS WRITE
 	9,  // SWAPIN
 	9,  // IO
 	0,  // GRAPH
@@ -297,7 +303,7 @@ inline e_grtype masked_grtype(int isforward) {
 inline int masked_sort_by(int isforward) {
 	if (!has_tda)
 		if (config.f.sort_by==SORT_BY_IO||config.f.sort_by==SORT_BY_SWAPIN)
-			return isforward?SORT_BY_GRAPH:SORT_BY_WRITE;
+			return isforward?SORT_BY_GRAPH:SORT_BY_VFS_WRITE;
 	return config.f.sort_by;
 }
 
@@ -607,6 +613,9 @@ static inline void view_help(void) {
 				case '9':
 					sprintf(p->descr,p->t,!config.f.hidecmd?"on":"off");
 					break;
+				case 'v':
+					sprintf(p->descr,p->t,(!config.f.hidevfsread||!config.f.hidevfswrite)?"on":"off");
+					break;
 				case 'g': {
 					char *grt;
 
@@ -857,8 +866,12 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		maxcmdline-=column_width[SORT_BY_USER];
 	if (!config.f.hideread)
 		maxcmdline-=column_width[SORT_BY_READ];
+	if (!config.f.hidevfsread)
+		maxcmdline-=column_width[SORT_BY_VFS_READ];
 	if (!config.f.hidewrite)
 		maxcmdline-=column_width[SORT_BY_WRITE];
+	if (!config.f.hidevfswrite)
+		maxcmdline-=column_width[SORT_BY_VFS_WRITE];
 	if (!config.f.hideswapin&&has_tda)
 		maxcmdline-=column_width[SORT_BY_SWAPIN];
 	if (!config.f.hideio&&has_tda)
@@ -1196,8 +1209,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 		int th_prio_diff,th_first,th_have_filtered,th_first_id,th_last_id;
 		struct xxxid_stats *ms=cs->sor[i],*s;
 		char read_str[4],write_str[4];
+		char vfs_read_str[4],vfs_write_str[4];
 		char graphstr[HISTORY_POS*5];
 		double read_val,write_val;
+		double vfs_read_val,vfs_write_val;
 		char *pw_name,*cmdline;
 		char *pwt,*cmdt;
 		int hrevpos;
@@ -1260,21 +1275,31 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 			if (config.f.accumbw) {
 				read_val=config.f.processes?s->read_val_abw_p:s->read_val_abw;
 				write_val=config.f.processes?s->write_val_abw_p:s->write_val_abw;
+				vfs_read_val=config.f.processes?s->read_char_val_abw_p:s->read_char_val_abw;
+				vfs_write_val=config.f.processes?s->write_char_val_abw_p:s->write_char_val_abw;
 			} else if (config.f.accumulated) {
 				read_val=config.f.processes?s->read_val_acc_p:s->read_val_acc;
 				write_val=config.f.processes?s->write_val_acc_p:s->write_val_acc;
+				vfs_read_val=config.f.processes?s->read_char_val_acc_p:s->read_char_val_acc;
+				vfs_write_val=config.f.processes?s->write_char_val_acc_p:s->write_char_val_acc;
 			} else {
 				if (s->exited) {
 					read_val=0.0;
 					write_val=0.0;
+					vfs_read_val=0.0;
+					vfs_write_val=0.0;
 				} else {
 					read_val=config.f.processes?s->read_val_p:s->read_val;
 					write_val=config.f.processes?s->write_val_p:s->write_val;
+					vfs_read_val=config.f.processes?s->read_char_val_p:s->read_char_val;
+					vfs_write_val=config.f.processes?s->write_char_val_p:s->write_char_val;
 				}
 			}
 
 			humanize_val(&read_val,read_str,1);
 			humanize_val(&write_val,write_str,1);
+			humanize_val(&vfs_read_val,vfs_read_str,1);
+			humanize_val(&vfs_write_val,vfs_write_str,1);
 
 			pwt=esc_low_ascii(s->pw_name);
 			pw_name=u8strpadt(pwt,9);
@@ -1401,6 +1426,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 				} else
 					printw("%7.2f %-3.3s ",read_val,read_str);
 			}
+			if (!config.f.hidevfsread) {
+				if (s->error_x) {
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+					printw("   Error    ");
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+				} else
+					printw("%7.2f %-3.3s ",vfs_read_val,vfs_read_str);
+			}
 			if (!config.f.hidewrite) {
 				if (s->error_x) {
 					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
@@ -1408,6 +1441,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
 					printw("%7.2f %-3.3s ",write_val,write_str);
+			}
+			if (!config.f.hidevfswrite) {
+				if (s->error_x) {
+					attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+					printw("   Error    ");
+					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
+				} else
+					printw("%7.2f %-3.3s ",vfs_write_val,vfs_write_str);
 			}
 			if (!config.f.hideswapin&&has_tda) {
 				if (s->error_x) {
@@ -1847,7 +1888,7 @@ donedraw:
 
 		attron(A_UNDERLINE);
 		attron(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
-		printw("1-9");
+		printw("1-9/v");
 		attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(CYAN_PAIR));
 		attroff(A_UNDERLINE);
 		printw(": toggle ");
@@ -2374,6 +2415,11 @@ static inline int curses_key(int ch) {
 		case 'C':
 			config.f.fullcmdline=!config.f.fullcmdline;
 			break;
+		case 'v':
+		case 'V':
+			config.f.hidevfsread=!config.f.hidevfsread;
+			config.f.hidevfswrite=config.f.hidevfsread;
+			break;
 		case 'g': // roll grtype forward
 			config.f.grtype++;
 			if (config.f.grtype>E_GR_MAX)
@@ -2554,13 +2600,23 @@ static inline int curses_key(int ch) {
 				}
 			}
 			if (!in_ionice&&!in_filter) {
-				if (ch>='1'&&ch<='9')
-					config.opts[&config.f.hidepid-config.opts+ch-'1']^=1;
-				if (ch=='0') { // show all columns
-					int i;
+				switch (ch) {
+					case '1': config.f.hidepid^=1; break;
+					case '2': config.f.hideprio^=1; break;
+					case '3': config.f.hideuser^=1; break;
+					case '4': config.f.hideread^=1; break;
+					case '5': config.f.hidewrite^=1; break;
+					case '6': config.f.hideswapin^=1; break;
+					case '7': config.f.hideio^=1; break;
+					case '8': config.f.hidegraph^=1; break;
+					case '9': config.f.hidecmd^=1; break;
+					case '0': { // show all columns
+						int i;
 
-					for (i=1;i<=9;i++)
-						config.opts[&config.f.hidepid-config.opts+i-1]=0;
+						for (i=0;i<SORT_BY_MAX;i++)
+							config.opts[&config.f.hidepid-config.opts+i]=0;
+						break;
+					}
 				}
 			}
 			break;

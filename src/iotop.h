@@ -63,7 +63,9 @@ typedef union {
 		int hideprio;
 		int hideuser;
 		int hideread;
+		int hidevfsread;
 		int hidewrite;
+		int hidevfswrite;
 		int hideswapin;
 		int hideio;
 		int hidegraph;
@@ -85,7 +87,7 @@ typedef union {
 		int norenice;
 		e_uid2name uid2name;
 	} f;
-	int opts[24];
+	int opts[26];
 } config_t;
 
 typedef struct {
@@ -170,10 +172,14 @@ struct xxxid_stats {
 	uint64_t blkio_delay_total; // nanoseconds
 	uint64_t read_bytes;
 	uint64_t write_bytes;
+	uint64_t read_char;
+	uint64_t write_char;
 	uint64_t swapin_delay_total_p; // aggregated data from all threads
 	uint64_t blkio_delay_total_p; // used for process view
 	uint64_t read_bytes_p;
 	uint64_t write_bytes_p;
+	uint64_t read_char_p;
+	uint64_t write_char_p;
 	uint64_t ts_s; // start timestamp for accum-bw
 	uint64_t ts_e; // end timestamp for accum-bw
 	uint64_t btime; // start time and exe of the task from taskstats, 0 if not known;
@@ -183,19 +189,31 @@ struct xxxid_stats {
 	double swapin_val;
 	double read_val;
 	double write_val;
+	double read_char_val;
+	double write_char_val;
 	double read_val_acc;
 	double write_val_acc;
+	double read_char_val_acc;
+	double write_char_val_acc;
 	double read_val_abw;
 	double write_val_abw;
+	double read_char_val_abw;
+	double write_char_val_abw;
 
 	double blkio_val_p;
 	double swapin_val_p;
 	double read_val_p;
 	double write_val_p;
+	double read_char_val_p;
+	double write_char_val_p;
 	double read_val_acc_p;
 	double write_val_acc_p;
+	double read_char_val_acc_p;
+	double write_char_val_acc_p;
 	double read_val_abw_p;
 	double write_val_abw_p;
+	double read_char_val_abw_p;
+	double write_char_val_abw_p;
 
 	int io_prio;
 
@@ -300,7 +318,9 @@ enum {
 	SORT_BY_PRIO,
 	SORT_BY_USER,
 	SORT_BY_READ,
+	SORT_BY_VFS_READ,
 	SORT_BY_WRITE,
+	SORT_BY_VFS_WRITE,
 	SORT_BY_SWAPIN,
 	SORT_BY_IO,
 	SORT_BY_GRAPH,

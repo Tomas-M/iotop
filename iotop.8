@@ -46,8 +46,9 @@ the \fB\-\-processes\fR option, \fBa\fR to cycle between the
 \fB\-\-accumulated\fR, \fB\-\-accum\-bw\fR and normal operation,
 \fBi\fR to change the priority of a thread or a process's thread,
 \fBf\fR to change filtering by \fBUID\fR/\fBPID\fR (\fB\-\-user\fR and
-\fB\-\-pid\fR options), \fB1\-9\fR to toggle the visibility of the respective
-column, \fB0\fR to show all columns, \fBup\fR/\fBdown\fR arrows,
+\fB\-\-pid\fR options), \fB1\-9\fR to toggle the visibility of the respective column,
+\fBv\fR to toggle the visibility of the VFS READ and VFS WRITE columns,
+\fB0\fR to show all columns, \fBup\fR/\fBdown\fR arrows,
 \fBpage\-up\fR/\fBpage\-down\fR/\fBhome\fR/\fBend\fR keys to scroll and \fBq\fR
 to quit. Any unrecognized key will be ignored.
 .PP
@@ -208,11 +209,29 @@ Hide DISK READ column
 \fB\-\-show\-read\fR
 Show DISK READ column
 .TP
+\fB\-\-show\-vfs\-read\fR
+Show VFS READ column
+.TP
+\fB\-\-hide\-vfs\-read\fR
+Hide VFS READ column
+.TP
 \fB\-5\fR, \fB\-\-hide\-write\fR
 Hide DISK WRITE column
 .TP
 \fB\-\-show\-write\fR
 Show DISK WRITE column
+.TP
+\fB\-\-show\-vfs\-write\fR
+Show VFS WRITE column
+.TP
+\fB\-\-hide\-vfs\-write\fR
+Hide VFS WRITE column
+.TP
+\fB\-\-show\-vfs\fR
+Show VFS READ and VFS WRITE columns
+.TP
+\fB\-\-hide\-vfs\fR
+Hide VFS READ and VFS WRITE columns
 .TP
 \fB\-6\fR, \fB\-\-hide\-swapin\fR
 Hide SWAPIN column
