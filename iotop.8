@@ -345,6 +345,11 @@ refresh cycle to avoid repetitive getpwuid(3) lookups), and \fBstatic\fR
 \fB\-W\fR, \fB\-\-write\fR
 Merge the preceding options to the current config, save the config and exit.
 Note that all options after this one will be ignored.
+.TP
+\fB\-\-debug\-write\fR
+Send the output of \fB\-W\fR (\fB\-\-write\fR) to standard output instead of
+writing to the configuration file. Put this option before \fB\-W\fR.
+Do not use in normal operation; this option is for debugging and testing.
 .PD 1
 .SH KEYBOARD SHORTCUTS
 .TP

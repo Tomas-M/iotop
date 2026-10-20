@@ -57,6 +57,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_HIDE_VFS_READ 0x11e
 #define OPT_SHOW_VFS_WRITE 0x11f
 #define OPT_HIDE_VFS_WRITE 0x120
+#define OPT_DEBUG_WRITE 0x121
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -224,7 +225,8 @@ static inline void print_help(void) {
 		"  -N, --inverse          use inverse interface (black on white)\n"
 		"      --filter=REGEX     filter processes by TID and COMMAND\n"
 		"      --uid2name=MODE    set UID to user name resolution mode (always, none, cyclic, [static])\n"
-		"  -W, --write            write preceding options to the config and exit\n",
+		"  -W, --write            write preceding options to the config and exit\n"
+		"      --debug-write      send -W output to stdout (put before -W; for debugging/testing)\n",
 		progname
 	);
 }
@@ -325,6 +327,7 @@ static inline void parse_args(int clac,char **clav) {
 				{"ascii",no_argument,NULL,OPT_ASCII},
 				{"unicode",no_argument,NULL,OPT_UNICODE},
 				{"write",no_argument,NULL,'W'},
+				{"debug-write",no_argument,NULL,OPT_DEBUG_WRITE},
 				{"inverse",no_argument,NULL,'N'},
 				{"filter",required_argument,NULL,OPT_FILTER},
 				{"uid2name",required_argument,NULL,OPT_UID2NAME},
@@ -593,6 +596,9 @@ static inline void parse_args(int clac,char **clav) {
 						fprintf(stderr,"%s: invalid value %s for uid2name\n",progname,optarg);
 						exit(EXIT_FAILURE);
 					}
+					break;
+				case OPT_DEBUG_WRITE:
+					config.f.debug_write=1;
 					break;
 				default:
 					exit(EXIT_FAILURE);
