@@ -156,6 +156,21 @@ clean:
 	$(E) CLEAN
 	$(Q)rm -rf ./bld $(TARGET)
 
+check: $(TARGET)
+	$(E) CHECK
+	$(Q)fail=0; \
+	for t in tests/tests-*.sh; do \
+		printf "%s..." "$$t"; \
+		if IOTOP="$${IOTOP:-./$(TARGET)}" "./$$t"; then \
+			echo "OK"; \
+		else \
+			rc=$$?; \
+			echo "ERROR($$rc)"; \
+			fail=1; \
+		fi; \
+	done; \
+	exit $$fail
+
 install: $(TARGET)
 	$(E) STRIP $(TARGET)
 	$(Q)$(STRIP) $(TARGET)
@@ -213,4 +228,4 @@ pv:
 
 -include $(DEPS)
 
-.PHONY: all clean install uninstall mkotar re pv
+.PHONY: all clean check install uninstall mkotar re pv
