@@ -77,14 +77,14 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 	for (i=0;cs->sor&&i<cs->sor_length;i++) {
 		struct xxxid_stats *s=cs->sor[i];
-		char read_str[4],write_str[4];
 		char vfs_read_str[4],vfs_write_str[4];
+		char read_str[4],write_str[4];
+		double vfs_write_val;
+		double vfs_read_val;
 		double swapin_val;
 		double blkio_val;
 		double write_val;
 		double read_val;
-		double vfs_write_val;
-		double vfs_read_val;
 		char *pw_name;
 		char *cmdt;
 

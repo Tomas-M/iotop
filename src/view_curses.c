@@ -1208,11 +1208,11 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	for (i=0;cs->sor&&i<cs->sor_length;i++) {
 		int th_prio_diff,th_first,th_have_filtered,th_first_id,th_last_id;
 		struct xxxid_stats *ms=cs->sor[i],*s;
-		char read_str[4],write_str[4];
 		char vfs_read_str[4],vfs_write_str[4];
+		double vfs_read_val,vfs_write_val;
+		char read_str[4],write_str[4];
 		char graphstr[HISTORY_POS*5];
 		double read_val,write_val;
-		double vfs_read_val,vfs_write_val;
 		char *pw_name,*cmdline;
 		char *pwt,*cmdt;
 		int hrevpos;
@@ -2601,22 +2601,39 @@ static inline int curses_key(int ch) {
 			}
 			if (!in_ionice&&!in_filter) {
 				switch (ch) {
-					case '1': config.f.hidepid^=1; break;
-					case '2': config.f.hideprio^=1; break;
-					case '3': config.f.hideuser^=1; break;
-					case '4': config.f.hideread^=1; break;
-					case '5': config.f.hidewrite^=1; break;
-					case '6': config.f.hideswapin^=1; break;
-					case '7': config.f.hideio^=1; break;
-					case '8': config.f.hidegraph^=1; break;
-					case '9': config.f.hidecmd^=1; break;
-					case '0': { // show all columns
-						int i;
+					int i;
 
+					case '1':
+						config.f.hidepid^=1;
+						break;
+					case '2':
+						config.f.hideprio^=1;
+						break;
+					case '3':
+						config.f.hideuser^=1;
+						break;
+					case '4':
+						config.f.hideread^=1;
+						break;
+					case '5':
+						config.f.hidewrite^=1;
+						break;
+					case '6':
+						config.f.hideswapin^=1;
+						break;
+					case '7':
+						config.f.hideio^=1;
+						break;
+					case '8':
+						config.f.hidegraph^=1;
+						break;
+					case '9':
+						config.f.hidecmd^=1;
+						break;
+					case '0': // show all columns
 						for (i=0;i<SORT_BY_MAX;i++)
 							config.opts[&config.f.hidepid-config.opts+i]=0;
 						break;
-					}
 				}
 			}
 			break;

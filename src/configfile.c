@@ -222,7 +222,7 @@ inline int config_file_save(void) {
 	if (config.f.hidewrite)
 		fprintf(cf,"--hide-write\n");
 	// --show-vfs
-	if (!config.f.hidevfsread && !config.f.hidevfswrite)
+	if (!config.f.hidevfsread&&!config.f.hidevfswrite)
 		fprintf(cf,"--show-vfs\n");
 	else {
 		if (!config.f.hidevfsread)
