@@ -141,7 +141,8 @@ static inline int parse_num(const char *s) {
 	return v;
 }
 
-static const char str_opt[]="boPaktqc123456789xelRTAN";
+// '_' is a placeholder for flags in config.opts without a short option (hidevfsread, hidevfswrite)
+static const char str_opt[]="boPaktqc1234_5_6789xelRTAN";
 
 static inline void print_help(void) {
 	printf(
