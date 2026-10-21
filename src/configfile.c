@@ -170,6 +170,8 @@ inline void config_file_free(void) {
 // save the config to its file, or write it to stdout for --debug-write
 inline int config_file_save(int to_stdout) {
 	FILE *cf=to_stdout?stdout:config_file_open("w");
+	char *no_color=getenv("NO_COLOR");
+	int env_nocolor=no_color&&*no_color; // the default from the environment, not to be saved as a choice
 
 	if (!cf)
 		return -1;
@@ -262,9 +264,9 @@ inline int config_file_save(int to_stdout) {
 	// --hide-exited
 	if (config.f.hideexited)
 		fprintf(cf,"--hide-exited\n");
-	// --no-color
-	if (config.f.nocolor)
-		fprintf(cf,"--no-color\n");
+	// --no-color or --color, when it is not the default that NO_COLOR gives
+	if (config.f.nocolor!=env_nocolor)
+		fprintf(cf,config.f.nocolor?"--no-color\n":"--color\n");
 	// --reverse-graph
 	if (config.f.reverse_graph)
 		fprintf(cf,"--reverse-graph\n");

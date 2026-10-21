@@ -580,6 +580,8 @@ character under the cursor.
 As per the recommendation of \fBhttps://www.no\-color.org/\fR iotop honors the
 contents of the environment variable \fBNO_COLOR\fR and when it is set to a non
 empty string, all color output is suppressed.
+The config file keeps the colors only when they differ from what it gives,
+so \fB\-\-write\fR and \fBW\fR do not save it as a setting.
 .TP
 \fBHOME\fR, \fBXDG_CONFIG_HOME\fR
 Used to determine the config file path. See the \fBW\fR shortcut for details.
