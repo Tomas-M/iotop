@@ -89,6 +89,8 @@ inline int read_cmdline(int pid,char **cmd_long,char **cmd_short) {
 			if (n>0)
 				p+=n;
 		} while (n>0);
+		while (p>0&&!dbuf[p-1]) // the end of the last argument, also the padding of a rewritten cmdline, is not a separator
+			p--;
 
 		if (p>0) {
 			ssize_t k;
