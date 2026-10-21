@@ -544,6 +544,47 @@ inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg) {
 
 static int grlen=0; // count of the newest history values that the graph shows
 
+// the parts of the command that the view shows for s: a custom thread name in brackets before the full command
+// line; a command line that could not be copied is empty; returns the count of the parts
+static inline int cmd_parts(const struct xxxid_stats *s,const char *p[4]) {
+	if (config.f.fullcmdline&&s->cmdline_comm&&s->cmdline_long) {
+		p[0]="[";
+		p[1]=s->cmdline_comm;
+		p[2]="]";
+		p[3]=s->cmdline_long;
+		return 4;
+	}
+	p[0]=config.f.fullcmdline?s->cmdline_long:s->cmdline_short;
+	if (!p[0])
+		p[0]="";
+	return 1;
+}
+
+// compare the commands of a and b as the view shows them, like strcmp, without joining their parts
+static inline int cmd_cmp(const struct xxxid_stats *a,const struct xxxid_stats *b) {
+	const char *pa[4],*pb[4];
+	int na=cmd_parts(a,pa);
+	int nb=cmd_parts(b,pb);
+	const char *ca=pa[0];
+	const char *cb=pb[0];
+	int ia=0,ib=0;
+
+	for (;;) {
+		unsigned char ua,ub;
+
+		while (!*ca&&ia+1<na) // skip to the next part, also over the empty ones
+			ca=pa[++ia];
+		while (!*cb&&ib+1<nb)
+			cb=pb[++ib];
+		ua=(unsigned char)*ca;
+		ub=(unsigned char)*cb;
+		if (ua!=ub||!ua)
+			return ua-ub;
+		ca++;
+		cb++;
+	}
+}
+
 // the curses view keeps the sorted lists while struct view_key is unchanged, so any input of the sort
 // besides the compared items has to be there too; agg compares the values of the whole processes
 static inline int sort_cmp(const void *a,const void *b,int agg) {
@@ -619,7 +660,7 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 			res=pa->io_prio-pb->io_prio;
 			break;
 		case SORT_BY_COMMAND:
-			res=strcmp(config.f.fullcmdline?pa->cmdline_long:pa->cmdline_short,config.f.fullcmdline?pb->cmdline_long:pb->cmdline_short);
+			res=cmd_cmp(pa,pb);
 			break;
 		case SORT_BY_TID:
 			res=pa->tid-pb->tid;
