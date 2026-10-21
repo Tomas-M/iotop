@@ -2217,7 +2217,7 @@ static inline int curses_key(int ch) {
 			init_config();
 			break;
 		case 'W':
-			if (config_file_save())
+			if (config_file_save(0))
 				snprintf(warn_save,sizeof warn_save,"%s",strerror(errno));
 			break;
 		case 's':

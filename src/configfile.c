@@ -167,8 +167,9 @@ inline void config_file_free(void) {
 	ac=0;
 }
 
-inline int config_file_save(void) {
-	FILE *cf=config.f.debug_write?stdout:config_file_open("w");
+// save the config to its file, or write it to stdout for --debug-write
+inline int config_file_save(int to_stdout) {
+	FILE *cf=to_stdout?stdout:config_file_open("w");
 
 	if (!cf)
 		return -1;
@@ -297,14 +298,13 @@ inline int config_file_save(void) {
 		fprintf(cf,"--uid2name=cyclic\n");
 	if (config.f.uid2name==E_UID2NAME_STATIC)
 		fprintf(cf,"--uid2name=static\n");
-	// --debug-write is ignored
 
 	if (ferror(cf)) {
-		if (!config.f.debug_write)
+		if (!to_stdout)
 			fclose(cf);
 		return -1;
 	}
-	if (config.f.debug_write) {
+	if (to_stdout) {
 		if (fflush(cf))
 			return -1;
 	} else if (fclose(cf)) // the buffered data is written here, e.g. a full disk shows only now

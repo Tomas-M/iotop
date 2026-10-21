@@ -86,7 +86,6 @@ typedef union {
 		int threshold; // 1..10
 		int norenice;
 		e_uid2name uid2name;
-		int debug_write;
 	} f;
 	int opts[26];
 } config_t;
@@ -391,7 +390,7 @@ inline int write_task_delayacct(int da);
 
 inline int config_file_load(int *pac,char ***pav);
 inline void config_file_free(void);
-inline int config_file_save(void);
+inline int config_file_save(int to_stdout);
 
 /* main.c */
 

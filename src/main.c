@@ -226,7 +226,7 @@ static inline void print_help(void) {
 		"      --filter=REGEX     filter processes by TID and COMMAND\n"
 		"      --uid2name=MODE    set UID to user name resolution mode (always, none, cyclic, [static])\n"
 		"  -W, --write            write preceding options to the config and exit\n"
-		"      --debug-write      send -W output to stdout (put before -W; for debugging/testing)\n",
+		"      --debug-write      write preceding options to stdout like -W and exit (for debugging/testing)\n",
 		progname
 	);
 }
@@ -353,7 +353,8 @@ static inline void parse_args(int clac,char **clav) {
 					print_help();
 					exit(EXIT_SUCCESS);
 				case 'W':
-					if (config_file_save()) {
+				case OPT_DEBUG_WRITE:
+					if (config_file_save(c==OPT_DEBUG_WRITE)) {
 						fprintf(stderr,"%s: can not save the config file: %s\n",progname,strerror(errno));
 						exit(EXIT_FAILURE);
 					}
@@ -596,9 +597,6 @@ static inline void parse_args(int clac,char **clav) {
 						fprintf(stderr,"%s: invalid value %s for uid2name\n",progname,optarg);
 						exit(EXIT_FAILURE);
 					}
-					break;
-				case OPT_DEBUG_WRITE:
-					config.f.debug_write=1;
 					break;
 				default:
 					exit(EXIT_FAILURE);
