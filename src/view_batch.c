@@ -20,6 +20,8 @@ You should have received a copy of the GNU General Public License along with thi
 #include <string.h>
 #include <unistd.h>
 
+static int pidw=6; // the width of the TID column, fixed for the run so that the output can be parsed
+
 // the batch view never shows exited tasks, threads only when processes are not aggregated, and the filtered ones
 static int batch_keep(const struct xxxid_stats *s) {
 	return !s->exited&&(!config.f.processes||s->pid==s->tid)&&!filter1(s);
@@ -69,7 +71,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 	if (config.f.quiet==0||(config.f.quiet==1&&firsthdr)) {
 		firsthdr=0;
-		printf("%s%6s %4s %-10s %11s",config.f.timestamp?"    TIME ":"",config.f.processes?"PID":"TID","PRIO","USER","DISK READ");
+		printf("%s%*s %4s %-10s %11s",config.f.timestamp?"    TIME ":"",pidw,config.f.processes?"PID":"TID","PRIO","USER","DISK READ");
 		if (!config.f.hidevfsread)
 			printf(" %11s","VFS READ");
 		printf(" %11s","DISK WRITE");
@@ -134,7 +136,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 		cmdt=cmd_text(s); // with -c the custom thread name in [] before the full cmdline
 
-		printf("%s%6i %4s %s %7.2f %-3.3s",tstr,s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str);
+		printf("%s%*i %4s %s %7.2f %-3.3s",tstr,pidw,s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str);
 		if (!config.f.hidevfsread)
 			printf(" %7.2f %-3.3s",vfs_read_val,vfs_read_str);
 		printf(" %7.2f %-3.3s",write_val,write_str);
@@ -151,6 +153,15 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 }
 
 inline void view_batch_init(void) {
+	FILE *f=fopen("/proc/sys/kernel/pid_max","r");
+	long pm=0;
+
+	if (f) { // all the TIDs are below pid_max; systemd raises it to 4194304, which needs 7 digits
+		if (fscanf(f,"%ld",&pm)==1)
+			for (pm--;pm>=1000000;pm/=10)
+				pidw++;
+		fclose(f);
+	}
 	if (!read_task_delayacct())
 		fprintf(stderr,"Warning: task_delayacct is 0, enable by: echo 1 > /proc/sys/kernel/task_delayacct\n");
 }
