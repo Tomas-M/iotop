@@ -155,6 +155,7 @@ struct xxxid_hist_p {
 struct xxxid_hist {
 	int pos; // index of the newest value
 	int cnt; // count of the stored values; the older ones are all zero
+	int idle; // count of the newest cycles in which all the values were zero
 	// sums of the newest hist_w values of each array
 	int iosum;
 	int sisum;

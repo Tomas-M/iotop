@@ -263,6 +263,17 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,uint64
 		return;
 	h=c->hist;
 
+	// a history with only zeros again is the same as the shared empty one; free it for the tasks that stay idle
+	if (io||si||rv||wv||iop||sip||rvp||wvp)
+		h->idle=0;
+	else if (++h->idle>=HISTORY_CNT) {
+		if (h->proc!=&hist_p_none)
+			free(h->proc);
+		free(h);
+		c->hist=&hist_none;
+		return;
+	}
+
 	// store the values of this cycle as the newest
 	h->pos=(h->pos+1)%HISTORY_CNT;
 	if (h->cnt<HISTORY_CNT)
