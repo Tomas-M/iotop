@@ -139,12 +139,12 @@ struct xxxid_hist_p {
 	// sums of the newest hist_w values of each array
 	int iosum_p;
 	int sisum_p;
-	double readsum_p;
-	double writesum_p;
+	uint64_t readsum_p;
+	uint64_t writesum_p;
 	uint8_t iohist_p[HISTORY_CNT]; // io history data (aggregated in main process)
 	uint8_t sihist_p[HISTORY_CNT]; // swapin history data (aggregated in main process)
-	double readhist_p[HISTORY_CNT]; // read history data (aggregated in main process)
-	double writehist_p[HISTORY_CNT]; // write history data (aggregated in main process)
+	uint64_t readhist_p[HISTORY_CNT]; // bytes read in each cycle (aggregated in main process)
+	uint64_t writehist_p[HISTORY_CNT]; // bytes written in each cycle (aggregated in main process)
 };
 
 // history of the GRAPH column; it is handed over to the item of the next cycle instead of being copied
@@ -155,12 +155,12 @@ struct xxxid_hist {
 	// sums of the newest hist_w values of each array
 	int iosum;
 	int sisum;
-	double readsum;
-	double writesum;
+	uint64_t readsum;
+	uint64_t writesum;
 	uint8_t iohist[HISTORY_CNT]; // io history data
 	uint8_t sihist[HISTORY_CNT]; // swapin history data
-	double readhist[HISTORY_CNT]; // read history data
-	double writehist[HISTORY_CNT]; // write history data
+	uint64_t readhist[HISTORY_CNT]; // bytes read in each cycle
+	uint64_t writehist[HISTORY_CNT]; // bytes written in each cycle
 	struct xxxid_hist_p *proc; // never NULL, only main processes get own, the rest point to hist_p_none
 };
 
@@ -200,10 +200,10 @@ struct xxxid_stats {
 	double write_val;
 	double read_char_val;
 	double write_char_val;
-	double read_val_acc;
-	double write_val_acc;
-	double read_char_val_acc;
-	double write_char_val_acc;
+	uint64_t read_val_acc; // bytes since the task was first seen
+	uint64_t write_val_acc;
+	uint64_t read_char_val_acc;
+	uint64_t write_char_val_acc;
 
 	double blkio_val_p;
 	double swapin_val_p;
@@ -211,10 +211,10 @@ struct xxxid_stats {
 	double write_val_p;
 	double read_char_val_p;
 	double write_char_val_p;
-	double read_val_acc_p;
-	double write_val_acc_p;
-	double read_char_val_acc_p;
-	double write_char_val_acc_p;
+	uint64_t read_val_acc_p;
+	uint64_t write_val_acc_p;
+	uint64_t read_char_val_acc_p;
+	uint64_t write_char_val_acc_p;
 
 	int io_prio;
 
@@ -378,7 +378,7 @@ inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg);
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,int keep_exited);
 inline int count_visible(struct xxxid_stats_arr *cs,filter_callback_w cb,int width);
 inline int value2scale(double val,double mx);
-inline double hist_sum(const struct xxxid_hist *h,const double *a,int cnt);
+inline uint64_t hist_sum(const struct xxxid_hist *h,const uint64_t *a,int cnt);
 inline int hist_sum8(const struct xxxid_hist *h,const uint8_t *a,int cnt);
 inline void hist_window(struct xxxid_stats_arr *cs,int w);
 inline int filter1(struct xxxid_stats *s);

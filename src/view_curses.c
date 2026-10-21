@@ -396,7 +396,7 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 				(config.f.processes?s->write_val_p:s->write_val)<=0)
 				goto dohide;
 		} else {
-			double su=0;
+			uint64_t su=0;
 
 			switch (masked_grtype(0)) {
 				case E_GR_IO:
@@ -405,17 +405,17 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 					break;
 				case E_GR_R:
 					su=HIST_SUM(s->hist,read,config.f.processes,gr_width);
-					if (su<=0)
+					if (!su)
 						goto dohide;
 					break;
 				case E_GR_W:
 					su=HIST_SUM(s->hist,write,config.f.processes,gr_width);
-					if (su<=0)
+					if (!su)
 						goto dohide;
 					break;
 				case E_GR_RW:
 					su=HIST_SUM(s->hist,read,config.f.processes,gr_width)+HIST_SUM(s->hist,write,config.f.processes,gr_width);
-					if (su<=0)
+					if (!su)
 						goto dohide;
 					break;
 				case E_GR_SW:
@@ -842,7 +842,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 	int flat=config.f.flat&&!config.f.processes; // list the threads alone, not below their process
 	int promptx=0,prompty=0,show=FALSE;
 	char *head1row_format="";
-	double maxvisible=0.0;
+	uint64_t maxvisible=0;
 	double mx_t_r=1000.0;
 	double mx_t_w=1000.0;
 	double mx_a_r=1000.0;
@@ -1168,7 +1168,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 				view_sort(ms->threads,iotop_sort_cb,NULL);
 			// show only processes, if configured
 			for (k=-1;k<((config.f.processes||flat)?0:(ms->threads?ms->threads->length:0));k++) {
-				const double *rh,*wh; // the histories that are drawn: aggregated for processes
+				const uint64_t *rh,*wh; // the histories that are drawn: aggregated for processes
 
 				if (k<0)
 					s=ms;

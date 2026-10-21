@@ -100,8 +100,8 @@ static inline int hist_own_p(struct xxxid_hist *h) {
 }
 
 // sum of the newest cnt values of history array a of h
-inline double hist_sum(const struct xxxid_hist *h,const double *a,int cnt) {
-	double sum=0;
+inline uint64_t hist_sum(const struct xxxid_hist *h,const uint64_t *a,int cnt) {
+	uint64_t sum=0;
 	int i,n=0;
 
 	if (cnt>h->cnt) // the rest was never stored
@@ -128,7 +128,7 @@ inline int hist_sum8(const struct xxxid_hist *h,const uint8_t *a,int cnt) {
 }
 
 // store v as the newest value of a after pos was advanced, keeping the sum of the newest hist_w values
-static inline void hist_put(struct xxxid_hist *h,double *a,double *sum,double v) {
+static inline void hist_put(struct xxxid_hist *h,uint64_t *a,uint64_t *sum,uint64_t v) {
 	*sum+=v-a[(h->pos+HISTORY_CNT-hist_w)%HISTORY_CNT]; // the value that just left the window
 	a[h->pos]=v;
 }
@@ -197,9 +197,9 @@ static inline void stats_new(struct xxxid_stats *c,uint64_t ts_c) {
 
 // calculate the values of the current cycle from the previous data in p
 static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double time_s,uint64_t ts_c) {
-	struct xxxid_hist *h;
-	double rv,wv,rcv,wcv,rvp=0,wvp=0;
+	uint64_t rv,wv,rcv,wcv,rvp=0,wvp=0;
 	int io,si,iop=0,sip=0;
+	struct xxxid_hist *h;
 
 	c->ts_s=p->ts_s; // update end ts
 	c->ts_e=ts_c; // update end ts
@@ -222,15 +222,15 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	if (c->swapin_val>100)
 		c->swapin_val=100;
 
-	rv=(double)rrv(c->read_bytes,p->read_bytes);
-	wv=(double)rrv(c->write_bytes,p->write_bytes);
-	rcv=(double)rrv(c->read_char,p->read_char);
-	wcv=(double)rrv(c->write_char,p->write_char);
+	rv=rrv(c->read_bytes,p->read_bytes);
+	wv=rrv(c->write_bytes,p->write_bytes);
+	rcv=rrv(c->read_char,p->read_char);
+	wcv=rrv(c->write_char,p->write_char);
 
-	c->read_val=rv/time_s;
-	c->write_val=wv/time_s;
-	c->read_char_val=rcv/time_s;
-	c->write_char_val=wcv/time_s;
+	c->read_val=(double)rv/time_s;
+	c->write_val=(double)wv/time_s;
+	c->read_char_val=(double)rcv/time_s;
+	c->write_char_val=(double)wcv/time_s;
 
 	c->read_val_acc=p->read_val_acc+rv;
 	c->write_val_acc=p->write_val_acc+wv;
@@ -249,15 +249,15 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		if (c->swapin_val_p>100)
 			c->swapin_val_p=100;
 
-		rvp=(double)rrv(c->read_bytes_p,p->read_bytes_p);
-		wvp=(double)rrv(c->write_bytes_p,p->write_bytes_p);
-		rcv=(double)rrv(c->read_char_p,p->read_char_p);
-		wcv=(double)rrv(c->write_char_p,p->write_char_p);
+		rvp=rrv(c->read_bytes_p,p->read_bytes_p);
+		wvp=rrv(c->write_bytes_p,p->write_bytes_p);
+		rcv=rrv(c->read_char_p,p->read_char_p);
+		wcv=rrv(c->write_char_p,p->write_char_p);
 
-		c->read_val_p=rvp/time_s;
-		c->write_val_p=wvp/time_s;
-		c->read_char_val_p=rcv/time_s;
-		c->write_char_val_p=wcv/time_s;
+		c->read_val_p=(double)rvp/time_s;
+		c->write_val_p=(double)wvp/time_s;
+		c->read_char_val_p=(double)rcv/time_s;
+		c->write_char_val_p=(double)wcv/time_s;
 
 		c->read_val_acc_p=p->read_val_acc_p+rvp;
 		c->write_val_acc_p=p->write_val_acc_p+wvp;
@@ -270,7 +270,7 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 
 	// an idle task keeps the shared empty history; the older values of a history are all zero,
 	// so allocating it with the first nonzero value gives the same result as storing zeros until then
-	if (h==&hist_none&&!(io||si||rv>0||wv>0||iop||sip||rvp>0||wvp>0))
+	if (h==&hist_none&&!(io||si||rv||wv||iop||sip||rvp||wvp))
 		return;
 	if (!hist_own(c))
 		return;
@@ -287,7 +287,7 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 
 	if (c->pid!=c->tid)
 		return;
-	if (h->proc==&hist_p_none&&!(iop||sip||rvp>0||wvp>0)) // the same for the aggregated history
+	if (h->proc==&hist_p_none&&!(iop||sip||rvp||wvp)) // the same for the aggregated history
 		return;
 	if (hist_own_p(h)) { // pos was already advanced above
 		struct xxxid_hist_p *hp=h->proc;
@@ -319,15 +319,15 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 			h->cnt++;
 		hist_put8(h,h->iohist,&h->iosum,0);
 		hist_put8(h,h->sihist,&h->sisum,0);
-		hist_put(h,h->readhist,&h->readsum,0.0);
-		hist_put(h,h->writehist,&h->writesum,0.0);
+		hist_put(h,h->readhist,&h->readsum,0);
+		hist_put(h,h->writehist,&h->writesum,0);
 		if (o->tid==o->pid&&h->proc!=&hist_p_none) { // process aggregated data, only for main process
 			struct xxxid_hist_p *hp=h->proc;
 
 			hist_put8(h,hp->iohist_p,&hp->iosum_p,0);
 			hist_put8(h,hp->sihist_p,&hp->sisum_p,0);
-			hist_put(h,hp->readhist_p,&hp->readsum_p,0.0);
-			hist_put(h,hp->writehist_p,&hp->writesum_p,0.0);
+			hist_put(h,hp->readhist_p,&hp->readsum_p,0);
+			hist_put(h,hp->writehist_p,&hp->writesum_p,0);
 		}
 	}
 	return o;
@@ -491,7 +491,7 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg) {
 	double age=timediff_in_s(s->ts_s,s->ts_e);
 	uint64_t cnt=0; // the counter of the kernel, from the start of the task
-	double acc=0;
+	uint64_t acc=0;
 
 	switch (v) {
 		case E_ACC_READ:
@@ -521,8 +521,8 @@ inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg) {
 		}
 	}
 	if (config.f.accumbw)
-		return acc/age;
-	return acc;
+		return (double)acc/age;
+	return (double)acc;
 }
 
 static int grlen=0; // count of the newest history values that the graph shows
