@@ -370,6 +370,7 @@ inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write);
 inline void calc_a_total(struct act_stats *act,double *read,double *write,double time_s);
 inline void humanize_val(double *value,char *str,int allow_accum);
 inline int iotop_sort_cb(const void *a,const void *b);
+inline int iotop_sort_proc_cb(const void *a,const void *b);
 inline uint64_t rrv(uint64_t to,uint64_t from);
 inline int same_task(const struct xxxid_stats *c,const struct xxxid_stats *p);
 inline double accum_read(const struct xxxid_stats *s,int agg);

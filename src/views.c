@@ -506,20 +506,16 @@ inline double accum_write(const struct xxxid_stats *s,int agg) {
 	return agg?s->write_val_acc_p:s->write_val_acc;
 }
 
+static int grlen=0; // count of the newest history values that the graph shows
+
 // the curses view keeps the sorted lists while struct view_key is unchanged, so any input of the sort
-// besides the compared items has to be there too
-inline int iotop_sort_cb(const void *a,const void *b) {
+// besides the compared items has to be there too; agg compares the values of the whole processes
+static inline int sort_cmp(const void *a,const void *b,int agg) {
 	int order=config.f.sort_order?1:-1; // SORT_ASC is bit 0=1, else should reverse sort
 	struct xxxid_stats **ppa=(struct xxxid_stats **)a;
 	struct xxxid_stats **ppb=(struct xxxid_stats **)b;
 	struct xxxid_stats *pa,*pb;
-	static int grlen=0;
 	int res=0;
-
-	if (!a) {
-		grlen=(long)b;
-		return 0;
-	}
 
 	pa=*ppa;
 	pb=*ppb;
@@ -533,19 +529,19 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_IO:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					aa=HIST_SUM8(pa->hist,io,config.f.processes,grlen);
-					ab=HIST_SUM8(pb->hist,io,config.f.processes,grlen);
+					aa=HIST_SUM8(pa->hist,io,agg,grlen);
+					ab=HIST_SUM8(pb->hist,io,agg,grlen);
 					res=aa-ab;
 					break;
 				case E_GR_R:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					if (config.f.accumulated||config.f.accumbw) {
-						da=accum_read(pa,config.f.processes);
-						db=accum_read(pb,config.f.processes);
+						da=accum_read(pa,agg);
+						db=accum_read(pb,agg);
 					} else {
-						da=HIST_SUM(pa->hist,read,config.f.processes,grlen);
-						db=HIST_SUM(pb->hist,read,config.f.processes,grlen);
+						da=HIST_SUM(pa->hist,read,agg,grlen);
+						db=HIST_SUM(pb->hist,read,agg,grlen);
 					}
 					if (da>db)
 						res=1;
@@ -558,11 +554,11 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					if (config.f.accumulated||config.f.accumbw) {
-						da=accum_write(pa,config.f.processes);
-						db=accum_write(pb,config.f.processes);
+						da=accum_write(pa,agg);
+						db=accum_write(pb,agg);
 					} else {
-						da=HIST_SUM(pa->hist,write,config.f.processes,grlen);
-						db=HIST_SUM(pb->hist,write,config.f.processes,grlen);
+						da=HIST_SUM(pa->hist,write,agg,grlen);
+						db=HIST_SUM(pb->hist,write,agg,grlen);
 					}
 					if (da>db)
 						res=1;
@@ -575,11 +571,11 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					if (config.f.accumulated||config.f.accumbw) {
-						da=accum_read(pa,config.f.processes)+accum_write(pa,config.f.processes);
-						db=accum_read(pb,config.f.processes)+accum_write(pb,config.f.processes);
+						da=accum_read(pa,agg)+accum_write(pa,agg);
+						db=accum_read(pb,agg)+accum_write(pb,agg);
 					} else {
-						da=HIST_SUM(pa->hist,read,config.f.processes,grlen)+HIST_SUM(pa->hist,write,config.f.processes,grlen);
-						db=HIST_SUM(pb->hist,read,config.f.processes,grlen)+HIST_SUM(pb->hist,write,config.f.processes,grlen);
+						da=HIST_SUM(pa->hist,read,agg,grlen)+HIST_SUM(pa->hist,write,agg,grlen);
+						db=HIST_SUM(pb->hist,read,agg,grlen)+HIST_SUM(pb->hist,write,agg,grlen);
 					}
 					if (da>db)
 						res=1;
@@ -591,8 +587,8 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_SW:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					aa=HIST_SUM8(pa->hist,si,config.f.processes,grlen);
-					ab=HIST_SUM8(pb->hist,si,config.f.processes,grlen);
+					aa=HIST_SUM8(pa->hist,si,agg,grlen);
+					ab=HIST_SUM8(pb->hist,si,agg,grlen);
 					res=aa-ab;
 					break;
 			}
@@ -612,60 +608,75 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 			break;
 		case SORT_BY_READ:
 			if (config.f.accumbw)
-				res=(config.f.processes?pa->read_val_abw_p:pa->read_val_abw)>(config.f.processes?pb->read_val_abw_p:pb->read_val_abw)?1:
-					(config.f.processes?pa->read_val_abw_p:pa->read_val_abw)<(config.f.processes?pb->read_val_abw_p:pb->read_val_abw)?-1:0;
+				res=(agg?pa->read_val_abw_p:pa->read_val_abw)>(agg?pb->read_val_abw_p:pb->read_val_abw)?1:
+					(agg?pa->read_val_abw_p:pa->read_val_abw)<(agg?pb->read_val_abw_p:pb->read_val_abw)?-1:0;
 			else if (config.f.accumulated)
-				res=(config.f.processes?pa->read_val_acc_p:pa->read_val_acc)>(config.f.processes?pb->read_val_acc_p:pb->read_val_acc)?1:
-					(config.f.processes?pa->read_val_acc_p:pa->read_val_acc)<(config.f.processes?pb->read_val_acc_p:pb->read_val_acc)?-1:0;
+				res=(agg?pa->read_val_acc_p:pa->read_val_acc)>(agg?pb->read_val_acc_p:pb->read_val_acc)?1:
+					(agg?pa->read_val_acc_p:pa->read_val_acc)<(agg?pb->read_val_acc_p:pb->read_val_acc)?-1:0;
 			else
-				res=(config.f.processes?pa->read_val_p:pa->read_val)>(config.f.processes?pb->read_val_p:pb->read_val)?1:
-					(config.f.processes?pa->read_val_p:pa->read_val)<(config.f.processes?pb->read_val_p:pb->read_val)?-1:0;
+				res=(agg?pa->read_val_p:pa->read_val)>(agg?pb->read_val_p:pb->read_val)?1:
+					(agg?pa->read_val_p:pa->read_val)<(agg?pb->read_val_p:pb->read_val)?-1:0;
 			break;
 		case SORT_BY_WRITE:
 			if (config.f.accumbw)
-				res=(config.f.processes?pa->write_val_abw_p:pa->write_val_abw)>(config.f.processes?pb->write_val_abw_p:pb->write_val_abw)?1:
-					(config.f.processes?pa->write_val_abw_p:pa->write_val_abw)<(config.f.processes?pb->write_val_abw_p:pb->write_val_abw)?-1:0;
+				res=(agg?pa->write_val_abw_p:pa->write_val_abw)>(agg?pb->write_val_abw_p:pb->write_val_abw)?1:
+					(agg?pa->write_val_abw_p:pa->write_val_abw)<(agg?pb->write_val_abw_p:pb->write_val_abw)?-1:0;
 			else if (config.f.accumulated)
-				res=(config.f.processes?pa->write_val_acc_p:pa->write_val_acc)>(config.f.processes?pb->write_val_acc_p:pb->write_val_acc)?1:
-					(config.f.processes?pa->write_val_acc_p:pa->write_val_acc)<(config.f.processes?pb->write_val_acc_p:pb->write_val_acc)?-1:0;
+				res=(agg?pa->write_val_acc_p:pa->write_val_acc)>(agg?pb->write_val_acc_p:pb->write_val_acc)?1:
+					(agg?pa->write_val_acc_p:pa->write_val_acc)<(agg?pb->write_val_acc_p:pb->write_val_acc)?-1:0;
 			else
-				res=(config.f.processes?pa->write_val_p:pa->write_val)>(config.f.processes?pb->write_val_p:pb->write_val)?1:
-					(config.f.processes?pa->write_val_p:pa->write_val)<(config.f.processes?pb->write_val_p:pb->write_val)?-1:0;
+				res=(agg?pa->write_val_p:pa->write_val)>(agg?pb->write_val_p:pb->write_val)?1:
+					(agg?pa->write_val_p:pa->write_val)<(agg?pb->write_val_p:pb->write_val)?-1:0;
 			break;
 		case SORT_BY_VFS_READ:
 			if (config.f.accumbw)
-				res=(config.f.processes?pa->read_char_val_abw_p:pa->read_char_val_abw)>(config.f.processes?pb->read_char_val_abw_p:pb->read_char_val_abw)?1:
-					(config.f.processes?pa->read_char_val_abw_p:pa->read_char_val_abw)<(config.f.processes?pb->read_char_val_abw_p:pb->read_char_val_abw)?-1:0;
+				res=(agg?pa->read_char_val_abw_p:pa->read_char_val_abw)>(agg?pb->read_char_val_abw_p:pb->read_char_val_abw)?1:
+					(agg?pa->read_char_val_abw_p:pa->read_char_val_abw)<(agg?pb->read_char_val_abw_p:pb->read_char_val_abw)?-1:0;
 			else if (config.f.accumulated)
-				res=(config.f.processes?pa->read_char_val_acc_p:pa->read_char_val_acc)>(config.f.processes?pb->read_char_val_acc_p:pb->read_char_val_acc)?1:
-					(config.f.processes?pa->read_char_val_acc_p:pa->read_char_val_acc)<(config.f.processes?pb->read_char_val_acc_p:pb->read_char_val_acc)?-1:0;
+				res=(agg?pa->read_char_val_acc_p:pa->read_char_val_acc)>(agg?pb->read_char_val_acc_p:pb->read_char_val_acc)?1:
+					(agg?pa->read_char_val_acc_p:pa->read_char_val_acc)<(agg?pb->read_char_val_acc_p:pb->read_char_val_acc)?-1:0;
 			else
-				res=(config.f.processes?pa->read_char_val_p:pa->read_char_val)>(config.f.processes?pb->read_char_val_p:pb->read_char_val)?1:
-					(config.f.processes?pa->read_char_val_p:pa->read_char_val)<(config.f.processes?pb->read_char_val_p:pb->read_char_val)?-1:0;
+				res=(agg?pa->read_char_val_p:pa->read_char_val)>(agg?pb->read_char_val_p:pb->read_char_val)?1:
+					(agg?pa->read_char_val_p:pa->read_char_val)<(agg?pb->read_char_val_p:pb->read_char_val)?-1:0;
 			break;
 		case SORT_BY_VFS_WRITE:
 			if (config.f.accumbw)
-				res=(config.f.processes?pa->write_char_val_abw_p:pa->write_char_val_abw)>(config.f.processes?pb->write_char_val_abw_p:pb->write_char_val_abw)?1:
-					(config.f.processes?pa->write_char_val_abw_p:pa->write_char_val_abw)<(config.f.processes?pb->write_char_val_abw_p:pb->write_char_val_abw)?-1:0;
+				res=(agg?pa->write_char_val_abw_p:pa->write_char_val_abw)>(agg?pb->write_char_val_abw_p:pb->write_char_val_abw)?1:
+					(agg?pa->write_char_val_abw_p:pa->write_char_val_abw)<(agg?pb->write_char_val_abw_p:pb->write_char_val_abw)?-1:0;
 			else if (config.f.accumulated)
-				res=(config.f.processes?pa->write_char_val_acc_p:pa->write_char_val_acc)>(config.f.processes?pb->write_char_val_acc_p:pb->write_char_val_acc)?1:
-					(config.f.processes?pa->write_char_val_acc_p:pa->write_char_val_acc)<(config.f.processes?pb->write_char_val_acc_p:pb->write_char_val_acc)?-1:0;
+				res=(agg?pa->write_char_val_acc_p:pa->write_char_val_acc)>(agg?pb->write_char_val_acc_p:pb->write_char_val_acc)?1:
+					(agg?pa->write_char_val_acc_p:pa->write_char_val_acc)<(agg?pb->write_char_val_acc_p:pb->write_char_val_acc)?-1:0;
 			else
-				res=(config.f.processes?pa->write_char_val_p:pa->write_char_val)>(config.f.processes?pb->write_char_val_p:pb->write_char_val)?1:
-					(config.f.processes?pa->write_char_val_p:pa->write_char_val)<(config.f.processes?pb->write_char_val_p:pb->write_char_val)?-1:0;
+				res=(agg?pa->write_char_val_p:pa->write_char_val)>(agg?pb->write_char_val_p:pb->write_char_val)?1:
+					(agg?pa->write_char_val_p:pa->write_char_val)<(agg?pb->write_char_val_p:pb->write_char_val)?-1:0;
 			break;
 		case SORT_BY_SWAPIN:
-			res=(config.f.processes?pa->swapin_val_p:pa->swapin_val)>(config.f.processes?pb->swapin_val_p:pb->swapin_val)?1:
-				(config.f.processes?pa->swapin_val_p:pa->swapin_val)<(config.f.processes?pb->swapin_val_p:pb->swapin_val)?-1:0;
+			res=(agg?pa->swapin_val_p:pa->swapin_val)>(agg?pb->swapin_val_p:pb->swapin_val)?1:
+				(agg?pa->swapin_val_p:pa->swapin_val)<(agg?pb->swapin_val_p:pb->swapin_val)?-1:0;
 			break;
 		case SORT_BY_IO:
-			res=(config.f.processes?pa->blkio_val_p:pa->blkio_val)>(config.f.processes?pb->blkio_val_p:pb->blkio_val)?1:
-				(config.f.processes?pa->blkio_val_p:pa->blkio_val)<(config.f.processes?pb->blkio_val_p:pb->blkio_val)?-1:0;
+			res=(agg?pa->blkio_val_p:pa->blkio_val)>(agg?pb->blkio_val_p:pb->blkio_val)?1:
+				(agg?pa->blkio_val_p:pa->blkio_val)<(agg?pb->blkio_val_p:pb->blkio_val)?-1:0;
 			break;
 	}
 	res*=order;
 	return res;
 }
+
+// compare the tasks by the values that the view shows; a NULL a sets the graph width from b
+inline int iotop_sort_cb(const void *a,const void *b) {
+	if (!a) {
+		grlen=(long)b;
+		return 0;
+	}
+	return sort_cmp(a,b,config.f.processes);
+}
+
+// compare the processes by the values of the whole process, also when their threads are shown
+inline int iotop_sort_proc_cb(const void *a,const void *b) {
+	return sort_cmp(a,b,1);
+}
+
 
 // any input of the filter besides s has to be in struct view_key, the curses view relies on it
 inline int filter1(struct xxxid_stats *s) {
