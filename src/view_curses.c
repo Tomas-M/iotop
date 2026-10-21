@@ -2824,7 +2824,8 @@ inline void view_curses_loop(void) {
 	struct xxxid_stats_arr *cs=NULL;
 	struct act_stats act={0,0,0,0,0,0,0,};
 	uint64_t bef=0;
-	int refresh=0;
+	int refresh=0; // new data, the header graphs move on with the redraw
+	int redraw=0; // only the clock moved while the data is frozen
 	int k=ERR;
 
 	for (;;) {
@@ -2872,9 +2873,9 @@ inline void view_curses_loop(void) {
 			refresh=1;
 		} else if (bef+params.delay_ms<now&&dontrefresh&&!config.f.hideclock) {
 			bef=now;
-			refresh=1;
+			redraw=1;
 		}
-		if (refresh&&k==ERR)
+		if ((refresh||redraw)&&k==ERR)
 			k=KEY_REFRESH;
 		if (k!=ERR) {
 			int kres;
@@ -2884,6 +2885,7 @@ inline void view_curses_loop(void) {
 			if (kres==0) {
 				view_curses(cs,&act,refresh);
 				refresh=0;
+				redraw=0;
 			}
 		}
 		k=getch();
