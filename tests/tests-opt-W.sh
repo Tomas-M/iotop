@@ -3,6 +3,9 @@
 
 IOTOP="${IOTOP:-./iotop}"
 
-# Pass --color before -l to clear nocolor in case an existing user config
-# (~/.config/iotop/iotoprc) already has --no-color enabled.
-"$IOTOP" --color -l --debug-write | grep -q '^--no-color$'
+# Run with an empty config directory and without NO_COLOR, so that neither the config of the user
+# (~/.config/iotop/iotoprc) nor the environment changes what is written.
+CFG="$(mktemp -d)" || exit 1
+trap 'rm -rf "$CFG"' EXIT
+
+XDG_CONFIG_HOME="$CFG" NO_COLOR= "$IOTOP" -l --debug-write | grep -q '^--no-color$'
