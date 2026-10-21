@@ -99,8 +99,8 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 			vfs_read_val=(double)(config.f.processes?s->read_char_diff_p:s->read_char_diff)/time_s;
 			vfs_write_val=(double)(config.f.processes?s->write_char_diff_p:s->write_char_diff)/time_s;
 		}
-		swapin_val=config.f.processes?s->swapin_val_p:s->swapin_val;
-		blkio_val=config.f.processes?s->blkio_val_p:s->blkio_val;
+		swapin_val=delay_pc(config.f.processes?s->swapin_diff_p:s->swapin_diff,time_s);
+		blkio_val=delay_pc(config.f.processes?s->blkio_diff_p:s->blkio_diff,time_s);
 
 		if (config.f.only&&!read_val&&!write_val&&!swapin_val&&!blkio_val)
 			continue;

@@ -390,8 +390,8 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 	// visible history is non-zero, or in the accumulated modes the shown totals
 	if (config.f.only&&!((config.f.accumulated||config.f.accumbw)&&accum_val(s,E_ACC_READ,config.f.processes)+accum_val(s,E_ACC_WRITE,config.f.processes)>0)) {
 		if (config.f.hidegraph) {
-			if ((config.f.processes?s->blkio_val_p:s->blkio_val)<=0&&
-				(config.f.processes?s->swapin_val_p:s->swapin_val)<=0&&
+			if (!(config.f.processes?s->blkio_diff_p:s->blkio_diff)&&
+				!(config.f.processes?s->swapin_diff_p:s->swapin_diff)&&
 				!(config.f.processes?s->read_diff_p:s->read_diff)&&
 				!(config.f.processes?s->write_diff_p:s->write_diff))
 				goto dohide;
@@ -426,8 +426,8 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 		}
 		if (0) {
 		dohide:
-			if ((config.f.processes?s->blkio_val_p:s->blkio_val)<=0&&
-				(config.f.processes?s->swapin_val_p:s->swapin_val)<=0&&
+			if (!(config.f.processes?s->blkio_diff_p:s->blkio_diff)&&
+				!(config.f.processes?s->swapin_diff_p:s->swapin_diff)&&
 				!(config.f.processes?s->read_diff_p:s->read_diff)&&
 				!(config.f.processes?s->write_diff_p:s->write_diff))
 				return 1;
@@ -1469,7 +1469,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 					if (s->exited)
 						color_print_pc(0);
 					else
-						color_print_pc(config.f.processes?s->swapin_val_p:s->swapin_val);
+						color_print_pc(delay_pc(config.f.processes?s->swapin_diff_p:s->swapin_diff,time_s));
 				}
 			}
 			if (!config.f.hideio&&has_tda) {
@@ -1481,7 +1481,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 					if (s->exited)
 						color_print_pc(0);
 					else
-						color_print_pc(config.f.processes?s->blkio_val_p:s->blkio_val);
+						color_print_pc(delay_pc(config.f.processes?s->blkio_diff_p:s->blkio_diff,time_s));
 				}
 			}
 			if (!config.f.hidegraph&&hrevpos>0) {

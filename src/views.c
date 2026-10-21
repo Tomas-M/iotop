@@ -56,6 +56,13 @@ inline void calc_a_total(struct act_stats *act,double *read,double *write,double
 	}
 }
 
+// the percentage of the time of a cycle that a task waited, from its delay in nanoseconds
+inline double delay_pc(uint64_t ns,double time_s) {
+	double pc=(double)ns/(time_s*10000000.0);
+
+	return pc>100?100:pc;
+}
+
 inline int value2scale(double val,double mx) {
 	val=100.0*val/mx;
 
@@ -181,8 +188,8 @@ static inline void update_maxpidlen(pid_t tid) {
 
 // new process or task - there is no previous data to diff against
 static inline void stats_new(struct xxxid_stats *c,uint64_t ts_c) {
-	c->blkio_val=0;
-	c->swapin_val=0;
+	c->blkio_diff=0;
+	c->swapin_diff=0;
 	c->read_diff=0;
 	c->write_diff=0;
 	c->read_char_diff=0;
@@ -214,13 +221,8 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	}
 
 	// round robin value
-	c->blkio_val=(double)rrv(c->blkio_delay_total,p->blkio_delay_total)/(time_s*10000000.0);
-	if (c->blkio_val>100)
-		c->blkio_val=100;
-
-	c->swapin_val=(double)rrv(c->swapin_delay_total,p->swapin_delay_total)/(time_s*10000000.0);
-	if (c->swapin_val>100)
-		c->swapin_val=100;
+	c->blkio_diff=rrv(c->blkio_delay_total,p->blkio_delay_total);
+	c->swapin_diff=rrv(c->swapin_delay_total,p->swapin_delay_total);
 
 	rv=rrv(c->read_bytes,p->read_bytes);
 	wv=rrv(c->write_bytes,p->write_bytes);
@@ -237,17 +239,12 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	c->read_char_val_acc=p->read_char_val_acc+rcv;
 	c->write_char_val_acc=p->write_char_val_acc+wcv;
 
-	io=value2scale(c->blkio_val,100.0);
-	si=value2scale(c->swapin_val,100.0);
+	io=value2scale(delay_pc(c->blkio_diff,time_s),100.0);
+	si=value2scale(delay_pc(c->swapin_diff,time_s),100.0);
 
 	if (c->pid==c->tid) {
-		c->blkio_val_p=(double)rrv(c->blkio_delay_total_p,p->blkio_delay_total_p)/(time_s*10000000.0);
-		if (c->blkio_val_p>100)
-			c->blkio_val_p=100;
-
-		c->swapin_val_p=(double)rrv(c->swapin_delay_total_p,p->swapin_delay_total_p)/(time_s*10000000.0);
-		if (c->swapin_val_p>100)
-			c->swapin_val_p=100;
+		c->blkio_diff_p=rrv(c->blkio_delay_total_p,p->blkio_delay_total_p);
+		c->swapin_diff_p=rrv(c->swapin_delay_total_p,p->swapin_delay_total_p);
 
 		rvp=rrv(c->read_bytes_p,p->read_bytes_p);
 		wvp=rrv(c->write_bytes_p,p->write_bytes_p);
@@ -264,8 +261,8 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		c->read_char_val_acc_p=p->read_char_val_acc_p+rcv;
 		c->write_char_val_acc_p=p->write_char_val_acc_p+wcv;
 
-		iop=value2scale(c->blkio_val_p,100.0);
-		sip=value2scale(c->swapin_val_p,100.0);
+		iop=value2scale(delay_pc(c->blkio_diff_p,time_s),100.0);
+		sip=value2scale(delay_pc(c->swapin_diff_p,time_s),100.0);
 	}
 
 	// an idle task keeps the shared empty history; the older values of a history are all zero,
@@ -307,8 +304,8 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 	o->threads=NULL;
 	o->exited++;
 	// last state is zero, only history remains
-	o->blkio_val=0;
-	o->swapin_val=0;
+	o->blkio_diff=0;
+	o->swapin_diff=0;
 	o->read_diff=0;
 	o->write_diff=0;
 	o->read_char_diff=0;
@@ -658,12 +655,12 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 					(agg?pa->write_char_diff_p:pa->write_char_diff)<(agg?pb->write_char_diff_p:pb->write_char_diff)?-1:0;
 			break;
 		case SORT_BY_SWAPIN:
-			res=(agg?pa->swapin_val_p:pa->swapin_val)>(agg?pb->swapin_val_p:pb->swapin_val)?1:
-				(agg?pa->swapin_val_p:pa->swapin_val)<(agg?pb->swapin_val_p:pb->swapin_val)?-1:0;
+			res=(agg?pa->swapin_diff_p:pa->swapin_diff)>(agg?pb->swapin_diff_p:pb->swapin_diff)?1:
+				(agg?pa->swapin_diff_p:pa->swapin_diff)<(agg?pb->swapin_diff_p:pb->swapin_diff)?-1:0;
 			break;
 		case SORT_BY_IO:
-			res=(agg?pa->blkio_val_p:pa->blkio_val)>(agg?pb->blkio_val_p:pb->blkio_val)?1:
-				(agg?pa->blkio_val_p:pa->blkio_val)<(agg?pb->blkio_val_p:pb->blkio_val)?-1:0;
+			res=(agg?pa->blkio_diff_p:pa->blkio_diff)>(agg?pb->blkio_diff_p:pb->blkio_diff)?1:
+				(agg?pa->blkio_diff_p:pa->blkio_diff)<(agg?pb->blkio_diff_p:pb->blkio_diff)?-1:0;
 			break;
 	}
 	res*=order;

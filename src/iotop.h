@@ -194,8 +194,8 @@ struct xxxid_stats {
 	uint64_t btime; // start time and exe of the task from taskstats, 0 if not known;
 	uint64_t exe; // they tell that a task of the next cycle is the same process
 
-	double blkio_val;
-	double swapin_val;
+	uint64_t blkio_diff; // nanoseconds waited in the last cycle
+	uint64_t swapin_diff;
 	uint64_t read_diff; // bytes in the last cycle
 	uint64_t write_diff;
 	uint64_t read_char_diff;
@@ -205,8 +205,8 @@ struct xxxid_stats {
 	uint64_t read_char_val_acc;
 	uint64_t write_char_val_acc;
 
-	double blkio_val_p;
-	double swapin_val_p;
+	uint64_t blkio_diff_p;
+	uint64_t swapin_diff_p;
 	uint64_t read_diff_p;
 	uint64_t write_diff_p;
 	uint64_t read_char_diff_p;
@@ -378,6 +378,7 @@ inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg);
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,int keep_exited);
 inline int count_visible(struct xxxid_stats_arr *cs,filter_callback_w cb,int width);
 inline int value2scale(double val,double mx);
+inline double delay_pc(uint64_t ns,double time_s);
 inline uint64_t hist_sum(const struct xxxid_hist *h,const uint64_t *a,int cnt);
 inline int hist_sum8(const struct xxxid_hist *h,const uint8_t *a,int cnt);
 inline void hist_window(struct xxxid_stats_arr *cs,int w);
