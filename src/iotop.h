@@ -25,6 +25,7 @@ You should have received a copy of the GNU General Public License along with thi
 #endif
 
 #include <regex.h>
+#include <signal.h>
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -112,6 +113,7 @@ typedef struct {
 
 extern config_t config;
 extern params_t params;
+extern volatile sig_atomic_t stop_req;
 extern int maxpidlen;
 extern unsigned taskstats_ver;
 extern struct xxxid_hist hist_none;

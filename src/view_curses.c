@@ -2825,7 +2825,7 @@ inline void view_curses_loop(void) {
 	int redraw=0; // only the clock moved while the data is frozen
 	int k=ERR;
 
-	for (;;) {
+	for (;!stop_req;) {
 		uint64_t now=monotime();
 		int64_t wait;
 
@@ -2863,6 +2863,8 @@ inline void view_curses_loop(void) {
 				now=monotime();
 				cs=fetch_data(ps);
 			}
+			if (stop_req) // the cycle is not complete
+				break;
 			get_vm_counters(&act.read_bytes,&act.write_bytes);
 			act.ts_c=now;
 			// here and not on redraw: keys that do not redraw may come until the next refresh, and the next cycle

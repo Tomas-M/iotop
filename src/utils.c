@@ -190,7 +190,7 @@ inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint) {
 	if ((pr=opendir("/proc"))) {
 		struct dirent *de=readdir(pr);
 
-		for (;de;de=readdir(pr)) {
+		for (;de&&!stop_req;de=readdir(pr)) { // the cycle is dropped on a signal, do not read all of it
 			char *eol=NULL;
 			char path[30];
 			int havt=0;

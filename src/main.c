@@ -630,6 +630,9 @@ static inline void parse_args(int clac,char **clav) {
 	}
 }
 
+volatile sig_atomic_t stop_req=0; // a signal asked to exit; the views stop and clean up as on a normal exit
+
+// only set a flag: the cleanup frees memory and resets the terminal, which a signal handler can not safely do
 inline void sig_handler(int signo) {
 	switch (signo) {
 		default:
@@ -637,9 +640,7 @@ inline void sig_handler(int signo) {
 		case SIGINT:
 		case SIGHUP:
 		case SIGQUIT:
-			v_fini_cb();
-			nl_fini();
-			exit(EXIT_SUCCESS);
+			stop_req=1;
 	}
 }
 

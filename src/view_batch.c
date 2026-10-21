@@ -183,8 +183,10 @@ inline void view_batch_loop(void) {
 	struct timespec ts;
 	int warned=0;
 
-	for (;;) {
+	for (;!stop_req;) {
 		cs=fetch_data(ps);
+		if (stop_req) // the cycle is not complete
+			break;
 		if (!warned&&taskstats_ver&&taskstats_ver<IOTOP_TASKSTATS_MINVER) { // known after the first query
 			fprintf(stderr,"Warning: this kernel provides struct taskstats version %u, which does not contain the required data; it should be %u or greater\n",taskstats_ver,IOTOP_TASKSTATS_MINVER);
 			warned=1;
@@ -207,10 +209,12 @@ inline void view_batch_loop(void) {
 		fflush(stdout);
 		ts.tv_sec=params.delay_ms/1000;
 		ts.tv_nsec=params.delay_ms%1000*1000000L;
-		while (nanosleep(&ts,&ts)==-1&&errno==EINTR) // sleep the rest after a signal
+		while (nanosleep(&ts,&ts)==-1&&errno==EINTR&&!stop_req) // sleep the rest after a signal that does not stop
 			;
 	}
 	clear_uid_cache();
+	if (ps!=cs)
+		arr_free(ps);
 	arr_free(cs);
 }
 
