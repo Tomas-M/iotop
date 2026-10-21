@@ -69,7 +69,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 	if (config.f.quiet==0||(config.f.quiet==1&&firsthdr)) {
 		firsthdr=0;
-		printf("%s%6s %4s %8s %11s",config.f.timestamp?"    TIME ":"",config.f.processes?"PID":"TID","PRIO","USER","DISK READ");
+		printf("%s%6s %4s %-10s %11s",config.f.timestamp?"    TIME ":"",config.f.processes?"PID":"TID","PRIO","USER","DISK READ");
 		if (!config.f.hidevfsread)
 			printf(" %11s","VFS READ");
 		printf(" %11s","DISK WRITE");
