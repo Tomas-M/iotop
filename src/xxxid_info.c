@@ -42,7 +42,9 @@ You should have received a copy of the GNU General Public License along with thi
 #define NLA_DATA(na) ((void *)((char*)(na)+NLA_HDRLEN))
 #define NLA_PAYLOAD(len) (len-NLA_HDRLEN)
 
-#define MAX_MSG_SIZE 1024
+// a reply of taskstats v17 is 724 bytes and each version adds to struct taskstats; a reply that does not fit
+// is cut by recv and dropped, so the data of all tasks would be missing; netlink replies fit a page
+#define MAX_MSG_SIZE 4096
 
 struct msgtemplate {
 	struct nlmsghdr n;
