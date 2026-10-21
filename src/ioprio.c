@@ -25,13 +25,21 @@ You should have received a copy of the GNU General Public License along with thi
 #define IOPRIO_STR_MAXSIZ  10
 #define IOPRIO_STR_FORMAT "%2s/%1i"
 
+#ifndef SCHED_DEADLINE
+#define SCHED_DEADLINE 6
+#endif
+#ifndef SCHED_RESET_ON_FORK
+#define SCHED_RESET_ON_FORK 0x40000000
+#endif
+
 const char *str_ioprio_class[]={"-","rt","be","id"};
 
-// io priority of a task without own one, derived from its scheduling policy and nice value
+// io priority of a task without own one, derived from its scheduling policy and nice value like the kernel does
 inline int ioprio_from_sched(int policy,int nice) {
 	int ioprio_nice=(nice+20)/5;
 
-	if (policy==SCHED_FIFO||policy==SCHED_RR)
+	policy&=~SCHED_RESET_ON_FORK; // sched_getscheduler adds the flag to the policy
+	if (policy==SCHED_FIFO||policy==SCHED_RR||policy==SCHED_DEADLINE)
 		return (IOPRIO_CLASS_RT<<IOPRIO_CLASS_SHIFT)+ioprio_nice;
 	if (policy==SCHED_IDLE)
 		return IOPRIO_CLASS_IDLE<<IOPRIO_CLASS_SHIFT;
