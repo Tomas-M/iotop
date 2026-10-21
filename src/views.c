@@ -35,7 +35,7 @@ inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write) {
 
 // growth of a counter between two cycles; the 64-bit counters do not wrap, a decrease is not growth:
 // the sums of a process lose the counters of its exited threads, and a new task may get the tid of an old one
-static inline uint64_t rrv(uint64_t to,uint64_t from) {
+inline uint64_t rrv(uint64_t to,uint64_t from) {
 	return to<from?0:to-from;
 }
 
@@ -345,7 +345,7 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 }
 
 // c and p have the same tid; tell if c is the task of p and not a new one that got its tid
-static inline int same_task(const struct xxxid_stats *c,const struct xxxid_stats *p) {
+inline int same_task(const struct xxxid_stats *c,const struct xxxid_stats *p) {
 	if (p->exited) // the tid of a kept exited task was given to a new one
 		return 0;
 	if (!c->btime||!p->btime) // the start time is known only from taskstats v12

@@ -543,18 +543,37 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 		if (filter&&filter(s))
 			free_stats(s);
 		else {
-			if (s->pid==s->tid) { // main process, copy own data to aggregated process data
+			if (s->pid==s->tid) { // main process, copy own delays to aggregated process data; fetch_data adds the bytes
 				s->swapin_delay_total_p=s->swapin_delay_total;
 				s->blkio_delay_total_p=s->blkio_delay_total;
-				s->read_bytes_p=s->read_bytes;
-				s->write_bytes_p=s->write_bytes;
-				s->read_char_p=s->read_char;
-				s->write_char_p=s->write_char;
 			}
 			if (arr_append(a,s)) // the list is sorted once at the end by arr_finalize
 				free_stats(s);
 		}
 	}
+}
+
+// add the growth of task s since o, the same task in the previous cycle or NULL for a new one, to the byte
+// counters of its process p; they go on from the previous cycle, so they never go down as a sum of the counters
+// of the tasks would, when a thread exits
+static inline void proc_grow(struct xxxid_stats *p,const struct xxxid_stats *s,const struct xxxid_stats *o) {
+	if (!o) { // all of it is new
+		p->read_bytes_p+=s->read_bytes;
+		p->write_bytes_p+=s->write_bytes;
+		p->read_char_p+=s->read_char;
+		p->write_char_p+=s->write_char;
+		return;
+	}
+	if (p==s) { // the main process carries the counters of the previous cycle
+		p->read_bytes_p+=o->read_bytes_p;
+		p->write_bytes_p+=o->write_bytes_p;
+		p->read_char_p+=o->read_char_p;
+		p->write_char_p+=o->write_char_p;
+	}
+	p->read_bytes_p+=rrv(s->read_bytes,o->read_bytes);
+	p->write_bytes_p+=rrv(s->write_bytes,o->write_bytes);
+	p->read_char_p+=rrv(s->read_char,o->read_char);
+	p->write_char_p+=rrv(s->write_char,o->write_char);
 }
 
 // count of recently found main processes kept while attaching threads; must be a power of 2
@@ -564,7 +583,7 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 inline struct xxxid_stats_arr *fetch_data(filter_callback filter,struct xxxid_stats_arr *prev) {
 	struct xxxid_stats *pcache[PROC_CACHE_SZ]={NULL}; // main processes, by pid
 	struct xxxid_stats_arr *a=arr_alloc();
-	int i;
+	int i,j=0;
 
 	current_cycle++;
 
@@ -580,31 +599,35 @@ inline struct xxxid_stats_arr *fetch_data(filter_callback filter,struct xxxid_st
 
 	for (i=0;a->arr&&i<a->length;i++) {
 		struct xxxid_stats *s=a->arr[i];
+		struct xxxid_stats *o=NULL; // s in the previous cycle
+		struct xxxid_stats *p=s; // main process of s
+
+		while (prev&&j<prev->length&&prev->arr[j]->tid<s->tid) // both lists are sorted by tid
+			j++;
+		if (prev&&j<prev->length&&prev->arr[j]->tid==s->tid&&same_task(s,prev->arr[j]))
+			o=prev->arr[j];
 
 		if (s->pid!=s->tid) { // maintain a thread list for each process
 			struct xxxid_stats **pc=&pcache[s->pid&(PROC_CACHE_SZ-1)];
-			struct xxxid_stats *p=*pc;
 
+			p=*pc;
 			if (!p||p->tid!=s->pid) { // the threads of a process mostly get close tids, so it is usually cached
 				p=arr_find(a,s->pid); // main process' tid=thread's pid
 				if (p)
 					*pc=p;
 			}
-			if (p) {
-				// aggregate thread data into the main process
-				if (!p->threads)
-					p->threads=arr_alloc();
-				if (p->threads) {
-					arr_add(p->threads,s);
-					p->swapin_delay_total_p=mymax(p->swapin_delay_total_p,s->swapin_delay_total);
-					p->blkio_delay_total_p=mymax(p->blkio_delay_total_p,s->blkio_delay_total);
-					p->read_bytes_p+=s->read_bytes;
-					p->write_bytes_p+=s->write_bytes;
-					p->read_char_p+=s->read_char;
-					p->write_char_p+=s->write_char;
-				}
-			}
+			if (!p)
+				continue;
+			// aggregate thread data into the main process
+			if (!p->threads)
+				p->threads=arr_alloc();
+			if (!p->threads)
+				continue;
+			arr_add(p->threads,s);
+			p->swapin_delay_total_p=mymax(p->swapin_delay_total_p,s->swapin_delay_total);
+			p->blkio_delay_total_p=mymax(p->blkio_delay_total_p,s->blkio_delay_total);
 		}
+		proc_grow(p,s,o);
 	}
 	return a;
 }

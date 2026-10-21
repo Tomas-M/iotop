@@ -370,6 +370,8 @@ inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write);
 inline void calc_a_total(struct act_stats *act,double *read,double *write,double time_s);
 inline void humanize_val(double *value,char *str,int allow_accum);
 inline int iotop_sort_cb(const void *a,const void *b);
+inline uint64_t rrv(uint64_t to,uint64_t from);
+inline int same_task(const struct xxxid_stats *c,const struct xxxid_stats *p);
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,int keep_exited);
 inline int count_visible(struct xxxid_stats_arr *cs,filter_callback_w cb,int width);
 inline int value2scale(double val,double mx);
