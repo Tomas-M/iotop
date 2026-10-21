@@ -261,7 +261,7 @@ inline int64_t monotime(void) {
 	int64_t res;
 
 	clock_gettime(CLOCK_MONOTONIC,&ts);
-	res=ts.tv_sec*1000;
+	res=(int64_t)ts.tv_sec*1000; // a 32-bit time_t times 1000 overflows after 24.8 days of uptime
 	res+=ts.tv_nsec/1000000;
 	return res;
 }
