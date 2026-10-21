@@ -216,6 +216,8 @@ re:
 	$(Q)$(MAKE) --no-print-directory -j
 
 pv:
+	@echo CC: $(CC)
+	@echo SCANBUILD: $(SCANBUILD)
 	@echo CFLAGS: $(CFLAGS)
 	@echo LDFLAGS: $(LDFLAGS)
 	@echo LIBS: $(LIBS)
