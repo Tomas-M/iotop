@@ -4,6 +4,10 @@
 #   make V=1
 # an example how to build with CFI (https://en.wikipedia.org/wiki/Control-flow_integrity)
 #   CC=clang-17 CFLAGS="-fsanitize=cfi -fno-sanitize-trap -fvisibility=hidden" make
+# and this to run the clang static analyzer on a clean build:
+#   make scan
+# or with another version of it:
+#   make scan SCANBUILD=scan-build
 
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
@@ -41,6 +45,7 @@ INSTALL?=install
 STRIP?=strip
 
 PKG_CONFIG?=pkg-config
+SCANBUILD?=scan-build-23
 NCCC?=$(shell $(PKG_CONFIG) --cflags ncursesw)
 NCLD?=$(shell $(PKG_CONFIG) --libs ncursesw)
 ifeq ("$(NCLD)","")
@@ -171,6 +176,10 @@ check: $(TARGET)
 	done; \
 	exit $$fail
 
+scan:
+	$(E) SCAN
+	$(Q)$(SCANBUILD) $(MAKE) --no-print-directory re
+
 install: $(TARGET)
 	$(E) STRIP $(TARGET)
 	$(Q)$(STRIP) $(TARGET)
@@ -228,4 +237,4 @@ pv:
 
 -include $(DEPS)
 
-.PHONY: all clean check install uninstall mkotar re pv
+.PHONY: all clean check scan install uninstall mkotar re pv
