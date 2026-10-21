@@ -2858,5 +2858,9 @@ inline void view_curses_loop(void) {
 		k=getch();
 	}
 	clear_uid_cache();
+	if (ps)
+		arr_free(ps);
+	if (cs)
+		arr_free(cs);
 }
 

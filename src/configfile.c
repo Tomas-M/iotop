@@ -168,7 +168,7 @@ inline void config_file_free(void) {
 }
 
 inline int config_file_save(void) {
-	FILE *cf=config_file_open("w");
+	FILE *cf=config.f.debug_write?stdout:config_file_open("w");
 
 	if (!cf)
 		return -1;
@@ -297,12 +297,17 @@ inline int config_file_save(void) {
 		fprintf(cf,"--uid2name=cyclic\n");
 	if (config.f.uid2name==E_UID2NAME_STATIC)
 		fprintf(cf,"--uid2name=static\n");
+	// --debug-write is ignored
 
 	if (ferror(cf)) {
-		fclose(cf);
+		if (!config.f.debug_write)
+			fclose(cf);
 		return -1;
 	}
-	if (fclose(cf)) // the buffered data is written here, e.g. a full disk shows only now
+	if (config.f.debug_write) {
+		if (fflush(cf))
+			return -1;
+	} else if (fclose(cf)) // the buffered data is written here, e.g. a full disk shows only now
 		return -1;
 
 	return 0;
