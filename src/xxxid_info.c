@@ -254,7 +254,7 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 						stats->write_char=t14->write_char;
 						stats->swapin_delay_total=t14->swapin_delay_total;
 						stats->blkio_delay_total=t14->blkio_delay_total;
-						stats->euid=t14->ac_uid;
+						stats->ruid=t14->ac_uid;
 						stats->io_prio=ioprio_from_sched(t14->ac_sched,(int8_t)t14->ac_nice);
 						stats->start=sent-(int64_t)(t14->ac_etime/1000);
 						if (ts->version>=12) { // the exe fields are there since v12, zero for kernel threads
@@ -272,7 +272,7 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 						stats->write_char=t15->write_char;
 						stats->swapin_delay_total=t15->swapin_delay_total;
 						stats->blkio_delay_total=t15->blkio_delay_total;
-						stats->euid=t15->ac_uid;
+						stats->ruid=t15->ac_uid;
 						stats->io_prio=ioprio_from_sched(t15->ac_sched,(int8_t)t15->ac_nice);
 						stats->start=sent-(int64_t)(t15->ac_etime/1000);
 						have_exe=1;
@@ -521,14 +521,14 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 		s->cmdline_short=strdup(unknown);
 	// cmdline_comm can be NULL
 	if (config.f.uid2name==E_UID2NAME_NONE) {
-		snprintf(uid_str,sizeof uid_str,"%4u",s->euid);
+		snprintf(uid_str,sizeof uid_str,"%4u",s->ruid);
 		s->pw_name=pw_intern(uid_str);
 	} else if (config.f.uid2name==E_UID2NAME_CYCLIC)
-		s->pw_name=get_user_name_cyclic(s->euid,unknown);
+		s->pw_name=get_user_name_cyclic(s->ruid,unknown);
 	else if (config.f.uid2name==E_UID2NAME_STATIC)
-		s->pw_name=get_user_name_static(s->euid,unknown);
+		s->pw_name=get_user_name_static(s->ruid,unknown);
 	else
-		s->pw_name=pw_intern(get_user_name_pwuid(s->euid,unknown));
+		s->pw_name=pw_intern(get_user_name_pwuid(s->ruid,unknown));
 	if (!s->pw_name) // pw_name is never freed, a static string is fine
 		s->pw_name=unknown;
 

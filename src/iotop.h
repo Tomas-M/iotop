@@ -222,7 +222,7 @@ struct xxxid_stats {
 
 	int io_prio;
 
-	uid_t euid;
+	uid_t ruid; // the real uid; taskstats has no effective one
 	char *cmdline_long;
 	char *cmdline_short;
 	char *cmdline_comm;

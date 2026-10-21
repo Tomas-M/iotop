@@ -138,6 +138,8 @@ A process/thread id to monitor (all by default)
 .TP
 \fB\-u\fR \fIUSER\fR, \fB\-\-user\fR=\fIUSER\fR
 A user id to monitor (all by default).
+It is matched against the real user id of the tasks, which the USER column
+shows.
 The value will always be resolved first unless it is prefixed by \fB+\fR in
 which case it is treated as numeric only. Values that do not resolve but appear
 to be numeric are used as numeric
@@ -359,6 +361,8 @@ or COMMAND are matching the REGEX.
 .TP
 \fB\-\-uid2name\fR=\fIMODE\fR
 Set the UID to user name resolution mode for the USER column.
+The USER column shows the real user id of a task, as the kernel reports it in
+taskstats, so a set\-user\-ID program shows the user that started it.
 Accepted values for \fIMODE\fR are \fBalways\fR (always resolve UID to
 username using getpwuid(3)), \fBnone\fR (do not resolve UID, show numeric
 UID instead), \fBcyclic\fR (cache resolved usernames internally for each
