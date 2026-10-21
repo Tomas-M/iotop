@@ -490,7 +490,7 @@ static inline void draw_vscroll(int xpos,int from,int to,int items,int pos) {
 			int adjss=(ss<min_ss)?min_ss:ss; // adjusted scroller size
 			int vss=y-adjss+1; // available scroll space without scroller size
 
-			begpos=((from+1)*drscale)+vss*pos/(items-visible);
+			begpos=((from+1)*drscale)+(int)((int64_t)vss*pos/(items-visible)); // vss*pos overflows int with a million tasks on a tall screen
 			endpos=begpos+adjss-1*(!u);
 		}
 
