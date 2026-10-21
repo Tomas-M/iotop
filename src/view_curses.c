@@ -383,8 +383,8 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 		if (ma_long&&ma_short&&ma_comm&&ma_tid) // nothing matches
 			return 1;
 	}
-	// visible history is non-zero
-	if (config.f.only) {
+	// visible history is non-zero, or in the accumulated modes the shown totals
+	if (config.f.only&&!((config.f.accumulated||config.f.accumbw)&&accum_read(s,config.f.processes)+accum_write(s,config.f.processes)>0)) {
 		if (config.f.hidegraph) {
 			if ((config.f.processes?s->blkio_val_p:s->blkio_val)<=0&&
 				(config.f.processes?s->swapin_val_p:s->swapin_val)<=0&&

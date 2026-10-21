@@ -494,13 +494,13 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 }
 
 // the read and write values that the columns show in the accumulated modes
-static inline double accum_read(const struct xxxid_stats *s,int agg) {
+inline double accum_read(const struct xxxid_stats *s,int agg) {
 	if (config.f.accumbw)
 		return agg?s->read_val_abw_p:s->read_val_abw;
 	return agg?s->read_val_acc_p:s->read_val_acc;
 }
 
-static inline double accum_write(const struct xxxid_stats *s,int agg) {
+inline double accum_write(const struct xxxid_stats *s,int agg) {
 	if (config.f.accumbw)
 		return agg?s->write_val_abw_p:s->write_val_abw;
 	return agg?s->write_val_acc_p:s->write_val_acc;
