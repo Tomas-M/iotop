@@ -132,13 +132,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 		pw_name=u8strpadt(s->pw_name,10);
 
-		if (config.f.fullcmdline&&s->cmdline_comm&&s->cmdline_long) { // append custom thread name before full cmdline
-			char tb[1+strlen(s->cmdline_comm)+1+strlen(s->cmdline_long)+1];
-
-			sprintf(tb,"[%s]%s",s->cmdline_comm,s->cmdline_long);
-			cmdt=esc_low_ascii(tb);
-		} else
-			cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline_long:s->cmdline_short);
+		cmdt=cmd_text(s); // with -c the custom thread name in [] before the full cmdline
 
 		printf("%s%6i %4s %s %7.2f %-3.3s",tstr,s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str);
 		if (!config.f.hidevfsread)

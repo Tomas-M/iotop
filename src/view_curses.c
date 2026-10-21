@@ -1327,13 +1327,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 			if (pwt)
 				free(pwt);
 
-			if (config.f.fullcmdline&&s->cmdline_comm&&s->cmdline_long) { // append custom thread name before full cmdline
-				char tb[1+strlen(s->cmdline_comm)+1+strlen(s->cmdline_long)+1];
-
-				sprintf(tb,"[%s]%s",s->cmdline_comm,s->cmdline_long);
-				cmdt=esc_low_ascii(tb);
-			} else
-				cmdt=esc_low_ascii(config.f.fullcmdline?s->cmdline_long:s->cmdline_short);
+			cmdt=cmd_text(s); // with -c the custom thread name in [] before the full cmdline
 			cmdline=u8strpadt(cmdt,maxcmdline-1); // -1 for thread/process link chars
 			if (cmdt)
 				free(cmdt);

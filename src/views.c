@@ -560,6 +560,23 @@ static inline int cmd_parts(const struct xxxid_stats *s,const char *p[4]) {
 	return 1;
 }
 
+// the command as the view shows it with the low ascii escaped, to be freed; NULL when out of memory
+inline char *cmd_text(const struct xxxid_stats *s) {
+	const char *p[4];
+	char *res;
+	char *t;
+
+	if (cmd_parts(s,p)==1)
+		return esc_low_ascii(p[0]);
+	t=malloc(strlen(p[1])+strlen(p[3])+3); // not on the stack, a command line can have megabytes
+	if (!t)
+		return NULL;
+	sprintf(t,"[%s]%s",p[1],p[3]);
+	res=esc_low_ascii(t);
+	free(t);
+	return res;
+}
+
 // compare the commands of a and b as the view shows them, like strcmp, without joining their parts
 static inline int cmd_cmp(const struct xxxid_stats *a,const struct xxxid_stats *b) {
 	const char *pa[4],*pb[4];

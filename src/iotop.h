@@ -389,6 +389,7 @@ inline uint64_t hist_sum(const struct xxxid_hist *h,const uint64_t *a,int cnt);
 inline int hist_sum8(const struct xxxid_hist *h,const uint8_t *a,int cnt);
 inline void hist_window(struct xxxid_stats_arr *cs,int w);
 inline int filter1(const struct xxxid_stats *s);
+inline char *cmd_text(const struct xxxid_stats *s);
 
 /* delayacct.c */
 
