@@ -306,6 +306,12 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 	o->write_diff=0;
 	o->read_char_diff=0;
 	o->write_char_diff=0;
+	o->blkio_diff_p=0;
+	o->swapin_diff_p=0;
+	o->read_diff_p=0;
+	o->write_diff_p=0;
+	o->read_char_diff_p=0;
+	o->write_char_diff_p=0;
 	if (h) { // store zero as the newest values; without own history it is all zero anyway
 		h->pos=(h->pos+1)%HISTORY_CNT;
 		if (h->cnt<HISTORY_CNT)
