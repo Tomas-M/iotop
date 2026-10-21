@@ -401,6 +401,7 @@ inline int write_task_delayacct(int da);
 inline int config_file_load(int *pac,char ***pav);
 inline void config_file_free(void);
 inline int config_file_save(int to_stdout);
+inline const char *config_file_name(void);
 
 /* main.c */
 

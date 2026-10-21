@@ -65,6 +65,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_NO_INVERSE 0x126
 
 static const char *progname=NULL;
+static const char *opt_src=NULL; // the config file while its options are parsed
 int maxpidlen=5;
 unsigned taskstats_ver=0; // 0=no warning, any version above the biggest known one will print a warning after exit
 
@@ -251,6 +252,13 @@ static inline void print_help(void) {
 	);
 }
 
+// exit on an invalid option, telling when it came from the config file
+static inline void __attribute__((noreturn)) bad_option(void) {
+	if (opt_src)
+		fprintf(stderr,"%s: the option is in the config file %s\n",progname,opt_src);
+	exit(EXIT_FAILURE);
+}
+
 static inline void parse_args(int clac,char **clav) {
 	int v;
 	int i;
@@ -265,9 +273,11 @@ static inline void parse_args(int clac,char **clav) {
 		if (i==0) { // process config file
 			if (config_file_load(&argc,&argv))
 				continue; // did not load, ignore
+			opt_src=config_file_name();
 			optind=1;
 		} else { // process command line options
 			config_file_free();
+			opt_src=NULL;
 			argc=clac;
 			argv=clav;
 			optind=0; // fully reinitialize getopt, it may still point into the freed config
@@ -356,7 +366,7 @@ static inline void parse_args(int clac,char **clav) {
 				if (optind<argc) {
 					for (i=optind;i<argc;i++)
 						fprintf(stderr,"%s: unknown argument: %s\n",progname,argv[i]);
-					exit(EXIT_FAILURE);
+					bad_option();
 				}
 				break;
 			}
@@ -372,7 +382,7 @@ static inline void parse_args(int clac,char **clav) {
 				case OPT_DEBUG_WRITE:
 					if (config_file_save(c==OPT_DEBUG_WRITE)) {
 						fprintf(stderr,"%s: can not save the config file: %s\n",progname,strerror(errno));
-						exit(EXIT_FAILURE);
+						bad_option();
 					}
 					exit(EXIT_SUCCESS);
 				case 'H': // below values are not partial prefixes of each other, do a relaxed match
@@ -387,7 +397,7 @@ static inline void parse_args(int clac,char **clav) {
 					else {
 					bad_helptype:
 						fprintf(stderr,"%s: invalid value %s for interactive help type\n",progname,optarg);
-						exit(EXIT_FAILURE);
+						bad_option();
 					}
 					break;
 				case 'a':
@@ -423,21 +433,21 @@ static inline void parse_args(int clac,char **clav) {
 					params.iter=parse_num(optarg);
 					if (params.iter<1) {
 						fprintf(stderr,"%s: invalid value %s for iterations\n",progname,optarg);
-						exit(EXIT_FAILURE);
+						bad_option();
 					}
 					break;
 				case 'd':
 					params.delay_ms=parse_delay(optarg);
 					if (params.delay_ms<0) {
 						fprintf(stderr,"%s: invalid value %s for delay\n",progname,optarg);
-						exit(EXIT_FAILURE);
+						bad_option();
 					}
 					break;
 				case 'p':
 					params.pid=parse_num(optarg);
 					if (params.pid<1) {
 						fprintf(stderr,"%s: invalid value %s for pid\n",progname,optarg);
-						exit(EXIT_FAILURE);
+						bad_option();
 					}
 					break;
 				case 'g': // below values are not partial prefixes of each other, do a relaxed match
@@ -458,7 +468,7 @@ static inline void parse_args(int clac,char **clav) {
 					else {
 					bad_grtype:
 						fprintf(stderr,"%s: invalid value %s for graph type\n",progname,optarg);
-						exit(EXIT_FAILURE);
+						bad_option();
 					}
 					break;
 				case 'u':
@@ -466,7 +476,7 @@ static inline void parse_args(int clac,char **clav) {
 						params.user_id=parse_num(optarg+1);
 						if (params.user_id<0) {
 							fprintf(stderr,"%s: invalid uid %s\n",progname,optarg+1);
-							exit(EXIT_FAILURE);
+							bad_option();
 						}
 					} else {
 						struct passwd *pwd=getpwnam(optarg);
@@ -476,7 +486,7 @@ static inline void parse_args(int clac,char **clav) {
 							if (params.user_id>=0) // fallback to numeric uid
 								break;
 							fprintf(stderr,"%s: user %s not found\n",progname,optarg);
-							exit(EXIT_FAILURE);
+							bad_option();
 						}
 						params.user_id=pwd->pw_uid;
 					}
@@ -488,7 +498,7 @@ static inline void parse_args(int clac,char **clav) {
 					v=parse_num(optarg);
 					if (v<1||v>10) {
 						fprintf(stderr,"%s: threshold %s is not between 1 and 10\n",progname,optarg);
-						exit(EXIT_FAILURE);
+						bad_option();
 					}
 					config.f.threshold=v;
 					break;
@@ -607,12 +617,12 @@ static inline void parse_args(int clac,char **clav) {
 					params.search_str=strdup(optarg);
 					if (!params.search_str) {
 						fprintf(stderr,"%s: can not allocate memory for: %s\n",progname,optarg);
-						exit(EXIT_FAILURE);
+						bad_option();
 					}
 					params.search_regx_ok=regcomp(&params.search_regx,params.search_str,REG_EXTENDED)==0;
 					if (!params.search_regx_ok) {
 						fprintf(stderr,"%s: invalid regular expression: %s\n",progname,optarg);
-						exit(EXIT_FAILURE);
+						bad_option();
 					}
 					break;
 				case OPT_UID2NAME:
@@ -626,11 +636,11 @@ static inline void parse_args(int clac,char **clav) {
 						config.f.uid2name=E_UID2NAME_STATIC;
 					else {
 						fprintf(stderr,"%s: invalid value %s for uid2name\n",progname,optarg);
-						exit(EXIT_FAILURE);
+						bad_option();
 					}
 					break;
 				default:
-					exit(EXIT_FAILURE);
+					bad_option();
 			}
 		}
 	}

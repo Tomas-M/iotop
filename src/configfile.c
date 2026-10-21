@@ -27,6 +27,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define MAX_OPT 50
 
 static char *av[MAX_OPT]={NULL,};
+static char path[PATH_MAX]=""; // the config file that was opened last
 static char *ss=NULL;
 static int ac=0;
 
@@ -49,7 +50,6 @@ static inline void mkdir_p(const char *dir) {
 }
 
 static inline FILE *config_file_open(const char *mode) {
-	char path[PATH_MAX];
 	char dir[PATH_MAX];
 	char *xdgconfig;
 	char *home;
@@ -80,6 +80,11 @@ static inline FILE *config_file_open(const char *mode) {
 	}
 
 	return fopen(path,mode);
+}
+
+// the path of the config file that was opened last, for messages
+inline const char *config_file_name(void) {
+	return path;
 }
 
 inline int config_file_load(int *pac,char ***pav) {
