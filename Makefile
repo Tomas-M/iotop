@@ -128,7 +128,8 @@ MYLDFLAGS:=$(filter-out -pie,$(MYLDFLAGS))
 endif
 
 ifeq ("$(NEEDLRT)","need")
-MYLDFLAGS+=-lrt
+# with the libraries after the objects, or --as-needed drops it
+MYLIBS+=-lrt
 endif
 
 ifeq ("$(V)","1")
