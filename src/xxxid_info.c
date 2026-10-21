@@ -447,7 +447,7 @@ void cmdline_reread(void) {
 	cmdline_force=1;
 }
 
-// the item of the previous cycle to take the cmdline of main process s from, NULL to read it
+// the item of the previous cycle to take the cmdline of task s from, NULL to read it
 static struct xxxid_stats *cmdline_prev(struct xxxid_stats *s,const char *comm) {
 	struct xxxid_stats *o;
 
@@ -499,7 +499,7 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	if (tid!=pid&&pid==pcmd.pid) // all threads of a process have the same cmdline
 		cmdline_copy(s,pcmd.cmd_long,pcmd.cmd_short);
 	else {
-		struct xxxid_stats *o=tid==pid?cmdline_prev(s,comm):NULL;
+		struct xxxid_stats *o=cmdline_prev(s,comm); // also for a thread whose main thread exited and has no cmdline
 		int res=0;
 
 		if (o)
