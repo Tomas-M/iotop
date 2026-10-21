@@ -202,8 +202,12 @@ inline int config_file_load(int *pac,char ***pav) {
 			*s=0;
 			s++;
 		}
-		while (e>av[ac-1]&&(e[-1]==' '||e[-1]=='\t'||e[-1]=='\r')) // trim trailing ws, e.g. the CR of CRLF line ends
-			*--e=0;
+		if (!strncmp(av[ac-1],"--filter=",9)) { // a space at the end of a regex is a part of it, only the CR of CRLF is not
+			if (e>av[ac-1]&&e[-1]=='\r')
+				*--e=0;
+		} else
+			while (e>av[ac-1]&&(e[-1]==' '||e[-1]=='\t'||e[-1]=='\r')) // trim trailing ws, e.g. the CR of CRLF line ends
+				*--e=0;
 	}
 
 	fclose(cf);
@@ -348,7 +352,8 @@ inline int config_file_save(int to_stdout) {
 	// --inverse
 	if (config.f.inverse)
 		fprintf(cf,"--inverse\n");
-	if (params.search_regx_ok&&params.search_str&&strlen(params.search_str))
+	// --filter; a line break, only possible from the command line, does not fit in its line
+	if (params.search_regx_ok&&params.search_str&&*params.search_str&&!strpbrk(params.search_str,"\r\n"))
 		fprintf(cf,"--filter=%s\n",params.search_str);
 	// --uid2name
 	if (config.f.uid2name==E_UID2NAME_ALWAYS)
