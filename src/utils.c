@@ -329,6 +329,7 @@ inline char *u8strpadt(const char *s,ssize_t rlen) {
 		len=rlen;
 	if (!d)
 		return NULL;
+	*d=0; // nothing may be copied or padded when len is 0
 	if (!s)
 		s="(null)";
 
