@@ -354,6 +354,17 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 	return o;
 }
 
+// c and p have the same tid; tell if c is the task of p and not a new one that got its tid
+static inline int same_task(const struct xxxid_stats *c,const struct xxxid_stats *p) {
+	if (p->exited) // the tid of a kept exited task was given to a new one
+		return 0;
+	if (!c->btime||!p->btime) // the start time is known only from taskstats v12
+		return 1;
+	// the kernel gives the start time as the current second minus the elapsed seconds, both rounded down,
+	// so for the same task it may differ by one between two cycles
+	return c->btime<=p->btime+1&&p->btime<=c->btime+1;
+}
+
 // order the exited threads by process, keeping them in tid order within it
 static int exited_thread_cmp(const void *a,const void *b) {
 	const struct xxxid_stats *ta=*(struct xxxid_stats * const *)a;
@@ -399,8 +410,11 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 			y++;
 			continue;
 		}
-		// present in both cycles
-		stats_diff(cs->arr[x],ps->arr[y],time_s,ts_c);
+		// the same tid in both cycles
+		if (same_task(cs->arr[x],ps->arr[y]))
+			stats_diff(cs->arr[x],ps->arr[y],time_s,ts_c);
+		else // the old task is left in ps and freed with it
+			stats_new(cs->arr[x],ts_c);
 		update_maxpidlen(cs->arr[x]->tid);
 		x++;
 		y++;
