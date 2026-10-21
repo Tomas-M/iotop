@@ -542,22 +542,17 @@ static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback
 	if (s) {
 		if (filter&&filter(s))
 			free_stats(s);
-		else {
-			if (s->pid==s->tid) { // main process, copy own delays to aggregated process data; fetch_data adds the bytes
-				s->swapin_delay_total_p=s->swapin_delay_total;
-				s->blkio_delay_total_p=s->blkio_delay_total;
-			}
-			if (arr_append(a,s)) // the list is sorted once at the end by arr_finalize
-				free_stats(s);
-		}
+		else if (arr_append(a,s)) // the list is sorted once at the end by arr_finalize
+			free_stats(s);
 	}
 }
 
 // add the growth of task s since o, the same task in the previous cycle or NULL for a new one, to the byte
 // counters of its process p; they go on from the previous cycle, so they never go down as a sum of the counters
-// of the tasks would, when a thread exits
+// of the tasks would, when a thread exits; the delays of the process in this cycle are the longest of its tasks,
+// so that a process with a thread that waits all the time waits 100%
 static inline void proc_grow(struct xxxid_stats *p,const struct xxxid_stats *s,const struct xxxid_stats *o) {
-	if (!o) { // all of it is new
+	if (!o) { // all of it is new; the delays in this cycle are not known
 		p->read_bytes_p+=s->read_bytes;
 		p->write_bytes_p+=s->write_bytes;
 		p->read_char_p+=s->read_char;
@@ -574,6 +569,8 @@ static inline void proc_grow(struct xxxid_stats *p,const struct xxxid_stats *s,c
 	p->write_bytes_p+=rrv(s->write_bytes,o->write_bytes);
 	p->read_char_p+=rrv(s->read_char,o->read_char);
 	p->write_char_p+=rrv(s->write_char,o->write_char);
+	p->blkio_diff_p=mymax(p->blkio_diff_p,rrv(s->blkio_delay_total,o->blkio_delay_total));
+	p->swapin_diff_p=mymax(p->swapin_diff_p,rrv(s->swapin_delay_total,o->swapin_delay_total));
 }
 
 // count of recently found main processes kept while attaching threads; must be a power of 2
@@ -624,8 +621,6 @@ inline struct xxxid_stats_arr *fetch_data(filter_callback filter,struct xxxid_st
 			if (!p->threads)
 				continue;
 			arr_add(p->threads,s);
-			p->swapin_delay_total_p=mymax(p->swapin_delay_total_p,s->swapin_delay_total);
-			p->blkio_delay_total_p=mymax(p->blkio_delay_total_p,s->blkio_delay_total);
 		}
 		proc_grow(p,s,o);
 	}

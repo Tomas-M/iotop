@@ -183,9 +183,7 @@ struct xxxid_stats {
 	uint64_t write_bytes;
 	uint64_t read_char;
 	uint64_t write_char;
-	uint64_t swapin_delay_total_p; // aggregated data from all threads
-	uint64_t blkio_delay_total_p; // used for process view
-	uint64_t read_bytes_p;
+	uint64_t read_bytes_p; // aggregated data from all threads, used for process view
 	uint64_t write_bytes_p;
 	uint64_t read_char_p;
 	uint64_t write_char_p;
@@ -205,7 +203,7 @@ struct xxxid_stats {
 	uint64_t read_char_val_acc;
 	uint64_t write_char_val_acc;
 
-	uint64_t blkio_diff_p;
+	uint64_t blkio_diff_p; // the longest that a thread of the process waited in the last cycle
 	uint64_t swapin_diff_p;
 	uint64_t read_diff_p;
 	uint64_t write_diff_p;

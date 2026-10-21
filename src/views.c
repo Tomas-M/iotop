@@ -239,9 +239,6 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,uint64
 	si=value2scale(c->swapin_diff,cyc_ns);
 
 	if (c->pid==c->tid) {
-		c->blkio_diff_p=rrv(c->blkio_delay_total_p,p->blkio_delay_total_p);
-		c->swapin_diff_p=rrv(c->swapin_delay_total_p,p->swapin_delay_total_p);
-
 		rvp=rrv(c->read_bytes_p,p->read_bytes_p);
 		wvp=rrv(c->write_bytes_p,p->write_bytes_p);
 		rcv=rrv(c->read_char_p,p->read_char_p);
