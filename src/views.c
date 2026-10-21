@@ -341,6 +341,10 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 inline int same_task(const struct xxxid_stats *c,const struct xxxid_stats *p) {
 	if (p->exited) // the tid of a kept exited task was given to a new one
 		return 0;
+	// another program after an exec; one by a thread also takes over the tid and the start of the main thread,
+	// and its own counters would be counted again as the growth of the main one
+	if (c->exe&&p->exe&&c->exe!=p->exe)
+		return 0;
 	if (!c->start||!p->start) // the query failed
 		return 1;
 	// the start is the time of the query minus the age of the task; the time the reply takes moves it a bit,

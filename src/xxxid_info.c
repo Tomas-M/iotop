@@ -458,7 +458,7 @@ static struct xxxid_stats *cmdline_prev(struct xxxid_stats *s,const char *comm) 
 	if (((uint64_t)s->tid+current_cycle)%CMDLINE_REREAD==0) // staggered, so each cycle reads a part of them
 		return NULL;
 	o=arr_find(cmdline_src,s->tid);
-	if (!o||o->exe!=s->exe||!same_task(s,o)) // another process or another exe
+	if (!o||!same_task(s,o)) // another process or another exe
 		return NULL;
 	if (!o->cmdline_long||!o->cmdline_short)
 		return NULL;
