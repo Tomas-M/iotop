@@ -470,7 +470,9 @@ inline int count_visible(struct xxxid_stats_arr *cs,filter_callback_w cb,int wid
 	return cnt;
 }
 
-inline void humanize_val(double *value,char *str,int allow_accum) {
+// scale value to its unit in str; returns the count of decimals that keep the value in 7 chars, as -k and a
+// threshold of 10 give values of 5 digits and more
+inline int humanize_val(double *value,char *str,int allow_accum) {
 	const char *u="BKMGTPEZY";
 	size_t p=0;
 
@@ -488,6 +490,11 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 	}
 
 	snprintf(str,4,"%c%s",u[p],config.f.accumulated&&allow_accum?"  ":"/s");
+	if (*value<9999.995) // rounded to 2 decimals it still has 4 digits before the point
+		return 2;
+	if (*value<99999.95)
+		return 1;
+	return 0;
 }
 
 // the bytes of v that a task did since it started if life is set, else since it was first seen

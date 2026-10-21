@@ -89,10 +89,10 @@ You should have received a copy of the GNU General Public License along with thi
 
 #define HEADER_XXS_FORMAT "%4.0f%s%s/%4.0f%s%s|%4.0f%s%s/%4.0f%s%s"
 #define HEADER_XS_FORMAT "TR:%4.0f%s%sW:%4.0f%s%s|CR:%4.0f%s%sW:%4.0f%s%s"
-#define HEADER_S_FORMAT "T R:%7.2f%s%s W:%7.2f%s%s|C R:%7.2f%s%s W:%7.2f%s%s"
-#define HEADER_M_FORMAT "T Read:%7.2f%s%s Write:%7.2f%s%s|C Read:%7.2f%s%s Write:%7.2f%s%s"
-#define HEADER_L_FORMAT "Total Read:%7.2f %s%s Write:%7.2f %s%s|Current Read:%7.2f %s%s Write:%7.2f %s%s"
-#define HEADER_XL_FORMAT "Total Read: %7.2f %s%s Write: %7.2f %s%s | Current Read: %7.2f %s%s Write: %7.2f %s%s"
+#define HEADER_S_FORMAT "T R:%7.*f%s%s W:%7.*f%s%s|C R:%7.*f%s%s W:%7.*f%s%s"
+#define HEADER_M_FORMAT "T Read:%7.*f%s%s Write:%7.*f%s%s|C Read:%7.*f%s%s Write:%7.*f%s%s"
+#define HEADER_L_FORMAT "Total Read:%7.*f %s%s Write:%7.*f %s%s|Current Read:%7.*f %s%s Write:%7.*f %s%s"
+#define HEADER_XL_FORMAT "Total Read: %7.*f %s%s Write: %7.*f %s%s | Current Read: %7.*f %s%s Write: %7.*f %s%s"
 
 #define RED_PAIR 1
 #define CYAN_PAIR 2
@@ -847,6 +847,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 	char pg_a_r[HISTORY_POS*5]={0};
 	char pg_a_w[HISTORY_POS*5]={0};
 	int flat=config.f.flat&&!config.f.processes; // list the threads alone, not below their process
+	int pr_tr,pr_tw,pr_ar,pr_aw; // the decimals of the totals
+	int head1row_nodec=0; // head1row_format shows the totals without decimals
 	int promptx=0,prompty=0,show=FALSE;
 	char *head1row_format="";
 	uint64_t maxvisible=0;
@@ -935,10 +937,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 		hist_a_w[0]=tot_a_w*1000/cyc_ms;
 	}
 
-	humanize_val(&total_read,str_read,1);
-	humanize_val(&total_write,str_write,1);
-	humanize_val(&total_a_read,str_a_read,0);
-	humanize_val(&total_a_write,str_a_write,0);
+	pr_tr=humanize_val(&total_read,str_read,1);
+	pr_tw=humanize_val(&total_write,str_write,1);
+	pr_ar=humanize_val(&total_a_read,str_a_read,0);
+	pr_aw=humanize_val(&total_a_write,str_a_write,0);
 
 	gr_width_h=gr_width;
 	if (maxy<10||maxx<(int)strlen(HEADER1_FORMAT)+2*(7-5+3-2+(!config.f.hidegraph?gr_width_h+1:0)-2)) {
@@ -968,10 +970,12 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 					} else
 						if (maxx>=(int)strlen(HEADER_XS_FORMAT)+4*(size_off-5)+bllen) {
 							head1row_format=HEADER_XS_FORMAT;
+							head1row_nodec=1;
 							shrink_dm=1;
 							size_off-=5;
 						} else {
 							head1row_format=HEADER_XXS_FORMAT;
+							head1row_nodec=1;
 							shrink_dm=1;
 							size_off-=5;
 						}
@@ -1026,7 +1030,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 				str_a_write[1]=0;
 			}
 			mvhline(0,0,' ',maxx);
-			mvprintw(0,0,head1row_format,total_read,str_read,!config.f.hidegraph?pg_t_r:"",total_write,str_write,!config.f.hidegraph?pg_t_w:"",total_a_read,str_a_read,!config.f.hidegraph?pg_a_r:"",total_a_write,str_a_write,!config.f.hidegraph?pg_a_w:"");
+			if (head1row_nodec)
+				mvprintw(0,0,head1row_format,total_read,str_read,!config.f.hidegraph?pg_t_r:"",total_write,str_write,!config.f.hidegraph?pg_t_w:"",total_a_read,str_a_read,!config.f.hidegraph?pg_a_r:"",total_a_write,str_a_write,!config.f.hidegraph?pg_a_w:"");
+			else
+				mvprintw(0,0,head1row_format,pr_tr,total_read,str_read,!config.f.hidegraph?pg_t_r:"",pr_tw,total_write,str_write,!config.f.hidegraph?pg_t_w:"",pr_ar,total_a_read,str_a_read,!config.f.hidegraph?pg_a_r:"",pr_aw,total_a_write,str_a_write,!config.f.hidegraph?pg_a_w:"");
 			if (maxx>bllen)
 				mvprintw(0,maxx-bllen,"%s",base_lbl);
 			show=FALSE;
@@ -1036,14 +1043,14 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 		int xpos=maxx-bllen;
 
 		mvhline(0,0,' ',maxx);
-		mvprintw(0,0,HEADER1_FORMAT,total_read,str_read,!config.f.hidegraph?pg_t_r:"",total_write,str_write,!config.f.hidegraph?pg_t_w:"");
+		mvprintw(0,0,HEADER1_FORMAT,pr_tr,total_read,str_read,!config.f.hidegraph?pg_t_r:"",pr_tw,total_write,str_write,!config.f.hidegraph?pg_t_w:"");
 		if (xpos<h1vis)
 			xpos=h1vis;
 		mvprintw(0,xpos,"%s",base_lbl);
 
 		if (!in_ionice&&!in_filter&&!in_search) {
 			mvhline(1,0,' ',maxx);
-			mvprintw(1,0,HEADER2_FORMAT,total_a_read,str_a_read,!config.f.hidegraph?pg_a_r:"",total_a_write,str_a_write,!config.f.hidegraph?pg_a_w:"");
+			mvprintw(1,0,HEADER2_FORMAT,pr_ar,total_a_read,str_a_read,!config.f.hidegraph?pg_a_r:"",pr_aw,total_a_write,str_a_write,!config.f.hidegraph?pg_a_w:"");
 			show=FALSE;
 		}
 	}
@@ -1240,6 +1247,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 		char graphstr[HISTORY_POS*5];
 		double read_val,write_val;
 		char *pw_name,*cmdline;
+		int pr_r,pr_w,pr_vr,pr_vw; // the decimals of the values
 		char *pwt,*cmdt;
 		int hrevpos;
 
@@ -1317,10 +1325,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 				}
 			}
 
-			humanize_val(&read_val,read_str,1);
-			humanize_val(&write_val,write_str,1);
-			humanize_val(&vfs_read_val,vfs_read_str,1);
-			humanize_val(&vfs_write_val,vfs_write_str,1);
+			pr_r=humanize_val(&read_val,read_str,1);
+			pr_w=humanize_val(&write_val,write_str,1);
+			pr_vr=humanize_val(&vfs_read_val,vfs_read_str,1);
+			pr_vw=humanize_val(&vfs_write_val,vfs_write_str,1);
 
 			pwt=esc_low_ascii(s->pw_name);
 			pw_name=u8strpadt(pwt,9);
@@ -1439,7 +1447,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 					printw("   Error    ");
 					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
-					printw("%7.2f %-3.3s ",read_val,read_str);
+					printw("%7.*f %-3.3s ",pr_r,read_val,read_str);
 			}
 			if (!config.f.hidevfsread) {
 				if (s->error_x) {
@@ -1447,7 +1455,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 					printw("   Error    ");
 					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
-					printw("%7.2f %-3.3s ",vfs_read_val,vfs_read_str);
+					printw("%7.*f %-3.3s ",pr_vr,vfs_read_val,vfs_read_str);
 			}
 			if (!config.f.hidewrite) {
 				if (s->error_x) {
@@ -1455,7 +1463,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 					printw("   Error    ");
 					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
-					printw("%7.2f %-3.3s ",write_val,write_str);
+					printw("%7.*f %-3.3s ",pr_w,write_val,write_str);
 			}
 			if (!config.f.hidevfswrite) {
 				if (s->error_x) {
@@ -1463,7 +1471,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 					printw("   Error    ");
 					attroff(config.f.nocolor?A_ITALIC:COLOR_PAIR(RED_PAIR));
 				} else
-					printw("%7.2f %-3.3s ",vfs_write_val,vfs_write_str);
+					printw("%7.*f %-3.3s ",pr_vw,vfs_write_val,vfs_write_str);
 			}
 			if (!config.f.hideswapin&&has_tda) {
 				if (s->error_x) {

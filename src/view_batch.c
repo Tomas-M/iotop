@@ -34,6 +34,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	char str_a_read[4],str_a_write[4];
 	double total_read,total_write;
 	char str_read[4],str_write[4];
+	int pr_tr,pr_tw,pr_ar,pr_aw; // the decimals of the totals
 	static int firsthdr=1;
 	char tstr[16]=""; // time prefix of each line with --time
 	struct tm *tm;
@@ -48,10 +49,10 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	total_a_read=(double)tot_a_r/time_s;
 	total_a_write=(double)tot_a_w/time_s;
 
-	humanize_val(&total_read,str_read,1);
-	humanize_val(&total_write,str_write,1);
-	humanize_val(&total_a_read,str_a_read,0);
-	humanize_val(&total_a_write,str_a_write,0);
+	pr_tr=humanize_val(&total_read,str_read,1);
+	pr_tw=humanize_val(&total_write,str_write,1);
+	pr_ar=humanize_val(&total_a_read,str_a_read,0);
+	pr_aw=humanize_val(&total_a_write,str_a_write,0);
 
 	if (config.f.timestamp) { // the same time for all lines of the iteration
 		t=time(NULL);
@@ -62,10 +63,10 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 
 	if (config.f.quiet<3) {
 		printf("%s",tstr);
-		printf(HEADER1_FORMAT,total_read,str_read,"",total_write,str_write,"");
+		printf(HEADER1_FORMAT,pr_tr,total_read,str_read,"",pr_tw,total_write,str_write,"");
 		printf("\n");
 		printf("%s",tstr);
-		printf(HEADER2_FORMAT,total_a_read,str_a_read,"",total_a_write,str_a_write,"");
+		printf(HEADER2_FORMAT,pr_ar,total_a_read,str_a_read,"",pr_aw,total_a_write,str_a_write,"");
 		printf("\n");
 	}
 
@@ -86,6 +87,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		struct xxxid_stats *s=cs->sor[i];
 		char vfs_read_str[4],vfs_write_str[4];
 		char read_str[4],write_str[4];
+		int pr_r,pr_w,pr_vr,pr_vw; // the decimals of the values
 		double vfs_write_val;
 		double vfs_read_val;
 		double swapin_val;
@@ -127,21 +129,21 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 				continue;
 		}
 
-		humanize_val(&read_val,read_str,1);
-		humanize_val(&write_val,write_str,1);
-		humanize_val(&vfs_read_val,vfs_read_str,1);
-		humanize_val(&vfs_write_val,vfs_write_str,1);
+		pr_r=humanize_val(&read_val,read_str,1);
+		pr_w=humanize_val(&write_val,write_str,1);
+		pr_vr=humanize_val(&vfs_read_val,vfs_read_str,1);
+		pr_vw=humanize_val(&vfs_write_val,vfs_write_str,1);
 
 		pw_name=u8strpadt(s->pw_name,10);
 
 		cmdt=cmd_text(s); // with -c the custom thread name in [] before the full cmdline
 
-		printf("%s%*i %4s %s %7.2f %-3.3s",tstr,pidw,s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",read_val,read_str);
+		printf("%s%*i %4s %s %7.*f %-3.3s",tstr,pidw,s->tid,str_ioprio(s->io_prio),pw_name?pw_name:"(null)",pr_r,read_val,read_str);
 		if (!config.f.hidevfsread)
-			printf(" %7.2f %-3.3s",vfs_read_val,vfs_read_str);
-		printf(" %7.2f %-3.3s",write_val,write_str);
+			printf(" %7.*f %-3.3s",pr_vr,vfs_read_val,vfs_read_str);
+		printf(" %7.*f %-3.3s",pr_w,write_val,write_str);
 		if (!config.f.hidevfswrite)
-			printf(" %7.2f %-3.3s",vfs_write_val,vfs_write_str);
+			printf(" %7.*f %-3.3s",pr_vw,vfs_write_val,vfs_write_str);
 		printf(" %2.2f %% %2.2f %% %s\n",swapin_val,blkio_val,cmdt?cmdt:"(null)");
 
 		if (cmdt)

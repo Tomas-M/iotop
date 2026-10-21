@@ -368,12 +368,12 @@ inline void arr_free(struct xxxid_stats_arr *pa);
 inline void arr_free_noitem(struct xxxid_stats_arr *pa);
 inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b),int (*keep)(const struct xxxid_stats *s));
 
-#define HEADER1_FORMAT "  Total DISK READ: %7.2f %s%s |   Total DISK WRITE: %7.2f %s%s"
-#define HEADER2_FORMAT "Current DISK READ: %7.2f %s%s | Current DISK WRITE: %7.2f %s%s"
+#define HEADER1_FORMAT "  Total DISK READ: %7.*f %s%s |   Total DISK WRITE: %7.*f %s%s"
+#define HEADER2_FORMAT "Current DISK READ: %7.*f %s%s | Current DISK WRITE: %7.*f %s%s"
 
 inline void calc_total(struct xxxid_stats_arr *cs,uint64_t *read,uint64_t *write);
 inline void calc_a_total(struct act_stats *act,uint64_t *read,uint64_t *write);
-inline void humanize_val(double *value,char *str,int allow_accum);
+inline int humanize_val(double *value,char *str,int allow_accum);
 inline int iotop_sort_cb(const void *a,const void *b);
 inline void iotop_sort(struct xxxid_stats_arr *a,int agg,int (*keep)(const struct xxxid_stats *s));
 inline uint64_t rrv(uint64_t to,uint64_t from);
