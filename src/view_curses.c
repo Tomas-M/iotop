@@ -392,8 +392,8 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 		if (config.f.hidegraph) {
 			if ((config.f.processes?s->blkio_val_p:s->blkio_val)<=0&&
 				(config.f.processes?s->swapin_val_p:s->swapin_val)<=0&&
-				(config.f.processes?s->read_val_p:s->read_val)<=0&&
-				(config.f.processes?s->write_val_p:s->write_val)<=0)
+				!(config.f.processes?s->read_diff_p:s->read_diff)&&
+				!(config.f.processes?s->write_diff_p:s->write_diff))
 				goto dohide;
 		} else {
 			uint64_t su=0;
@@ -428,8 +428,8 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 		dohide:
 			if ((config.f.processes?s->blkio_val_p:s->blkio_val)<=0&&
 				(config.f.processes?s->swapin_val_p:s->swapin_val)<=0&&
-				(config.f.processes?s->read_val_p:s->read_val)<=0&&
-				(config.f.processes?s->write_val_p:s->write_val)<=0)
+				!(config.f.processes?s->read_diff_p:s->read_diff)&&
+				!(config.f.processes?s->write_diff_p:s->write_diff))
 				return 1;
 		}
 	}
@@ -910,7 +910,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 			view_sort(cs,iotop_sort_proc_cb,is_main); // the processes by their totals, also when the threads are shown
 	}
 
-	calc_total(cs,&total_read,&total_write);
+	calc_total(cs,&total_read,&total_write,time_s);
 	calc_a_total(act,&total_a_read,&total_a_write,time_s);
 
 	if (roll) {
@@ -1299,10 +1299,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 					vfs_read_val=0.0;
 					vfs_write_val=0.0;
 				} else {
-					read_val=config.f.processes?s->read_val_p:s->read_val;
-					write_val=config.f.processes?s->write_val_p:s->write_val;
-					vfs_read_val=config.f.processes?s->read_char_val_p:s->read_char_val;
-					vfs_write_val=config.f.processes?s->write_char_val_p:s->write_char_val;
+					read_val=(double)(config.f.processes?s->read_diff_p:s->read_diff)/time_s;
+					write_val=(double)(config.f.processes?s->write_diff_p:s->write_diff)/time_s;
+					vfs_read_val=(double)(config.f.processes?s->read_char_diff_p:s->read_char_diff)/time_s;
+					vfs_write_val=(double)(config.f.processes?s->write_char_diff_p:s->write_char_diff)/time_s;
 				}
 			}
 

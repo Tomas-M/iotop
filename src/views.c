@@ -20,15 +20,15 @@ You should have received a copy of the GNU General Public License along with thi
 
 static double wall_off; // the wall clock minus the monotonic clock in seconds, for the start times of the tasks
 
-inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write) {
+inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write,double time_s) {
 	int i;
 
 	*read=*write=0;
 
 	for (i=0;i<cs->length;i++) {
 		if (!config.f.accumulated) {
-			*read+=cs->arr[i]->read_val;
-			*write+=cs->arr[i]->write_val;
+			*read+=(double)cs->arr[i]->read_diff/time_s;
+			*write+=(double)cs->arr[i]->write_diff/time_s;
 		} else {
 			*read+=accum_val(cs->arr[i],E_ACC_READ,0);
 			*write+=accum_val(cs->arr[i],E_ACC_WRITE,0);
@@ -183,10 +183,10 @@ static inline void update_maxpidlen(pid_t tid) {
 static inline void stats_new(struct xxxid_stats *c,uint64_t ts_c) {
 	c->blkio_val=0;
 	c->swapin_val=0;
-	c->read_val=0;
-	c->write_val=0;
-	c->read_char_val=0;
-	c->write_char_val=0;
+	c->read_diff=0;
+	c->write_diff=0;
+	c->read_char_diff=0;
+	c->write_char_diff=0;
 	c->read_val_acc=0;
 	c->write_val_acc=0;
 	c->read_char_val_acc=0;
@@ -227,10 +227,10 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	rcv=rrv(c->read_char,p->read_char);
 	wcv=rrv(c->write_char,p->write_char);
 
-	c->read_val=(double)rv/time_s;
-	c->write_val=(double)wv/time_s;
-	c->read_char_val=(double)rcv/time_s;
-	c->write_char_val=(double)wcv/time_s;
+	c->read_diff=rv;
+	c->write_diff=wv;
+	c->read_char_diff=rcv;
+	c->write_char_diff=wcv;
 
 	c->read_val_acc=p->read_val_acc+rv;
 	c->write_val_acc=p->write_val_acc+wv;
@@ -254,10 +254,10 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		rcv=rrv(c->read_char_p,p->read_char_p);
 		wcv=rrv(c->write_char_p,p->write_char_p);
 
-		c->read_val_p=(double)rvp/time_s;
-		c->write_val_p=(double)wvp/time_s;
-		c->read_char_val_p=(double)rcv/time_s;
-		c->write_char_val_p=(double)wcv/time_s;
+		c->read_diff_p=rvp;
+		c->write_diff_p=wvp;
+		c->read_char_diff_p=rcv;
+		c->write_char_diff_p=wcv;
 
 		c->read_val_acc_p=p->read_val_acc_p+rvp;
 		c->write_val_acc_p=p->write_val_acc_p+wvp;
@@ -309,10 +309,10 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 	// last state is zero, only history remains
 	o->blkio_val=0;
 	o->swapin_val=0;
-	o->read_val=0;
-	o->write_val=0;
-	o->read_char_val=0;
-	o->write_char_val=0;
+	o->read_diff=0;
+	o->write_diff=0;
+	o->read_char_diff=0;
+	o->write_char_diff=0;
 	if (h) { // store zero as the newest values; without own history it is all zero anyway
 		h->pos=(h->pos+1)%HISTORY_CNT;
 		if (h->cnt<HISTORY_CNT)
@@ -630,32 +630,32 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 				res=accum_val(pa,E_ACC_READ,agg)>accum_val(pb,E_ACC_READ,agg)?1:
 					accum_val(pa,E_ACC_READ,agg)<accum_val(pb,E_ACC_READ,agg)?-1:0;
 			else
-				res=(agg?pa->read_val_p:pa->read_val)>(agg?pb->read_val_p:pb->read_val)?1:
-					(agg?pa->read_val_p:pa->read_val)<(agg?pb->read_val_p:pb->read_val)?-1:0;
+				res=(agg?pa->read_diff_p:pa->read_diff)>(agg?pb->read_diff_p:pb->read_diff)?1:
+					(agg?pa->read_diff_p:pa->read_diff)<(agg?pb->read_diff_p:pb->read_diff)?-1:0;
 			break;
 		case SORT_BY_WRITE:
 			if (config.f.accumulated||config.f.accumbw)
 				res=accum_val(pa,E_ACC_WRITE,agg)>accum_val(pb,E_ACC_WRITE,agg)?1:
 					accum_val(pa,E_ACC_WRITE,agg)<accum_val(pb,E_ACC_WRITE,agg)?-1:0;
 			else
-				res=(agg?pa->write_val_p:pa->write_val)>(agg?pb->write_val_p:pb->write_val)?1:
-					(agg?pa->write_val_p:pa->write_val)<(agg?pb->write_val_p:pb->write_val)?-1:0;
+				res=(agg?pa->write_diff_p:pa->write_diff)>(agg?pb->write_diff_p:pb->write_diff)?1:
+					(agg?pa->write_diff_p:pa->write_diff)<(agg?pb->write_diff_p:pb->write_diff)?-1:0;
 			break;
 		case SORT_BY_VFS_READ:
 			if (config.f.accumulated||config.f.accumbw)
 				res=accum_val(pa,E_ACC_VFS_READ,agg)>accum_val(pb,E_ACC_VFS_READ,agg)?1:
 					accum_val(pa,E_ACC_VFS_READ,agg)<accum_val(pb,E_ACC_VFS_READ,agg)?-1:0;
 			else
-				res=(agg?pa->read_char_val_p:pa->read_char_val)>(agg?pb->read_char_val_p:pb->read_char_val)?1:
-					(agg?pa->read_char_val_p:pa->read_char_val)<(agg?pb->read_char_val_p:pb->read_char_val)?-1:0;
+				res=(agg?pa->read_char_diff_p:pa->read_char_diff)>(agg?pb->read_char_diff_p:pb->read_char_diff)?1:
+					(agg?pa->read_char_diff_p:pa->read_char_diff)<(agg?pb->read_char_diff_p:pb->read_char_diff)?-1:0;
 			break;
 		case SORT_BY_VFS_WRITE:
 			if (config.f.accumulated||config.f.accumbw)
 				res=accum_val(pa,E_ACC_VFS_WRITE,agg)>accum_val(pb,E_ACC_VFS_WRITE,agg)?1:
 					accum_val(pa,E_ACC_VFS_WRITE,agg)<accum_val(pb,E_ACC_VFS_WRITE,agg)?-1:0;
 			else
-				res=(agg?pa->write_char_val_p:pa->write_char_val)>(agg?pb->write_char_val_p:pb->write_char_val)?1:
-					(agg?pa->write_char_val_p:pa->write_char_val)<(agg?pb->write_char_val_p:pb->write_char_val)?-1:0;
+				res=(agg?pa->write_char_diff_p:pa->write_char_diff)>(agg?pb->write_char_diff_p:pb->write_char_diff)?1:
+					(agg?pa->write_char_diff_p:pa->write_char_diff)<(agg?pb->write_char_diff_p:pb->write_char_diff)?-1:0;
 			break;
 		case SORT_BY_SWAPIN:
 			res=(agg?pa->swapin_val_p:pa->swapin_val)>(agg?pb->swapin_val_p:pb->swapin_val)?1:

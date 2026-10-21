@@ -38,7 +38,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	int i;
 
 	create_diff(cs,ps,time_s,act->ts_c,0); // the batch view does not show exited tasks
-	calc_total(cs,&total_read,&total_write);
+	calc_total(cs,&total_read,&total_write,time_s);
 	calc_a_total(act,&total_a_read,&total_a_write,time_s);
 
 	humanize_val(&total_read,str_read,1);
@@ -94,10 +94,10 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 			vfs_read_val=accum_val(s,E_ACC_VFS_READ,config.f.processes);
 			vfs_write_val=accum_val(s,E_ACC_VFS_WRITE,config.f.processes);
 		} else {
-			read_val=config.f.processes?s->read_val_p:s->read_val;
-			write_val=config.f.processes?s->write_val_p:s->write_val;
-			vfs_read_val=config.f.processes?s->read_char_val_p:s->read_char_val;
-			vfs_write_val=config.f.processes?s->write_char_val_p:s->write_char_val;
+			read_val=(double)(config.f.processes?s->read_diff_p:s->read_diff)/time_s;
+			write_val=(double)(config.f.processes?s->write_diff_p:s->write_diff)/time_s;
+			vfs_read_val=(double)(config.f.processes?s->read_char_diff_p:s->read_char_diff)/time_s;
+			vfs_write_val=(double)(config.f.processes?s->write_char_diff_p:s->write_char_diff)/time_s;
 		}
 		swapin_val=config.f.processes?s->swapin_val_p:s->swapin_val;
 		blkio_val=config.f.processes?s->blkio_val_p:s->blkio_val;

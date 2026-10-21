@@ -196,10 +196,10 @@ struct xxxid_stats {
 
 	double blkio_val;
 	double swapin_val;
-	double read_val;
-	double write_val;
-	double read_char_val;
-	double write_char_val;
+	uint64_t read_diff; // bytes in the last cycle
+	uint64_t write_diff;
+	uint64_t read_char_diff;
+	uint64_t write_char_diff;
 	uint64_t read_val_acc; // bytes since the task was first seen
 	uint64_t write_val_acc;
 	uint64_t read_char_val_acc;
@@ -207,10 +207,10 @@ struct xxxid_stats {
 
 	double blkio_val_p;
 	double swapin_val_p;
-	double read_val_p;
-	double write_val_p;
-	double read_char_val_p;
-	double write_char_val_p;
+	uint64_t read_diff_p;
+	uint64_t write_diff_p;
+	uint64_t read_char_diff_p;
+	uint64_t write_char_diff_p;
 	uint64_t read_val_acc_p;
 	uint64_t write_val_acc_p;
 	uint64_t read_char_val_acc_p;
@@ -367,7 +367,7 @@ inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const vo
 #define HEADER1_FORMAT "  Total DISK READ: %7.2f %s%s |   Total DISK WRITE: %7.2f %s%s"
 #define HEADER2_FORMAT "Current DISK READ: %7.2f %s%s | Current DISK WRITE: %7.2f %s%s"
 
-inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write);
+inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write,double time_s);
 inline void calc_a_total(struct act_stats *act,double *read,double *write,double time_s);
 inline void humanize_val(double *value,char *str,int allow_accum);
 inline int iotop_sort_cb(const void *a,const void *b);
