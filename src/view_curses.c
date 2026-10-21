@@ -107,6 +107,7 @@ static int ionice_col=0; // select what to edit pid/tid(0), class(2) or prio(1) 
 static int ionice_class=IOPRIO_CLASS_RT;
 static int ionice_prio=0;
 static int ionice_id_changed=0;
+static int ionice_id_ok=0; // the typed id is of a live task, with its priority shown
 static int ionice_line=1;
 static int in_filter=0; // filter by pid/uid interface flag and state vars
 static char filter_uid[50];
@@ -1575,7 +1576,8 @@ donedraw:
 			attroff(A_BOLD);
 			getyx(stdscr,prompty,promptx);
 			show=TRUE;
-			if (id&&(p=arr_find(cs,id))&&!p->exited) {
+			ionice_id_ok=id&&(p=arr_find(cs,id))&&!p->exited;
+			if (ionice_id_ok) {
 				printw(" Current: ");
 				attron(A_BOLD);
 				printw("%s",str_ioprio(p->io_prio));
@@ -2529,7 +2531,7 @@ static inline int curses_key(int ch) {
 			break;
 		case KEY_RET: // CR
 		case KEY_ENTER:
-			if (in_ionice&&strlen(ionice_id)) {
+			if (in_ionice&&strlen(ionice_id)&&ionice_id_ok) { // else the prompt stays open to correct the id
 				pid_t pgid=atoi(ionice_id);
 				int who=IOPRIO_WHO_PROCESS;
 
@@ -2540,7 +2542,7 @@ static inline int curses_key(int ch) {
 				in_ionice=0;
 				set_ioprio(who,pgid,ionice_class,ionice_prio);
 			}
-			if (in_ionice&&ionice_pos_data&&!ionice_pos_data->exited) {
+			if (in_ionice&&!strlen(ionice_id)&&ionice_pos_data&&!ionice_pos_data->exited) {
 				pid_t pgid=ionice_pos_data->tid;
 				int who=IOPRIO_WHO_PROCESS;
 
