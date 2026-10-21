@@ -493,6 +493,19 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 	snprintf(str,4,"%c%s",u[p],config.f.accumulated&&allow_accum?"  ":"/s");
 }
 
+// the read and write values that the columns show in the accumulated modes
+static inline double accum_read(const struct xxxid_stats *s,int agg) {
+	if (config.f.accumbw)
+		return agg?s->read_val_abw_p:s->read_val_abw;
+	return agg?s->read_val_acc_p:s->read_val_acc;
+}
+
+static inline double accum_write(const struct xxxid_stats *s,int agg) {
+	if (config.f.accumbw)
+		return agg?s->write_val_abw_p:s->write_val_abw;
+	return agg?s->write_val_acc_p:s->write_val_acc;
+}
+
 // the curses view keeps the sorted lists while struct view_key is unchanged, so any input of the sort
 // besides the compared items has to be there too
 inline int iotop_sort_cb(const void *a,const void *b) {
@@ -527,8 +540,13 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_R:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					da=HIST_SUM(pa->hist,read,config.f.processes,grlen);
-					db=HIST_SUM(pb->hist,read,config.f.processes,grlen);
+					if (config.f.accumulated||config.f.accumbw) {
+						da=accum_read(pa,config.f.processes);
+						db=accum_read(pb,config.f.processes);
+					} else {
+						da=HIST_SUM(pa->hist,read,config.f.processes,grlen);
+						db=HIST_SUM(pb->hist,read,config.f.processes,grlen);
+					}
 					if (da>db)
 						res=1;
 					else if (da<db)
@@ -539,8 +557,13 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_W:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					da=HIST_SUM(pa->hist,write,config.f.processes,grlen);
-					db=HIST_SUM(pb->hist,write,config.f.processes,grlen);
+					if (config.f.accumulated||config.f.accumbw) {
+						da=accum_write(pa,config.f.processes);
+						db=accum_write(pb,config.f.processes);
+					} else {
+						da=HIST_SUM(pa->hist,write,config.f.processes,grlen);
+						db=HIST_SUM(pb->hist,write,config.f.processes,grlen);
+					}
 					if (da>db)
 						res=1;
 					else if (da<db)
@@ -551,8 +574,13 @@ inline int iotop_sort_cb(const void *a,const void *b) {
 				case E_GR_RW:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					da=HIST_SUM(pa->hist,read,config.f.processes,grlen)+HIST_SUM(pa->hist,write,config.f.processes,grlen);
-					db=HIST_SUM(pb->hist,read,config.f.processes,grlen)+HIST_SUM(pb->hist,write,config.f.processes,grlen);
+					if (config.f.accumulated||config.f.accumbw) {
+						da=accum_read(pa,config.f.processes)+accum_write(pa,config.f.processes);
+						db=accum_read(pb,config.f.processes)+accum_write(pb,config.f.processes);
+					} else {
+						da=HIST_SUM(pa->hist,read,config.f.processes,grlen)+HIST_SUM(pa->hist,write,config.f.processes,grlen);
+						db=HIST_SUM(pb->hist,read,config.f.processes,grlen)+HIST_SUM(pb->hist,write,config.f.processes,grlen);
+					}
 					if (da>db)
 						res=1;
 					else if (da<db)
