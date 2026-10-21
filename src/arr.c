@@ -248,7 +248,7 @@ inline void arr_free_noitem(struct xxxid_stats_arr *pa) {
 	_arr_free(pa,0);
 }
 
-// sort the items for which keep returns nonzero, all of them if keep is NULL
+// sort the items for which keep returns nonzero, all of them if keep is NULL; only select them if cb is NULL
 inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const void *b),int (*keep)(const struct xxxid_stats *s)) {
 	int i,n;
 
@@ -273,6 +273,7 @@ inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const vo
 		n=pa->length;
 	}
 	pa->sor_length=n;
-	qsort(pa->sor,n,sizeof *pa->sor,cb);
+	if (cb)
+		qsort(pa->sor,n,sizeof *pa->sor,cb);
 }
 

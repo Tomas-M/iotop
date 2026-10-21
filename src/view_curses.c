@@ -356,16 +356,19 @@ static inline void view_key_check(int width) {
 		view_gen=1;
 }
 
-// sort a for the view with cb, unless it is already sorted for the current generation
-static inline void view_sort(struct xxxid_stats_arr *a,int (*cb)(const void *a,const void *b),int (*keep)(const struct xxxid_stats *s)) {
+// sort a for the view, unless it is already sorted for the current generation; agg compares the values of the
+// whole processes
+static inline void view_sort(struct xxxid_stats_arr *a,int agg,int (*keep)(const struct xxxid_stats *s)) {
 	if (a->sort_gen==view_gen&&a->sor) // changing the list drops sor
 		return;
-	arr_sort(a,cb,keep);
+	iotop_sort(a,agg,keep);
 	a->sort_gen=view_gen;
 }
 
 // any input of the filter besides s has to be in struct view_key
 static inline int filter_view(struct xxxid_stats *s,int gr_width) {
+	uint64_t age; // the averaging time of accum_src, not needed here
+
 	// apply uid/pid filter
 	if (filter1(s))
 		return 1;
@@ -389,7 +392,7 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 			return 1;
 	}
 	// visible history is non-zero, or in the accumulated modes the shown totals
-	if (config.f.only&&!((config.f.accumulated||config.f.accumbw)&&accum_val(s,E_ACC_READ,config.f.processes)+accum_val(s,E_ACC_WRITE,config.f.processes)>0)) {
+	if (config.f.only&&!((config.f.accumulated||config.f.accumbw)&&(accum_src(s,E_ACC_READ,config.f.processes,&age)||accum_src(s,E_ACC_WRITE,config.f.processes,&age)))) {
 		if (config.f.hidegraph) {
 			if (!(config.f.processes?s->blkio_diff_p:s->blkio_diff)&&
 				!(config.f.processes?s->swapin_diff_p:s->swapin_diff)&&
@@ -908,9 +911,9 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 	if (cs->sort_gen!=view_gen||!cs->sor) { // count and sort only for new data or changed view
 		dispcount=count_visible(cs,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 		if (flat)
-			view_sort(cs,iotop_sort_cb,NULL);
+			view_sort(cs,config.f.processes,NULL);
 		else
-			view_sort(cs,iotop_sort_proc_cb,is_main); // the processes by their totals, also when the threads are shown
+			view_sort(cs,1,is_main); // the processes by their totals, also when the threads are shown
 	}
 
 	calc_total(cs,&tot_r,&tot_w);
@@ -1172,7 +1175,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 			struct xxxid_stats *ms=cs->sor[i],*s;
 
 			if (ms->threads&&!flat)
-				view_sort(ms->threads,iotop_sort_cb,NULL);
+				view_sort(ms->threads,config.f.processes,NULL);
 			// show only processes, if configured
 			for (k=-1;k<((config.f.processes||flat)?0:(ms->threads?ms->threads->length:0));k++) {
 				const uint64_t *rh,*wh; // the histories that are drawn: aggregated for processes
@@ -1241,7 +1244,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 
 		if (ms->threads&&!flat)
 			if (!(masked_grtype(0)!=E_GR_IO&&masked_grtype(0)!=E_GR_SW&&!config.f.hidegraph))
-				view_sort(ms->threads,iotop_sort_cb,NULL);
+				view_sort(ms->threads,config.f.processes,NULL);
 		// check if threads use the same prio as the main process
 		// scan for hidden threads
 		th_first=1;

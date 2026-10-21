@@ -505,21 +505,30 @@ inline uint64_t accum_bytes(const struct xxxid_stats *s,e_accum v,int agg,int li
 	return life?cnt:acc;
 }
 
-// the value that a column shows in the accumulated modes: the total since the task started, or with
-// --no-lifetime since it was first seen; with accum-bw the average bandwidth over that time
-inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg) {
-	uint64_t age=timediff_in_ms(s->ts_s,s->ts_e);
-
+// the bytes that the value of a column in the accumulated modes shows: the total since the task started,
+// or with --no-lifetime since it was first seen; age is the time in milliseconds that accum-bw averages over
+inline uint64_t accum_src(const struct xxxid_stats *s,e_accum v,int agg,uint64_t *age) {
+	*age=timediff_in_ms(s->ts_s,s->ts_e);
 	if (!config.f.accumbw)
-		return (double)accum_bytes(s,v,agg,!config.f.nolifetime);
+		return accum_bytes(s,v,agg,!config.f.nolifetime);
 	if (!config.f.nolifetime&&s->btime) { // the start time is known since taskstats v12, else average since first seen
 		int64_t life=(int64_t)s->ts_e-((int64_t)s->btime*1000-wall_off);
 
-		if (life>(int64_t)age)
-			age=(uint64_t)life;
-		return (double)accum_bytes(s,v,agg,1)*1000.0/(double)age;
+		if (life>(int64_t)*age)
+			*age=(uint64_t)life;
+		return accum_bytes(s,v,agg,1);
 	}
-	return (double)accum_bytes(s,v,agg,0)*1000.0/(double)age;
+	return accum_bytes(s,v,agg,0);
+}
+
+// the value that a column shows in the accumulated modes, with accum-bw the average bandwidth
+inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg) {
+	uint64_t age;
+	uint64_t b=accum_src(s,v,agg,&age);
+
+	if (config.f.accumbw)
+		return (double)b*1000.0/(double)age;
+	return (double)b;
 }
 
 static int grlen=0; // count of the newest history values that the graph shows
@@ -538,7 +547,7 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 
 	switch (masked_sort_by(0)) {
 		case SORT_BY_GRAPH: {
-			double da=0,db=0;
+			uint64_t ua=0,ub=0;
 			int aa=0,ab=0;
 
 			switch (masked_grtype(0)) {
@@ -552,16 +561,11 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 				case E_GR_R:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					if (config.f.accumulated||config.f.accumbw) {
-						da=accum_val(pa,E_ACC_READ,agg);
-						db=accum_val(pb,E_ACC_READ,agg);
-					} else {
-						da=HIST_SUM(pa->hist,read,agg,grlen);
-						db=HIST_SUM(pb->hist,read,agg,grlen);
-					}
-					if (da>db)
+					ua=HIST_SUM(pa->hist,read,agg,grlen);
+					ub=HIST_SUM(pb->hist,read,agg,grlen);
+					if (ua>ub)
 						res=1;
-					else if (da<db)
+					else if (ua<ub)
 						res=-1;
 					else
 						res=0;
@@ -569,16 +573,11 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 				case E_GR_W:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					if (config.f.accumulated||config.f.accumbw) {
-						da=accum_val(pa,E_ACC_WRITE,agg);
-						db=accum_val(pb,E_ACC_WRITE,agg);
-					} else {
-						da=HIST_SUM(pa->hist,write,agg,grlen);
-						db=HIST_SUM(pb->hist,write,agg,grlen);
-					}
-					if (da>db)
+					ua=HIST_SUM(pa->hist,write,agg,grlen);
+					ub=HIST_SUM(pb->hist,write,agg,grlen);
+					if (ua>ub)
 						res=1;
-					else if (da<db)
+					else if (ua<ub)
 						res=-1;
 					else
 						res=0;
@@ -586,16 +585,11 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 				case E_GR_RW:
 					if (grlen==0)
 						grlen=HISTORY_CNT;
-					if (config.f.accumulated||config.f.accumbw) {
-						da=accum_val(pa,E_ACC_READ,agg)+accum_val(pa,E_ACC_WRITE,agg);
-						db=accum_val(pb,E_ACC_READ,agg)+accum_val(pb,E_ACC_WRITE,agg);
-					} else {
-						da=HIST_SUM(pa->hist,read,agg,grlen)+HIST_SUM(pa->hist,write,agg,grlen);
-						db=HIST_SUM(pb->hist,read,agg,grlen)+HIST_SUM(pb->hist,write,agg,grlen);
-					}
-					if (da>db)
+					ua=HIST_SUM(pa->hist,read,agg,grlen)+HIST_SUM(pa->hist,write,agg,grlen);
+					ub=HIST_SUM(pb->hist,read,agg,grlen)+HIST_SUM(pb->hist,write,agg,grlen);
+					if (ua>ub)
 						res=1;
-					else if (da<db)
+					else if (ua<ub)
 						res=-1;
 					else
 						res=0;
@@ -623,36 +617,20 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 			res=strcmp(pa->pw_name,pb->pw_name);
 			break;
 		case SORT_BY_READ:
-			if (config.f.accumulated||config.f.accumbw)
-				res=accum_val(pa,E_ACC_READ,agg)>accum_val(pb,E_ACC_READ,agg)?1:
-					accum_val(pa,E_ACC_READ,agg)<accum_val(pb,E_ACC_READ,agg)?-1:0;
-			else
-				res=(agg?pa->read_diff_p:pa->read_diff)>(agg?pb->read_diff_p:pb->read_diff)?1:
-					(agg?pa->read_diff_p:pa->read_diff)<(agg?pb->read_diff_p:pb->read_diff)?-1:0;
+			res=(agg?pa->read_diff_p:pa->read_diff)>(agg?pb->read_diff_p:pb->read_diff)?1:
+				(agg?pa->read_diff_p:pa->read_diff)<(agg?pb->read_diff_p:pb->read_diff)?-1:0;
 			break;
 		case SORT_BY_WRITE:
-			if (config.f.accumulated||config.f.accumbw)
-				res=accum_val(pa,E_ACC_WRITE,agg)>accum_val(pb,E_ACC_WRITE,agg)?1:
-					accum_val(pa,E_ACC_WRITE,agg)<accum_val(pb,E_ACC_WRITE,agg)?-1:0;
-			else
-				res=(agg?pa->write_diff_p:pa->write_diff)>(agg?pb->write_diff_p:pb->write_diff)?1:
-					(agg?pa->write_diff_p:pa->write_diff)<(agg?pb->write_diff_p:pb->write_diff)?-1:0;
+			res=(agg?pa->write_diff_p:pa->write_diff)>(agg?pb->write_diff_p:pb->write_diff)?1:
+				(agg?pa->write_diff_p:pa->write_diff)<(agg?pb->write_diff_p:pb->write_diff)?-1:0;
 			break;
 		case SORT_BY_VFS_READ:
-			if (config.f.accumulated||config.f.accumbw)
-				res=accum_val(pa,E_ACC_VFS_READ,agg)>accum_val(pb,E_ACC_VFS_READ,agg)?1:
-					accum_val(pa,E_ACC_VFS_READ,agg)<accum_val(pb,E_ACC_VFS_READ,agg)?-1:0;
-			else
-				res=(agg?pa->read_char_diff_p:pa->read_char_diff)>(agg?pb->read_char_diff_p:pb->read_char_diff)?1:
-					(agg?pa->read_char_diff_p:pa->read_char_diff)<(agg?pb->read_char_diff_p:pb->read_char_diff)?-1:0;
+			res=(agg?pa->read_char_diff_p:pa->read_char_diff)>(agg?pb->read_char_diff_p:pb->read_char_diff)?1:
+				(agg?pa->read_char_diff_p:pa->read_char_diff)<(agg?pb->read_char_diff_p:pb->read_char_diff)?-1:0;
 			break;
 		case SORT_BY_VFS_WRITE:
-			if (config.f.accumulated||config.f.accumbw)
-				res=accum_val(pa,E_ACC_VFS_WRITE,agg)>accum_val(pb,E_ACC_VFS_WRITE,agg)?1:
-					accum_val(pa,E_ACC_VFS_WRITE,agg)<accum_val(pb,E_ACC_VFS_WRITE,agg)?-1:0;
-			else
-				res=(agg?pa->write_char_diff_p:pa->write_char_diff)>(agg?pb->write_char_diff_p:pb->write_char_diff)?1:
-					(agg?pa->write_char_diff_p:pa->write_char_diff)<(agg?pb->write_char_diff_p:pb->write_char_diff)?-1:0;
+			res=(agg?pa->write_char_diff_p:pa->write_char_diff)>(agg?pb->write_char_diff_p:pb->write_char_diff)?1:
+				(agg?pa->write_char_diff_p:pa->write_char_diff)<(agg?pb->write_char_diff_p:pb->write_char_diff)?-1:0;
 			break;
 		case SORT_BY_SWAPIN:
 			res=(agg?pa->swapin_diff_p:pa->swapin_diff)>(agg?pb->swapin_diff_p:pb->swapin_diff)?1:
@@ -667,18 +645,99 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 	return res;
 }
 
+static int sort_agg; // the sort compares the values of the whole processes
+
 // compare the tasks by the values that the view shows; a NULL a sets the graph width from b
 inline int iotop_sort_cb(const void *a,const void *b) {
 	if (!a) {
 		grlen=(long)b;
 		return 0;
 	}
-	return sort_cmp(a,b,config.f.processes);
+	return sort_cmp(a,b,sort_agg);
 }
 
-// compare the processes by the values of the whole process, also when their threads are shown
-inline int iotop_sort_proc_cb(const void *a,const void *b) {
-	return sort_cmp(a,b,1);
+// the values of the accumulated modes that the sort compares as bits of e_accum, 0 when it does not
+static inline int accum_sort_mask(void) {
+	if (!config.f.accumulated&&!config.f.accumbw)
+		return 0;
+	switch (masked_sort_by(0)) {
+		case SORT_BY_GRAPH:
+			switch (masked_grtype(0)) {
+				case E_GR_R:
+					return 1<<E_ACC_READ;
+				case E_GR_W:
+					return 1<<E_ACC_WRITE;
+				case E_GR_RW:
+					return 1<<E_ACC_READ|1<<E_ACC_WRITE;
+				default:
+					return 0;
+			}
+		case SORT_BY_READ:
+			return 1<<E_ACC_READ;
+		case SORT_BY_WRITE:
+			return 1<<E_ACC_WRITE;
+		case SORT_BY_VFS_READ:
+			return 1<<E_ACC_VFS_READ;
+		case SORT_BY_VFS_WRITE:
+			return 1<<E_ACC_VFS_WRITE;
+		default:
+			return 0;
+	}
+}
+
+// the sort key of s in the accumulated modes: the sum of the values in mask, with accum-bw in thousandths of
+// bytes per second, fine enough to order the averages that the view shows with two decimals
+static inline uint64_t accum_key(const struct xxxid_stats *s,int mask,int agg) {
+	uint64_t age=1,b=0;
+	int v;
+
+	for (v=E_ACC_READ;v<=E_ACC_VFS_WRITE;v++)
+		if (mask&1<<v)
+			b+=accum_src(s,(e_accum)v,agg,&age);
+	if (!config.f.accumbw)
+		return b;
+	return b/age*1000000+b%age*1000000/age;
+}
+
+struct sort_item {
+	uint64_t key;
+	struct xxxid_stats *s;
+};
+
+static int sort_item_cb(const void *a,const void *b) {
+	const struct sort_item *ka=a;
+	const struct sort_item *kb=b;
+	int order=config.f.sort_order?1:-1; // SORT_ASC is bit 0=1, else should reverse sort
+
+	return (ka->key>kb->key?1:ka->key<kb->key?-1:0)*order;
+}
+
+// sort the items of a for which keep returns nonzero, all of them if keep is NULL; agg compares the values of
+// the whole processes; the accumulated values are computed once for each item, not for each comparison
+inline void iotop_sort(struct xxxid_stats_arr *a,int agg,int (*keep)(const struct xxxid_stats *s)) {
+	int mask=accum_sort_mask();
+	struct sort_item *k;
+	int i;
+
+	sort_agg=agg;
+	if (!mask) {
+		arr_sort(a,iotop_sort_cb,keep);
+		return;
+	}
+	arr_sort(a,NULL,keep);
+	if (!a||!a->sor||!a->sor_length)
+		return;
+	k=malloc(a->sor_length*sizeof *k);
+	if (!k) // the items stay unsorted
+		return;
+	for (i=0;i<a->sor_length;i++) {
+		k[i].key=accum_key(a->sor[i],mask,agg);
+		k[i].s=a->sor[i];
+	}
+	qsort(k,a->sor_length,sizeof *k,sort_item_cb);
+	for (i=0;i<a->sor_length;i++)
+		a->sor[i]=k[i].s;
+	free(k);
 }
 
 

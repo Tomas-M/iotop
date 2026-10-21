@@ -372,10 +372,11 @@ inline void calc_total(struct xxxid_stats_arr *cs,uint64_t *read,uint64_t *write
 inline void calc_a_total(struct act_stats *act,uint64_t *read,uint64_t *write);
 inline void humanize_val(double *value,char *str,int allow_accum);
 inline int iotop_sort_cb(const void *a,const void *b);
-inline int iotop_sort_proc_cb(const void *a,const void *b);
+inline void iotop_sort(struct xxxid_stats_arr *a,int agg,int (*keep)(const struct xxxid_stats *s));
 inline uint64_t rrv(uint64_t to,uint64_t from);
 inline int same_task(const struct xxxid_stats *c,const struct xxxid_stats *p);
 inline uint64_t accum_bytes(const struct xxxid_stats *s,e_accum v,int agg,int life);
+inline uint64_t accum_src(const struct xxxid_stats *s,e_accum v,int agg,uint64_t *age);
 inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg);
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,uint64_t cyc_ms,uint64_t ts_c,int keep_exited);
 inline int count_visible(struct xxxid_stats_arr *cs,filter_callback_w cb,int width);

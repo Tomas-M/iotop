@@ -78,7 +78,7 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		printf(" %6s %6s %s\n","SWAPIN","IO","COMMAND");
 	}
 
-	arr_sort(cs,iotop_sort_cb,batch_keep);
+	iotop_sort(cs,config.f.processes,batch_keep);
 
 	for (i=0;cs->sor&&i<cs->sor_length;i++) {
 		struct xxxid_stats *s=cs->sor[i];
