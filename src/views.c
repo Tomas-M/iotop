@@ -18,20 +18,21 @@ You should have received a copy of the GNU General Public License along with thi
 #include <string.h>
 #include <stdlib.h>
 
-static double wall_off; // the wall clock minus the monotonic clock in seconds, for the start times of the tasks
+static int64_t wall_off; // the wall clock minus the monotonic clock in milliseconds, for the start times of the tasks
 
-inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write,double time_s) {
+// the bytes of all tasks in the cycle, or accumulated in the accumulated mode
+inline void calc_total(struct xxxid_stats_arr *cs,uint64_t *read,uint64_t *write) {
 	int i;
 
 	*read=*write=0;
 
 	for (i=0;i<cs->length;i++) {
 		if (!config.f.accumulated) {
-			*read+=(double)cs->arr[i]->read_diff/time_s;
-			*write+=(double)cs->arr[i]->write_diff/time_s;
+			*read+=cs->arr[i]->read_diff;
+			*write+=cs->arr[i]->write_diff;
 		} else {
-			*read+=accum_val(cs->arr[i],E_ACC_READ,0);
-			*write+=accum_val(cs->arr[i],E_ACC_WRITE,0);
+			*read+=accum_bytes(cs->arr[i],E_ACC_READ,0,!config.f.nolifetime);
+			*write+=accum_bytes(cs->arr[i],E_ACC_WRITE,0,!config.f.nolifetime);
 		}
 	}
 }
@@ -42,17 +43,13 @@ inline uint64_t rrv(uint64_t to,uint64_t from) {
 	return to<from?0:to-from;
 }
 
-inline void calc_a_total(struct act_stats *act,double *read,double *write,double time_s) {
+// the bytes that the block devices read and wrote in the cycle
+inline void calc_a_total(struct act_stats *act,uint64_t *read,uint64_t *write) {
 	*read=*write=0;
 
 	if (act->have_o) {
-		uint64_t r=act->read_bytes;
-		uint64_t w=act->write_bytes;
-
-		r=rrv(r,act->read_bytes_o);
-		w=rrv(w,act->write_bytes_o);
-		*read=(double)r/time_s;
-		*write=(double)w/time_s;
+		*read=rrv(act->read_bytes,act->read_bytes_o);
+		*write=rrv(act->write_bytes,act->write_bytes_o);
 	}
 }
 
@@ -63,16 +60,15 @@ inline double delay_pc(uint64_t ns,double time_s) {
 	return pc>100?100:pc;
 }
 
-inline int value2scale(double val,double mx) {
-	val=100.0*val/mx;
-
-	if (val>75)
+// the graph level of val relative to mx: over 75%, 50%, 25% or above zero
+inline int value2scale(uint64_t val,uint64_t mx) {
+	if (val*4>mx*3)
 		return 4;
-	if (val>50)
+	if (val*2>mx)
 		return 3;
-	if (val>25)
+	if (val*4>mx)
 		return 2;
-	if (val>0)
+	if (val)
 		return 1;
 	return 0;
 }
@@ -203,7 +199,7 @@ static inline void stats_new(struct xxxid_stats *c,uint64_t ts_c) {
 }
 
 // calculate the values of the current cycle from the previous data in p
-static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double time_s,uint64_t ts_c) {
+static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,uint64_t cyc_ns,uint64_t ts_c) {
 	uint64_t rv,wv,rcv,wcv,rvp=0,wvp=0;
 	int io,si,iop=0,sip=0;
 	struct xxxid_hist *h;
@@ -239,8 +235,8 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	c->read_char_val_acc=p->read_char_val_acc+rcv;
 	c->write_char_val_acc=p->write_char_val_acc+wcv;
 
-	io=value2scale(delay_pc(c->blkio_diff,time_s),100.0);
-	si=value2scale(delay_pc(c->swapin_diff,time_s),100.0);
+	io=value2scale(c->blkio_diff,cyc_ns);
+	si=value2scale(c->swapin_diff,cyc_ns);
 
 	if (c->pid==c->tid) {
 		c->blkio_diff_p=rrv(c->blkio_delay_total_p,p->blkio_delay_total_p);
@@ -261,8 +257,8 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		c->read_char_val_acc_p=p->read_char_val_acc_p+rcv;
 		c->write_char_val_acc_p=p->write_char_val_acc_p+wcv;
 
-		iop=value2scale(delay_pc(c->blkio_diff_p,time_s),100.0);
-		sip=value2scale(delay_pc(c->swapin_diff_p,time_s),100.0);
+		iop=value2scale(c->blkio_diff_p,cyc_ns);
+		sip=value2scale(c->swapin_diff_p,cyc_ns);
 	}
 
 	// an idle task keeps the shared empty history; the older values of a history are all zero,
@@ -352,7 +348,7 @@ static int exited_thread_cmp(const void *a,const void *b) {
 }
 
 // exited tasks move to cs while their exited count stays below keep_exited; ps is only freed afterwards
-inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,int keep_exited) {
+inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,uint64_t cyc_ms,uint64_t ts_c,int keep_exited) {
 	struct xxxid_stats **ex=NULL; // the processes and tasks that exited, moved from ps
 	struct xxxid_stats **et=NULL; // the exited threads in cs
 	struct timespec rt;
@@ -365,7 +361,7 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 	cs->diffed=1;
 
 	clock_gettime(CLOCK_REALTIME,&rt);
-	wall_off=(double)rt.tv_sec+(double)rt.tv_nsec/1000000000.0-(double)monotime()/1000.0;
+	wall_off=(int64_t)rt.tv_sec*1000+rt.tv_nsec/1000000-monotime();
 
 	ncs=cs->arr?cs->length:0;
 	nps=ps&&ps->arr?ps->length:0;
@@ -392,7 +388,7 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 		}
 		// the same tid in both cycles
 		if (same_task(cs->arr[x],ps->arr[y]))
-			stats_diff(cs->arr[x],ps->arr[y],time_s,ts_c);
+			stats_diff(cs->arr[x],ps->arr[y],cyc_ms*1000000,ts_c);
 		else // the old task is left in ps and freed with it
 			stats_new(cs->arr[x],ts_c);
 		update_maxpidlen(cs->arr[x]->tid);
@@ -483,10 +479,8 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 	snprintf(str,4,"%c%s",u[p],config.f.accumulated&&allow_accum?"  ":"/s");
 }
 
-// the value that a column shows in the accumulated modes: the total since the task started, or with
-// --no-lifetime since it was first seen; with accum-bw the average bandwidth over that time
-inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg) {
-	double age=timediff_in_s(s->ts_s,s->ts_e);
+// the bytes of v that a task did since it started if life is set, else since it was first seen
+inline uint64_t accum_bytes(const struct xxxid_stats *s,e_accum v,int agg,int life) {
 	uint64_t cnt=0; // the counter of the kernel, from the start of the task
 	uint64_t acc=0;
 
@@ -508,18 +502,24 @@ inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg) {
 			cnt=agg?s->write_char_p:s->write_char;
 			break;
 	}
-	if (!config.f.nolifetime) {
-		if (!config.f.accumbw)
-			return (double)cnt;
-		if (s->btime) { // the start time is known since taskstats v12, else average since first seen
-			double life=(double)s->ts_e/1000.0-((double)s->btime-wall_off);
+	return life?cnt:acc;
+}
 
-			return (double)cnt/(life>age?life:age);
-		}
+// the value that a column shows in the accumulated modes: the total since the task started, or with
+// --no-lifetime since it was first seen; with accum-bw the average bandwidth over that time
+inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg) {
+	uint64_t age=timediff_in_ms(s->ts_s,s->ts_e);
+
+	if (!config.f.accumbw)
+		return (double)accum_bytes(s,v,agg,!config.f.nolifetime);
+	if (!config.f.nolifetime&&s->btime) { // the start time is known since taskstats v12, else average since first seen
+		int64_t life=(int64_t)s->ts_e-((int64_t)s->btime*1000-wall_off);
+
+		if (life>(int64_t)age)
+			age=(uint64_t)life;
+		return (double)accum_bytes(s,v,agg,1)*1000.0/(double)age;
 	}
-	if (config.f.accumbw)
-		return (double)acc/age;
-	return (double)acc;
+	return (double)accum_bytes(s,v,agg,0)*1000.0/(double)age;
 }
 
 static int grlen=0; // count of the newest history values that the graph shows

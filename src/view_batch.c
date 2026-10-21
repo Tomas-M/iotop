@@ -27,6 +27,7 @@ static int batch_keep(const struct xxxid_stats *s) {
 
 static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act) {
 	double time_s=timediff_in_s(act->ts_o,act->ts_c);
+	uint64_t tot_r,tot_w,tot_a_r,tot_a_w; // bytes of the cycle, or accumulated
 	double total_a_read,total_a_write;
 	char str_a_read[4],str_a_write[4];
 	double total_read,total_write;
@@ -37,9 +38,13 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 	time_t t;
 	int i;
 
-	create_diff(cs,ps,time_s,act->ts_c,0); // the batch view does not show exited tasks
-	calc_total(cs,&total_read,&total_write,time_s);
-	calc_a_total(act,&total_a_read,&total_a_write,time_s);
+	create_diff(cs,ps,timediff_in_ms(act->ts_o,act->ts_c),act->ts_c,0); // the batch view does not show exited tasks
+	calc_total(cs,&tot_r,&tot_w);
+	calc_a_total(act,&tot_a_r,&tot_a_w);
+	total_read=config.f.accumulated?(double)tot_r:(double)tot_r/time_s;
+	total_write=config.f.accumulated?(double)tot_w:(double)tot_w/time_s;
+	total_a_read=(double)tot_a_r/time_s;
+	total_a_write=(double)tot_a_w/time_s;
 
 	humanize_val(&total_read,str_read,1);
 	humanize_val(&total_write,str_write,1);

@@ -413,6 +413,13 @@ inline int is_a_process(pid_t tid) {
 	return is_a_file(path);
 }
 
+// the length of a cycle in milliseconds; never 0, values are divided by it
+inline uint64_t timediff_in_ms(uint64_t sta,uint64_t end) {
+	if (end<=sta||sta==0)
+		return 1;
+	return end-sta;
+}
+
 inline double timediff_in_s(uint64_t sta,uint64_t end) {
 	if (sta==end||sta==0)
 		return 0.0001;

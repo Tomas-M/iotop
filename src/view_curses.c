@@ -116,10 +116,11 @@ static int in_search=0; // search by regex interface flag
 static struct xxxid_stats *ionice_pos_data=NULL;
 static struct xxxid_stats_arr *ionice_pos_arr=NULL; // the cycle that ionice_pos_data belongs to
 static int has_unicode=0;
-static double hist_t_r[HISTORY_CNT]={0};
-static double hist_t_w[HISTORY_CNT]={0};
-static double hist_a_r[HISTORY_CNT]={0};
-static double hist_a_w[HISTORY_CNT]={0};
+// bytes per second of the totals in the header, or the accumulated bytes in the accumulated mode
+static uint64_t hist_t_r[HISTORY_CNT]={0};
+static uint64_t hist_t_w[HISTORY_CNT]={0};
+static uint64_t hist_a_r[HISTORY_CNT]={0};
+static uint64_t hist_a_w[HISTORY_CNT]={0};
 static int scrollpos=0; // scroll view start position
 static int viewsizey=0; // how many lines we can show on screen
 static int dispcount=0; // how many lines we have after filters
@@ -833,6 +834,8 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 	const char *base_lbl=config.f.base==1000?"SI 1000":"IEC 1024";
 	char str_read[4],str_write[4],str_a_read[4],str_a_write[4];
 	double total_read,total_write,total_a_read,total_a_write;
+	uint64_t cyc_ms=timediff_in_ms(act->ts_o,act->ts_c);
+	uint64_t tot_r,tot_w,tot_a_r,tot_a_w; // bytes of the cycle, or accumulated
 	double time_s=timediff_in_s(act->ts_o,act->ts_c);
 	int bllen=(int)strlen(base_lbl);
 	char pg_t_r[HISTORY_POS*5]={0};
@@ -843,10 +846,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 	int promptx=0,prompty=0,show=FALSE;
 	char *head1row_format="";
 	uint64_t maxvisible=0;
-	double mx_t_r=1000.0;
-	double mx_t_w=1000.0;
-	double mx_a_r=1000.0;
-	double mx_a_w=1000.0;
+	uint64_t mx_t_r=1000;
+	uint64_t mx_t_w=1000;
+	uint64_t mx_a_r=1000;
+	uint64_t mx_a_w=1000;
 	int line,lastline;
 	int shrink_dm=0;
 	int head1row=0;
@@ -910,18 +913,22 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 			view_sort(cs,iotop_sort_proc_cb,is_main); // the processes by their totals, also when the threads are shown
 	}
 
-	calc_total(cs,&total_read,&total_write,time_s);
-	calc_a_total(act,&total_a_read,&total_a_write,time_s);
+	calc_total(cs,&tot_r,&tot_w);
+	calc_a_total(act,&tot_a_r,&tot_a_w);
+	total_read=config.f.accumulated?(double)tot_r:(double)tot_r/time_s;
+	total_write=config.f.accumulated?(double)tot_w:(double)tot_w/time_s;
+	total_a_read=(double)tot_a_r/time_s;
+	total_a_write=(double)tot_a_w/time_s;
 
 	if (roll) {
 		memmove(hist_t_r+1,hist_t_r,sizeof hist_t_r-sizeof *hist_t_r);
 		memmove(hist_t_w+1,hist_t_w,sizeof hist_t_w-sizeof *hist_t_w);
 		memmove(hist_a_r+1,hist_a_r,sizeof hist_a_r-sizeof *hist_a_r);
 		memmove(hist_a_w+1,hist_a_w,sizeof hist_a_w-sizeof *hist_a_w);
-		hist_t_r[0]=total_read;
-		hist_t_w[0]=total_write;
-		hist_a_r[0]=total_a_read;
-		hist_a_w[0]=total_a_write;
+		hist_t_r[0]=config.f.accumulated?tot_r:tot_r*1000/cyc_ms;
+		hist_t_w[0]=config.f.accumulated?tot_w:tot_w*1000/cyc_ms;
+		hist_a_r[0]=tot_a_r*1000/cyc_ms;
+		hist_a_w[0]=tot_a_w*1000/cyc_ms;
 	}
 
 	humanize_val(&total_read,str_read,1);
@@ -2854,7 +2861,7 @@ inline void view_curses_loop(void) {
 			act.ts_c=now;
 			// here and not on redraw: keys that do not redraw may come until the next refresh, and the next cycle
 			// needs this one done; keep the exited tasks the longest any view setting can show them
-			create_diff(cs,ps,timediff_in_s(act.ts_o,act.ts_c),act.ts_c,HISTORY_CNT);
+			create_diff(cs,ps,timediff_in_ms(act.ts_o,act.ts_c),act.ts_c,HISTORY_CNT);
 			refresh=1;
 		} else if (bef+params.delay_ms<now&&dontrefresh&&!config.f.hideclock) {
 			bef=now;

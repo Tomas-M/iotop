@@ -296,6 +296,7 @@ inline int is_a_file(const char *p);
 inline int is_a_process(pid_t tid);
 
 inline double timediff_in_s(uint64_t sta,uint64_t end);
+inline uint64_t timediff_in_ms(uint64_t sta,uint64_t end);
 
 /* ioprio.c */
 
@@ -367,17 +368,18 @@ inline void arr_sort(struct xxxid_stats_arr *pa,int (*cb)(const void *a,const vo
 #define HEADER1_FORMAT "  Total DISK READ: %7.2f %s%s |   Total DISK WRITE: %7.2f %s%s"
 #define HEADER2_FORMAT "Current DISK READ: %7.2f %s%s | Current DISK WRITE: %7.2f %s%s"
 
-inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write,double time_s);
-inline void calc_a_total(struct act_stats *act,double *read,double *write,double time_s);
+inline void calc_total(struct xxxid_stats_arr *cs,uint64_t *read,uint64_t *write);
+inline void calc_a_total(struct act_stats *act,uint64_t *read,uint64_t *write);
 inline void humanize_val(double *value,char *str,int allow_accum);
 inline int iotop_sort_cb(const void *a,const void *b);
 inline int iotop_sort_proc_cb(const void *a,const void *b);
 inline uint64_t rrv(uint64_t to,uint64_t from);
 inline int same_task(const struct xxxid_stats *c,const struct xxxid_stats *p);
+inline uint64_t accum_bytes(const struct xxxid_stats *s,e_accum v,int agg,int life);
 inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg);
-inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,int keep_exited);
+inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,uint64_t cyc_ms,uint64_t ts_c,int keep_exited);
 inline int count_visible(struct xxxid_stats_arr *cs,filter_callback_w cb,int width);
-inline int value2scale(double val,double mx);
+inline int value2scale(uint64_t val,uint64_t mx);
 inline double delay_pc(uint64_t ns,double time_s);
 inline uint64_t hist_sum(const struct xxxid_hist *h,const uint64_t *a,int cnt);
 inline int hist_sum8(const struct xxxid_hist *h,const uint8_t *a,int cnt);
