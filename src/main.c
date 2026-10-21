@@ -62,6 +62,7 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_NO_FLAT 0x123
 #define OPT_LIFETIME 0x124
 #define OPT_NO_LIFETIME 0x125
+#define OPT_NO_INVERSE 0x126
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -241,6 +242,7 @@ static inline void print_help(void) {
 		"      --ascii            disable using Unicode\n"
 		"      --unicode          use Unicode drawing chars\n"
 		"  -N, --inverse          use inverse interface (black on white)\n"
+		"      --no-inverse       use normal interface\n"
 		"      --filter=REGEX     filter processes by TID and COMMAND\n"
 		"      --uid2name=MODE    set UID to user name resolution mode (always, none, cyclic, [static])\n"
 		"  -W, --write            write preceding options to the config and exit\n"
@@ -342,6 +344,7 @@ static inline void parse_args(int clac,char **clav) {
 				{"write",no_argument,NULL,'W'},
 				{"debug-write",no_argument,NULL,OPT_DEBUG_WRITE},
 				{"inverse",no_argument,NULL,'N'},
+				{"no-inverse",no_argument,NULL,OPT_NO_INVERSE},
 				{"filter",required_argument,NULL,OPT_FILTER},
 				{"uid2name",required_argument,NULL,OPT_UID2NAME},
 				{NULL,0,NULL,0}
@@ -559,6 +562,9 @@ static inline void parse_args(int clac,char **clav) {
 					break;
 				case OPT_SHOW_EXITED:
 					config.f.hideexited=0;
+					break;
+				case OPT_NO_INVERSE:
+					config.f.inverse=0;
 					break;
 				case OPT_LIFETIME:
 					config.f.nolifetime=0;

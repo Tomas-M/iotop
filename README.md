@@ -237,6 +237,7 @@ Use the following commands:
         --ascii            disable using Unicode
         --unicode          use Unicode drawing chars
     -N, --inverse          use inverse interface (black on white)
+        --no-inverse       use normal interface
         --filter=REGEX     filter processes by TID and COMMAND
         --uid2name=MODE    set UID to user name resolution mode (always, none, cyclic, [static])
     -W, --write            write preceding options to the config and exit
