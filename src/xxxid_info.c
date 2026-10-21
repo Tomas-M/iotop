@@ -46,11 +46,13 @@ You should have received a copy of the GNU General Public License along with thi
 // is cut by recv and dropped, so the data of all tasks would be missing; netlink replies fit a page
 #define MAX_MSG_SIZE 4096
 
+// the kernel pads the replies so that the 64-bit counters of struct taskstats are 8-aligned from the start of
+// the message, which has to be aligned as well for the CPUs that trap on an unaligned access
 struct msgtemplate {
 	struct nlmsghdr n;
 	struct genlmsghdr g;
 	char buf[MAX_MSG_SIZE];
-};
+} __attribute__((aligned(8)));
 
 static int nl_sock=-1;
 static int nl_fam_id=0;
