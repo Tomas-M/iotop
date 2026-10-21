@@ -614,6 +614,19 @@ inline char *ucell_substr(ucell *uc,int skip,int maxc) { // {{{
 	return ress;
 } // }}}
 
+inline int ucell_skip_c(ucell *uc,int skip) { // {{{
+	int pos=0;
+	int i;
+
+	if (!uc)
+		return 0;
+
+	// a wide char that starts before skip is skipped whole, like ucell_substr does
+	for (i=0;i<uc->len&&pos<skip;i++)
+		pos+=uc->cells[i].w;
+	return pos;
+} // }}}
+
 inline int ucell_len(ucell *uc) { // {{{
 	if (!uc)
 		return 0;

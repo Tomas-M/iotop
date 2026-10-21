@@ -1767,6 +1767,7 @@ donedraw:
 		mvprintw(ionice_line,0,"Search: ");
 		if (ssize>2) {
 			int toskip=ssize-1<ucell_cursor_c(params.search_uc)?ucell_cursor_c(params.search_uc)-ssize+1:0;
+			int skipped=ucell_skip_c(params.search_uc,toskip); // one more than toskip when a wide char is cut
 			char *ss=ucell_substr(params.search_uc,toskip,ssize);
 			char *pss=u8strpadt(ss,ssize);
 
@@ -1791,7 +1792,7 @@ donedraw:
 				attroff(params.search_regx_ok?COLOR_PAIR(GREEN_PAIR):COLOR_PAIR(RED_PAIR));
 			attroff(A_BOLD);
 			printw("]");
-			promptx=strlen("Search: ")+ucell_cursor_c(params.search_uc)-toskip;
+			promptx=strlen("Search: ")+ucell_cursor_c(params.search_uc)-skipped;
 			prompty=ionice_line;
 			show=TRUE;
 			if (pss)
