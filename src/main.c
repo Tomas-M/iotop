@@ -93,7 +93,11 @@ inline void init_params(void) {
 	params.search_uc=NULL;
 }
 
+// the default settings with the environment applied; the D key resets to them too
 inline void init_config(void) {
+	char *no_renice=getenv("IOTOP_NO_RENICE");
+	char *no_color=getenv("NO_COLOR");
+
 	memset(&config,0,sizeof config);
 	config.f.sort_by=SORT_BY_GRAPH;
 	config.f.sort_order=SORT_DESC;
@@ -103,6 +107,12 @@ inline void init_config(void) {
 	config.f.uid2name=E_UID2NAME_STATIC; // default is static
 	config.f.hidevfsread=1; // default is hide VFS columns
 	config.f.hidevfswrite=1;
+	// implement https://no-color.org/ proposal
+	if (no_color&&*no_color)
+		config.f.nocolor=1;
+	// allow disabling process re-nice
+	if (no_renice&&*no_renice)
+		config.f.norenice=1;
 }
 
 // parse seconds with an optional fraction (always with '.' regardless of the locale) into milliseconds
@@ -240,20 +250,11 @@ static inline void print_help(void) {
 }
 
 static inline void parse_args(int clac,char **clav) {
-	char *no_renice=getenv("IOTOP_NO_RENICE");
-	char *no_color=getenv("NO_COLOR");
 	int v;
 	int i;
 
 	init_params();
 	init_config();
-
-	// implement https://no-color.org/ proposal
-	if (no_color&&*no_color)
-		config.f.nocolor=1;
-	// allow disabling process re-nice
-	if (no_renice&&*no_renice)
-		config.f.norenice=1;
 
 	for (i=0;i<2;i++) {
 		char **argv;

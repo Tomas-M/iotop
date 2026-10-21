@@ -2233,10 +2233,14 @@ static inline int curses_key(int ch) {
 	if (in_search)
 		return curses_key_search(ch);
 	switch (ch) {
-		case 'D':
+		case 'D': {
+			int iter=params.iter; // the count of refreshes left from -n is not a setting
+
 			init_params();
 			init_config();
+			params.iter=iter;
 			break;
+		}
 		case 'W':
 			if (config_file_save(0))
 				snprintf(warn_save,sizeof warn_save,"%s",strerror(errno));
