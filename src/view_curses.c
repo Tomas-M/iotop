@@ -1152,7 +1152,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 		noinlinehelp=0;
 	line=ionice_line+2;
 	lastline=line;
-	viewsizey=maxy-1-ionice_line-(noinlinehelp==0&&config.f.helptype==2?2:0);
+	viewsizey=maxy-2-ionice_line-(noinlinehelp==0&&config.f.helptype==2?2:0);
 	if (viewsizey<0)
 		viewsizey=0;
 	skip=scrollpos;
