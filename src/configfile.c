@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 #include "iotop.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -62,15 +63,21 @@ static inline FILE *config_file_open(const char *mode) {
 		len=snprintf(dir,sizeof dir,"%s%s",xdgconfig,CONFIG_DIR2);
 	else if (home&&*home)
 		len=snprintf(dir,sizeof dir,"%s%s%s",home,CONFIG_DIR1,CONFIG_DIR2);
-	else
+	else { // errno tells the callers why there is no file
+		errno=ENOENT;
 		return NULL;
-	if (len<0||(size_t)len>=sizeof dir) // do not create or open a truncated path
+	}
+	if (len<0||(size_t)len>=sizeof dir) { // do not create or open a truncated path
+		errno=ENAMETOOLONG;
 		return NULL;
+	}
 	if (*mode=='w') // only writing the config needs the directories
 		mkdir_p(dir);
 	len=snprintf(path,sizeof path,"%s%s",dir,CONFIG_NAME);
-	if (len<0||(size_t)len>=sizeof path)
+	if (len<0||(size_t)len>=sizeof path) {
+		errno=ENAMETOOLONG;
 		return NULL;
+	}
 
 	return fopen(path,mode);
 }
