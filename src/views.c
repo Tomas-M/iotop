@@ -33,20 +33,10 @@ inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write) {
 	}
 }
 
+// growth of a counter between two cycles; the 64-bit counters do not wrap, a decrease is not growth:
+// the sums of a process lose the counters of its exited threads, and a new task may get the tid of an old one
 static inline uint64_t rrv(uint64_t to,uint64_t from) {
-	uint64_t result;
-
-	if (to<from) {
-		result=0;
-		result=~result;
-		result-=to;
-		result+=from;
-	} else {
-		result=0;
-		result+=to;
-		result-=from;
-	}
-	return result;
+	return to<from?0:to-from;
 }
 
 inline void calc_a_total(struct act_stats *act,double *read,double *write,double time_s) {
