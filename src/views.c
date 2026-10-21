@@ -13,12 +13,9 @@ You should have received a copy of the GNU General Public License along with thi
 
 #include "iotop.h"
 
-#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-static int64_t wall_off; // the wall clock minus the monotonic clock in milliseconds, for the start times of the tasks
 
 // the bytes of all tasks in the cycle, or accumulated in the accumulated mode
 inline void calc_total(struct xxxid_stats_arr *cs,uint64_t *read,uint64_t *write) {
@@ -333,11 +330,11 @@ static inline struct xxxid_stats *stats_exited(struct xxxid_stats *o) {
 inline int same_task(const struct xxxid_stats *c,const struct xxxid_stats *p) {
 	if (p->exited) // the tid of a kept exited task was given to a new one
 		return 0;
-	if (!c->btime||!p->btime) // the start time is known only from taskstats v12
+	if (!c->start||!p->start) // the query failed
 		return 1;
-	// the kernel gives the start time as the current second minus the elapsed seconds, both rounded down,
-	// so for the same task it may differ by one between two cycles
-	return c->btime<=p->btime+1&&p->btime<=c->btime+1;
+	// the start is the time of the query minus the age of the task; the time the reply takes moves it a bit,
+	// the clock does not: it does not count a suspend and does not step, unlike the begin time of taskstats
+	return c->start<=p->start+START_SLACK&&p->start<=c->start+START_SLACK;
 }
 
 // order the exited threads by process, keeping them in tid order within it
@@ -354,7 +351,6 @@ static int exited_thread_cmp(const void *a,const void *b) {
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,uint64_t cyc_ms,uint64_t ts_c,int keep_exited) {
 	struct xxxid_stats **ex=NULL; // the processes and tasks that exited, moved from ps
 	struct xxxid_stats **et=NULL; // the exited threads in cs
-	struct timespec rt;
 	int exn=0,etn=0;
 	int ncs,nps;
 	int n,x,y,e;
@@ -362,9 +358,6 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,uin
 	if (cs->diffed) // the data of this cycle is already done; redraws do not need it again
 		return cs->length;
 	cs->diffed=1;
-
-	clock_gettime(CLOCK_REALTIME,&rt);
-	wall_off=(int64_t)rt.tv_sec*1000+rt.tv_nsec/1000000-monotime();
 
 	ncs=cs->arr?cs->length:0;
 	nps=ps&&ps->arr?ps->length:0;
@@ -514,8 +507,8 @@ inline uint64_t accum_src(const struct xxxid_stats *s,e_accum v,int agg,uint64_t
 	*age=timediff_in_ms(s->ts_s,s->ts_e);
 	if (!config.f.accumbw)
 		return accum_bytes(s,v,agg,!config.f.nolifetime);
-	if (!config.f.nolifetime&&s->btime) { // the start time is known since taskstats v12, else average since first seen
-		int64_t life=(int64_t)s->ts_e-((int64_t)s->btime*1000-wall_off);
+	if (!config.f.nolifetime&&s->start) { // else the query failed, average since first seen
+		int64_t life=(int64_t)s->ts_e-s->start;
 
 		if (life>(int64_t)*age)
 			*age=(uint64_t)life;

@@ -121,6 +121,9 @@ extern int hist_w;
 #define IOTOP_TASKSTATS_MINVER 4U
 #define IOTOP_TASKSTATS_VERSION 15
 
+// milliseconds that the start of the same task may differ by between two cycles
+#define START_SLACK 1000
+
 #define HISTORY_POS 60
 #define HISTORY_CNT (HISTORY_POS*2)
 
@@ -189,8 +192,8 @@ struct xxxid_stats {
 	uint64_t write_char_p;
 	uint64_t ts_s; // start timestamp for accum-bw
 	uint64_t ts_e; // end timestamp for accum-bw
-	uint64_t btime; // start time and exe of the task from taskstats, 0 if not known;
-	uint64_t exe; // they tell that a task of the next cycle is the same process
+	int64_t start; // start time of the task on the monotonic clock in milliseconds, 0 if not known
+	uint64_t exe; // with taskstats v12+ the exe also tells that a task of the next cycle is the same process
 
 	uint64_t blkio_diff; // nanoseconds waited in the last cycle
 	uint64_t swapin_diff;

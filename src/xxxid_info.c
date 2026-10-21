@@ -159,7 +159,10 @@ static inline uint64_t exe_id(uint64_t dev,uint64_t inode) {
 
 // comm has room for TS_COMM_LEN+1 chars; it gets the name of a user task, kernel threads are left to /proc
 // because there the name also tells the workqueue
+static int have_exe=0; // taskstats gives the exe and the comm of the tasks, since v12
+
 inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *comm) {
+	int64_t sent=monotime(); // the kernel tells the age of the task after this
 	static __u32 seq=0;
 
 	if (nl_sock<0) {
@@ -251,8 +254,9 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 						stats->blkio_delay_total=t14->blkio_delay_total;
 						stats->euid=t14->ac_uid;
 						stats->io_prio=ioprio_from_sched(t14->ac_sched,(int8_t)t14->ac_nice);
+						stats->start=sent-(int64_t)(t14->ac_etime/1000);
 						if (ts->version>=12) { // the exe fields are there since v12, zero for kernel threads
-							stats->btime=t14->ac_btime64;
+							have_exe=1;
 							stats->exe=exe_id(t14->ac_exe_dev,t14->ac_exe_inode);
 							if (t14->ac_exe_inode) {
 								memcpy(comm,t14->ac_comm,TS_COMM_LEN);
@@ -268,7 +272,8 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 						stats->blkio_delay_total=t15->blkio_delay_total;
 						stats->euid=t15->ac_uid;
 						stats->io_prio=ioprio_from_sched(t15->ac_sched,(int8_t)t15->ac_nice);
-						stats->btime=t15->ac_btime64;
+						stats->start=sent-(int64_t)(t15->ac_etime/1000);
+						have_exe=1;
 						stats->exe=exe_id(t15->ac_exe_dev,t15->ac_exe_inode);
 						if (t15->ac_exe_inode) { // zero for kernel threads
 							memcpy(comm,t15->ac_comm,TS_COMM_LEN);
@@ -446,16 +451,12 @@ void cmdline_reread(void) {
 static struct xxxid_stats *cmdline_prev(struct xxxid_stats *s,const char *comm) {
 	struct xxxid_stats *o;
 
-	if (!cmdline_src||cmdline_force||!*comm||!s->btime) // comm is known only for user tasks with taskstats v12+
+	if (!cmdline_src||cmdline_force||!*comm) // comm is known only for user tasks with taskstats v12+
 		return NULL;
 	if (((uint64_t)s->tid+current_cycle)%CMDLINE_REREAD==0) // staggered, so each cycle reads a part of them
 		return NULL;
 	o=arr_find(cmdline_src,s->tid);
-	if (!o||o->exited||o->exe!=s->exe) // another process or another exe
-		return NULL;
-	// the kernel gives the start time as the current second minus the elapsed seconds, both rounded down,
-	// so for the same task it may differ by one between two cycles
-	if (o->btime+1<s->btime||s->btime+1<o->btime) // another process with the same tid
+	if (!o||o->exe!=s->exe||!same_task(s,o)) // another process or another exe
 		return NULL;
 	if (!o->cmdline_long||!o->cmdline_short)
 		return NULL;
@@ -503,7 +504,7 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 
 		if (o)
 			res=cmdline_copy(s,o->cmdline_long,o->cmdline_short);
-		else if (!(s->btime&&!*comm)) // a kernel thread has no cmdline; taskstats tells it since v12
+		else if (!(have_exe&&!*comm)) // a kernel thread has no cmdline; taskstats tells it since v12
 			res=read_cmdline(tid,&s->cmdline_long,&s->cmdline_short);
 
 		// an exited main thread has empty cmdline while the rest of the threads still have it, so keep only a real one
