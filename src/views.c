@@ -745,7 +745,7 @@ inline void iotop_sort(struct xxxid_stats_arr *a,int agg,int (*keep)(const struc
 
 
 // any input of the filter besides s has to be in struct view_key, the curses view relies on it
-inline int filter1(struct xxxid_stats *s) {
+inline int filter1(const struct xxxid_stats *s) {
 	if (!s->cmdline_long||!s->cmdline_short) // if strdup fails during copy, those may become NULL
 		return 1;
 

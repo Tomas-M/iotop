@@ -184,7 +184,7 @@ inline void read_comm(int pid,const char *comm,char **cmd_long,char **cmd_short,
 	}
 }
 
-inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hint2) {
+inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint) {
 	DIR *pr;
 
 	if ((pr=opendir("/proc"))) {
@@ -212,12 +212,12 @@ inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hin
 					if (*eol!='\0')
 						continue;
 					havt=1;
-					cb(pid,tid,hint1,hint2);
+					cb(pid,tid,hint);
 				}
 				closedir(tr);
 			}
 			if (!havt)
-				cb(pid,pid,hint1,hint2);
+				cb(pid,pid,hint);
 		}
 		closedir(pr);
 	}

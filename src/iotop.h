@@ -250,10 +250,9 @@ inline void nl_fini(void);
 
 inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *comm);
 
-typedef int (*filter_callback)(struct xxxid_stats *);
 typedef int (*filter_callback_w)(struct xxxid_stats *,int width);
 
-inline struct xxxid_stats_arr *fetch_data(filter_callback filter,struct xxxid_stats_arr *prev);
+inline struct xxxid_stats_arr *fetch_data(struct xxxid_stats_arr *prev);
 void cmdline_reread(void);
 inline void free_stats(struct xxxid_stats *s);
 
@@ -285,8 +284,8 @@ inline int64_t monotime(void);
 inline char *u8strpadt(const char *s,ssize_t len);
 inline char *esc_low_ascii(const char *p);
 
-typedef void (*pg_cb)(pid_t pid,pid_t tid,struct xxxid_stats_arr *hint1,filter_callback hint2);
-inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint1,filter_callback hint2);
+typedef void (*pg_cb)(pid_t pid,pid_t tid,struct xxxid_stats_arr *hint);
+inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint);
 
 
 inline int is_a_dir(const char *p);
@@ -383,7 +382,7 @@ inline double delay_pc(uint64_t ns,double time_s);
 inline uint64_t hist_sum(const struct xxxid_hist *h,const uint64_t *a,int cnt);
 inline int hist_sum8(const struct xxxid_hist *h,const uint8_t *a,int cnt);
 inline void hist_window(struct xxxid_stats_arr *cs,int w);
-inline int filter1(struct xxxid_stats *s);
+inline int filter1(const struct xxxid_stats *s);
 
 /* delayacct.c */
 

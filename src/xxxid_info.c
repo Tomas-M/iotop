@@ -536,15 +536,11 @@ inline struct xxxid_stats *make_stats(pid_t tid,pid_t pid) {
 	return s;
 }
 
-static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a,filter_callback filter) {
+static void pid_cb(pid_t pid,pid_t tid,struct xxxid_stats_arr *a) {
 	struct xxxid_stats *s=make_stats(tid,pid);
 
-	if (s) {
-		if (filter&&filter(s))
-			free_stats(s);
-		else if (arr_append(a,s)) // the list is sorted once at the end by arr_finalize
-			free_stats(s);
-	}
+	if (s&&arr_append(a,s)) // the list is sorted once at the end by arr_finalize
+		free_stats(s);
 }
 
 // add the growth of task s since o, the same task in the previous cycle or NULL for a new one, to the byte
@@ -576,8 +572,9 @@ static inline void proc_grow(struct xxxid_stats *p,const struct xxxid_stats *s,c
 // count of recently found main processes kept while attaching threads; must be a power of 2
 #define PROC_CACHE_SZ 128
 
-// prev is the previous cycle, NULL if there is none
-inline struct xxxid_stats_arr *fetch_data(filter_callback filter,struct xxxid_stats_arr *prev) {
+// prev is the previous cycle, NULL if there is none; all tasks are kept, the views filter them, as the threads
+// count in their processes also when they are filtered out themselves
+inline struct xxxid_stats_arr *fetch_data(struct xxxid_stats_arr *prev) {
 	struct xxxid_stats *pcache[PROC_CACHE_SZ]={NULL}; // main processes, by pid
 	struct xxxid_stats_arr *a=arr_alloc();
 	int i,j=0;
@@ -588,7 +585,7 @@ inline struct xxxid_stats_arr *fetch_data(filter_callback filter,struct xxxid_st
 		return NULL;
 
 	cmdline_src=prev;
-	pidgen_cb(pid_cb,a,filter);
+	pidgen_cb(pid_cb,a);
 	pcmd_set(-1,NULL,NULL); // valid only during the walk
 	cmdline_src=NULL;
 	cmdline_force=0;

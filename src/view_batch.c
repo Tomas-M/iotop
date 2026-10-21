@@ -20,9 +20,9 @@ You should have received a copy of the GNU General Public License along with thi
 #include <string.h>
 #include <unistd.h>
 
-// the batch view never shows exited tasks, and threads only when processes are not aggregated
+// the batch view never shows exited tasks, threads only when processes are not aggregated, and the filtered ones
 static int batch_keep(const struct xxxid_stats *s) {
-	return !s->exited&&(!config.f.processes||s->pid==s->tid);
+	return !s->exited&&(!config.f.processes||s->pid==s->tid)&&!filter1(s);
 }
 
 static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act) {
@@ -184,7 +184,7 @@ inline void view_batch_loop(void) {
 	int warned=0;
 
 	for (;;) {
-		cs=fetch_data(filter1,ps);
+		cs=fetch_data(ps);
 		if (!warned&&taskstats_ver&&taskstats_ver<IOTOP_TASKSTATS_MINVER) { // known after the first query
 			fprintf(stderr,"Warning: this kernel provides struct taskstats version %u, which does not contain the required data; it should be %u or greater\n",taskstats_ver,IOTOP_TASKSTATS_MINVER);
 			warned=1;
