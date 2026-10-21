@@ -162,6 +162,18 @@ inline void view_batch_init(void) {
 }
 
 inline void view_batch_fini(void) {
+	if (params.search_str) {
+		free(params.search_str);
+		params.search_str=NULL;
+	}
+	if (params.search_regx_ok) {
+		regfree(&params.search_regx);
+		params.search_regx_ok=0;
+	}
+	if (params.search_uc) {
+		ucell_free(params.search_uc);
+		params.search_uc=NULL;
+	}
 }
 
 inline void view_batch_loop(void) {
