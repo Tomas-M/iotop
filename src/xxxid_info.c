@@ -576,8 +576,8 @@ static inline void proc_grow(struct xxxid_stats *p,const struct xxxid_stats *s,c
 #define PROC_CACHE_SZ 128
 
 // prev is the previous cycle, NULL if there is none; all tasks are kept, the views filter them, as the threads
-// count in their processes also when they are filtered out themselves
-inline struct xxxid_stats_arr *fetch_data(struct xxxid_stats_arr *prev) {
+// count in their processes also when they are filtered out themselves; only>0 reads only the process of that task
+inline struct xxxid_stats_arr *fetch_data(struct xxxid_stats_arr *prev,pid_t only) {
 	struct xxxid_stats *pcache[PROC_CACHE_SZ]={NULL}; // main processes, by pid
 	struct xxxid_stats_arr *a=arr_alloc();
 	int i,j=0;
@@ -588,7 +588,7 @@ inline struct xxxid_stats_arr *fetch_data(struct xxxid_stats_arr *prev) {
 		return NULL;
 
 	cmdline_src=prev;
-	pidgen_cb(pid_cb,a);
+	pidgen_cb(pid_cb,a,only);
 	pcmd_set(-1,NULL,NULL); // valid only during the walk
 	cmdline_src=NULL;
 	cmdline_force=0;

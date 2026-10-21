@@ -258,7 +258,7 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 
 typedef int (*filter_callback_w)(struct xxxid_stats *,int width);
 
-inline struct xxxid_stats_arr *fetch_data(struct xxxid_stats_arr *prev);
+inline struct xxxid_stats_arr *fetch_data(struct xxxid_stats_arr *prev,pid_t only);
 void cmdline_reread(void);
 inline void free_stats(struct xxxid_stats *s);
 
@@ -291,7 +291,7 @@ inline char *u8strpadt(const char *s,ssize_t len);
 inline char *esc_low_ascii(const char *p);
 
 typedef void (*pg_cb)(pid_t pid,pid_t tid,struct xxxid_stats_arr *hint);
-inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint);
+inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint,pid_t only);
 
 
 inline int is_a_dir(const char *p);

@@ -184,7 +184,7 @@ inline void view_batch_loop(void) {
 	int warned=0;
 
 	for (;!stop_req;) {
-		cs=fetch_data(ps);
+		cs=fetch_data(ps,params.pid); // the filter of -p does not change in batch mode, read only its process
 		if (stop_req) // the cycle is not complete
 			break;
 		if (!warned&&taskstats_ver&&taskstats_ver<IOTOP_TASKSTATS_MINVER) { // known after the first query

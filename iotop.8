@@ -138,7 +138,10 @@ Set the delay between iterations in seconds (1 second by default).
 Accepts non\-integer values such as 1.1 seconds
 .TP
 \fB\-p\fR \fIPID\fR, \fB\-\-pid\fR=\fIPID\fR
-A process/thread id to monitor (all by default)
+A process/thread id to monitor (all by default).
+In non\-interactive mode only the tasks of its process are read, which is
+much faster on systems with many tasks; the Total DISK READ and Total DISK
+WRITE then cover only that process
 .TP
 \fB\-u\fR \fIUSER\fR, \fB\-\-user\fR=\fIUSER\fR
 A user id to monitor (all by default).

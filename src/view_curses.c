@@ -2856,13 +2856,13 @@ inline void view_curses_loop(void) {
 				act.have_o=1;
 			act.ts_o=act.ts_c;
 
-			cs=fetch_data(ps);
+			cs=fetch_data(ps,-1); // the filter can change at any time, so read all tasks
 			if (!ps) { // first cycle - take a second snapshot to diff against
 				ps=cs;
 				create_diff(ps,NULL,0,now,0); // set the start ts of the first snapshot
 				act.ts_o=now;
 				now=monotime();
-				cs=fetch_data(ps);
+				cs=fetch_data(ps,-1);
 			}
 			if (stop_req) // the cycle is not complete
 				break;

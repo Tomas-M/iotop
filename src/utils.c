@@ -184,40 +184,73 @@ inline void read_comm(int pid,const char *comm,char **cmd_long,char **cmd_short,
 	}
 }
 
-inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint) {
+// call cb for each task of process pid
+static inline void proc_tasks(pg_cb cb,struct xxxid_stats_arr *hint,pid_t pid) {
+	char path[30];
+	int havt=0;
+	DIR *tr;
+
+	snprintf(path,sizeof path,"/proc/%d/task",pid);
+	if ((tr=opendir(path))) {
+		struct dirent *tde=readdir(tr);
+
+		for (;tde;tde=readdir(tr)) {
+			char *eol=NULL;
+			pid_t tid;
+
+			tid=strtol(tde->d_name,&eol,10);
+			if (*eol!='\0')
+				continue;
+			havt=1;
+			cb(pid,tid,hint);
+		}
+		closedir(tr);
+	}
+	if (!havt)
+		cb(pid,pid,hint);
+}
+
+// the process of task tid, -1 when it is gone
+static inline pid_t proc_of(pid_t tid) {
+	char path[30];
+	char line[64];
+	pid_t pid=-1;
+	FILE *f;
+
+	snprintf(path,sizeof path,"/proc/%d/status",tid);
+	if (!(f=fopen(path,"r")))
+		return -1;
+	while (fgets(line,sizeof line,f))
+		if (!strncmp(line,"Tgid:",5)) {
+			pid=strtol(line+5,NULL,10);
+			break;
+		}
+	fclose(f);
+	return pid>0?pid:-1;
+}
+
+// call cb for each task, or with only>0 for the tasks of the process of task only
+inline void pidgen_cb(pg_cb cb,struct xxxid_stats_arr *hint,pid_t only) {
 	DIR *pr;
 
+	if (only>0) { // all the threads of the process, they count in its totals
+		pid_t pid=proc_of(only);
+
+		if (pid>0)
+			proc_tasks(cb,hint,pid);
+		return;
+	}
 	if ((pr=opendir("/proc"))) {
 		struct dirent *de=readdir(pr);
 
 		for (;de&&!stop_req;de=readdir(pr)) { // the cycle is dropped on a signal, do not read all of it
 			char *eol=NULL;
-			char path[30];
-			int havt=0;
 			pid_t pid;
-			DIR *tr;
 
 			pid=strtol(de->d_name,&eol,10);
 			if (*eol!='\0')
 				continue;
-			snprintf(path,sizeof path,"/proc/%d/task",pid);
-			if ((tr=opendir(path))) {
-				struct dirent *tde=readdir(tr);
-
-				for (;tde;tde=readdir(tr)) {
-					pid_t tid;
-
-					eol=NULL;
-					tid=strtol(tde->d_name,&eol,10);
-					if (*eol!='\0')
-						continue;
-					havt=1;
-					cb(pid,tid,hint);
-				}
-				closedir(tr);
-			}
-			if (!havt)
-				cb(pid,pid,hint);
+			proc_tasks(cb,hint,pid);
 		}
 		closedir(pr);
 	}
