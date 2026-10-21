@@ -201,8 +201,14 @@ Use the following commands:
         --show-user        show USER column
     -4, --hide-read        hide DISK READ column
         --show-read        show DISK READ column
+        --show-vfs-read    show VFS READ column
+        --hide-vfs-read    hide VFS READ column
     -5, --hide-write       hide DISK WRITE column
         --show-write       show DISK WRITE column
+        --show-vfs-write   show VFS WRITE column
+        --hide-vfs-write   hide VFS WRITE column
+        --show-vfs         show VFS READ and VFS WRITE columns
+        --hide-vfs         hide VFS READ and VFS WRITE columns
     -6, --hide-swapin      hide SWAPIN column
         --show-swapin      show SWAPIN column
     -7, --hide-io          hide IO column
@@ -234,6 +240,7 @@ Use the following commands:
         --filter=REGEX     filter processes by TID and COMMAND
         --uid2name=MODE    set UID to user name resolution mode (always, none, cyclic, [static])
     -W, --write            write preceding options to the config and exit
+        --debug-write      write preceding options to stdout like -W and exit (for debugging/testing)
 
 ## Contribute
 
