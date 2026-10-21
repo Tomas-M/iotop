@@ -52,8 +52,9 @@ the \fB\-\-processes\fR option, \fBa\fR to cycle between the
 \fBpage\-up\fR/\fBpage\-down\fR/\fBhome\fR/\fBend\fR keys to scroll and \fBq\fR
 to quit. Any unrecognized key will be ignored.
 .PP
-All processes or threads that have exited are displayed grayed for the same time
-as is visible in the \fBGRAPH\fR column or 3 seconds when it is hidden. The
+All processes or threads that have exited are displayed grayed for as long as
+their data is visible in the \fBGRAPH\fR column, or for two refresh cycles when
+it is hidden. The
 invalid data points in the \fBGRAPH\fR column are displayed inverse or with
 letter \fBx\fR (see option \fB\-\-dead\-x\fR and \fBx\fR shortcut). When using
 Unicode characters each position contains two datapoints and only the positions
@@ -63,7 +64,8 @@ It is possible for threads of a process to have different priority from their
 main process. This is shown with \fB!\fR in the \fBPRIO\fR column of the main
 process as e.g. \fB!be/4\fR.
 .PP
-Thread activity is always aggregated with and shown inside the main process.
+With \fB\-P\fR the values of a process include all its threads. When showing
+threads, the row of the main process shows only the values of the main thread.
 .PP
 When showing threads, they appear below their main process, unless they are
 listed alone with \fB\-\-flat\fR. The processes are sorted by the values of the
@@ -189,9 +191,8 @@ Show bandwidth (useful when changing config file with \fB\-\-write\fR)
 Accumulate the I/O of each process or thread since it started. This is the
 default. The kernel counts the I/O of each thread, so the total of a process
 includes its threads that iotop saw, but not the threads that exited before.
-The start time needed for \fB\-\-accum\-bw\fR is known since taskstats
-version 12; with older kernels the average is since \fBiotop\fR first saw the
-process
+With \fB\-\-accum\-bw\fR the average is over the time since the process or
+thread started
 .TP
 \fB\-\-no\-lifetime\fR
 Accumulate the I/O of each process or thread since \fBiotop\fR first saw it
