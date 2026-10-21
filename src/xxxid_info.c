@@ -165,7 +165,9 @@ static int have_exe=0; // taskstats gives the exe and the comm of the tasks, sin
 
 inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *comm) {
 	int64_t sent=monotime(); // the kernel tells the age of the task after this
+	struct msgtemplate msg;
 	static __u32 seq=0;
+	ssize_t rv;
 
 	if (nl_sock<0) {
 		fprintf(stderr,"nl_xxxid_info: nl_sock is %d",nl_sock);
@@ -177,17 +179,13 @@ inline int nl_xxxid_info(pid_t tid,pid_t pid,struct xxxid_stats *stats,char *com
 	}
 
 	*comm=0;
+	stats->pid=pid; // also when the query fails, the task is kept while it exists
+	stats->tid=tid;
 	seq++;
 	if (send_cmd(nl_sock,nl_fam_id,tid,seq,TASKSTATS_CMD_GET,TASKSTATS_CMD_ATTR_PID,&tid,sizeof tid)) {
 		fprintf(stderr,"get_xxxid_info: %s\n",strerror(errno));
 		return -1;
 	}
-
-	stats->pid=pid;
-	stats->tid=tid;
-
-	struct msgtemplate msg;
-	ssize_t rv;
 
 	for (;;) {
 		rv=recv(nl_sock,&msg,sizeof msg,0);
