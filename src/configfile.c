@@ -20,6 +20,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #define CONFIG_DIR1 "/.config"
 #define CONFIG_DIR2 "/iotop"
@@ -28,6 +29,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 static char *av[MAX_OPT]={NULL,};
 static char path[PATH_MAX]=""; // the config file that was opened last
+static char tmppath[PATH_MAX]=""; // the new config while it is written, renamed over path when complete
 static char *ss=NULL;
 static int ac=0;
 
@@ -47,6 +49,50 @@ static inline void mkdir_p(const char *dir) {
 			*p='/';
 		}
 	mkdir(tmp,S_IRWXU);
+}
+
+// open a new file next to the config, so that a failed write does not leave it truncated; when it can
+// not get the mode and the owner of the config, e.g. in a directory that is not writable, write in place
+static inline FILE *config_tmp_open(void) {
+	char real[PATH_MAX];
+	struct stat st;
+	mode_t um;
+	FILE *f;
+	int len;
+	int fd;
+
+	*tmppath=0;
+	if (realpath(path,real)) // replace the target of a symlink, not the link
+		strcpy(path,real);
+	len=snprintf(tmppath,sizeof tmppath,"%s.XXXXXX",path);
+	if (len<0||(size_t)len>=sizeof tmppath) {
+		*tmppath=0;
+		return fopen(path,"w");
+	}
+	fd=mkstemp(tmppath);
+	if (fd==-1) {
+		*tmppath=0;
+		return fopen(path,"w");
+	}
+	if (!stat(path,&st)) {
+		if ((st.st_uid!=geteuid()||st.st_gid!=getegid())&&fchown(fd,st.st_uid,st.st_gid))
+			goto inplace;
+		if (fchmod(fd,st.st_mode&07777))
+			goto inplace;
+	} else {
+		um=umask(0);
+		umask(um);
+		if (fchmod(fd,0666&~um))
+			goto inplace;
+	}
+	f=fdopen(fd,"w");
+	if (f)
+		return f;
+inplace:
+	close(fd);
+	unlink(tmppath);
+	*tmppath=0;
+	return fopen(path,"w");
 }
 
 static inline FILE *config_file_open(const char *mode) {
@@ -79,6 +125,8 @@ static inline FILE *config_file_open(const char *mode) {
 		return NULL;
 	}
 
+	if (*mode=='w')
+		return config_tmp_open();
 	return fopen(path,mode);
 }
 
@@ -312,16 +360,28 @@ inline int config_file_save(int to_stdout) {
 	if (config.f.uid2name==E_UID2NAME_STATIC)
 		fprintf(cf,"--uid2name=static\n");
 
-	if (ferror(cf)) {
-		if (!to_stdout)
-			fclose(cf);
+	if (to_stdout) {
+		if (ferror(cf)||fflush(cf))
+			return -1;
+		return 0;
+	}
+	// the buffered data is written by fflush, e.g. a full disk shows only now; fsync before the rename keeps
+	// a crash from leaving an empty config
+	if (ferror(cf)||fflush(cf)||(*tmppath&&fsync(fileno(cf)))) {
+		fclose(cf);
+		if (*tmppath)
+			unlink(tmppath);
 		return -1;
 	}
-	if (to_stdout) {
-		if (fflush(cf))
-			return -1;
-	} else if (fclose(cf)) // the buffered data is written here, e.g. a full disk shows only now
+	if (fclose(cf)) {
+		if (*tmppath)
+			unlink(tmppath);
 		return -1;
+	}
+	if (*tmppath&&rename(tmppath,path)) {
+		unlink(tmppath);
+		return -1;
+	}
 
 	return 0;
 }
