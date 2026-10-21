@@ -105,7 +105,7 @@ endif
 
 ifeq ("$(HAVEFLTA)","no")
 ifndef NO_FLTO
-ifeq ("$(HAVEFLTA)","no")
+ifeq ("$(HAVEFLTO)","no")
 MYCFLAGS:=$(filter-out -flto=auto,$(MYCFLAGS))
 MYLDFLAGS:=$(filter-out -flto=auto,$(MYLDFLAGS))
 else
