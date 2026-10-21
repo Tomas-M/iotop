@@ -58,6 +58,8 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_SHOW_VFS_WRITE 0x11f
 #define OPT_HIDE_VFS_WRITE 0x120
 #define OPT_DEBUG_WRITE 0x121
+#define OPT_FLAT 0x122
+#define OPT_NO_FLAT 0x123
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -169,6 +171,8 @@ static inline void print_help(void) {
 		"  -u USER, --user=USER   users to monitor [all]\n"
 		"  -P, --processes        only show processes, not all threads\n"
 		"      --threads          show all threads\n"
+		"      --flat             list the threads alone, not grouped below their process\n"
+		"      --no-flat          list the threads grouped below their process\n"
 		"  -a, --accumulated      show accumulated I/O instead of bandwidth\n"
 		"      --no-accumulated   show bandwidth\n"
 		"  -A, --accum-bw         show accumulated bandwidth\n"
@@ -275,6 +279,8 @@ static inline void parse_args(int clac,char **clav) {
 				{"user",required_argument,NULL,'u'},
 				{"processes",no_argument,NULL,'P'},
 				{"threads",no_argument,NULL,OPT_THREADS},
+				{"flat",no_argument,NULL,OPT_FLAT},
+				{"no-flat",no_argument,NULL,OPT_NO_FLAT},
 				{"accumulated",no_argument,NULL,'a'},
 				{"no-accumulated",no_argument,NULL,OPT_NO_ACCUMULATED},
 				{"accum-bw",no_argument,NULL,'A'},
@@ -546,6 +552,12 @@ static inline void parse_args(int clac,char **clav) {
 					break;
 				case OPT_SHOW_EXITED:
 					config.f.hideexited=0;
+					break;
+				case OPT_FLAT:
+					config.f.flat=1;
+					break;
+				case OPT_NO_FLAT:
+					config.f.flat=0;
 					break;
 				case OPT_NO_REVERSE:
 					config.f.reverse_graph=0;

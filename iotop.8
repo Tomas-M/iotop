@@ -65,8 +65,9 @@ process as e.g. \fB!be/4\fR.
 .PP
 Thread activity is always aggregated with and shown inside the main process.
 .PP
-When showing threads, they always appear below their main process and are sorted
-in the same way as the processes.
+When showing threads, they appear below their main process, unless they are
+listed alone with \fB\-\-flat\fR. The processes are sorted by the values of the
+whole process and the threads of each process by their own values.
 .PP
 There are two ways to change the IO priority of a process or thread \- press
 \fBi\fR and use arrows to select the process or thread from the visible ones on
@@ -146,6 +147,14 @@ Only show processes. Normally \fBiotop\fR shows processes and all threads
 .TP
 \fB\-\-threads\fR
 Show processes and all threads
+.TP
+\fB\-\-flat\fR
+List the threads alone, sorted by their own values, instead of grouping them
+below their process. This has no effect when only processes are shown and in
+batch mode, which always lists the threads alone
+.TP
+\fB\-\-no\-flat\fR
+List the threads grouped below their process
 .TP
 \fB\-a\fR, \fB\-\-accumulated\fR
 Show accumulated I/O instead of bandwidth. In this mode, \fBiotop\fR shows the
@@ -416,6 +425,9 @@ Toggle showing only processes with IO activity
 .TP
 \fBp\fR, \fBP\fR
 Toggle showing processes/threads
+.TP
+\fBCtrl\-F\fR
+Toggle grouping threads below their process
 .TP
 \fBa\fR, \fBA\fR
 Cycle showing accumulated/accum-bw/current values

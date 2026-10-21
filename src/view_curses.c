@@ -149,6 +149,7 @@ typedef struct {
 static char tsoor[200]="Toggle sort order [desc]";
 static char tonly[200]="Toggle showing only processes with IO activity [only]";
 static char tproc[200]="Toggle showing processes/threads [proc]";
+static char tflat[200]="Toggle grouping threads below their process [off]";
 static char caccu[200]="Cycle accumulated/accum-bw/current values [accum-bw]";
 static char tcomm[200]="Toggle showing full command line [off]";
 static char tcol1[200]="Toggle showing TID [off]";
@@ -189,6 +190,7 @@ const s_helpitem thelp[]={
 	{.descr="Cancel ionice/filter/search or close help window",.k1="<esc>"},
 	{.descr=tonly,.t="Toggle showing only processes with IO activity [%s]",.k2="o",.k3="O"},
 	{.descr=tproc,.t="Toggle showing processes/threads [%s]",.k2="p",.k3="P"},
+	{.descr=tflat,.t="Toggle grouping threads below their process [%s]",.k1="<Ctrl-F>",.k2="",.k3=""},
 	{.descr=caccu,.t="Cycle accumulated/accum-bw/current values [%s]",.k2="a",.k3="A"},
 	{.descr=tcomm,.t="Toggle showing full command line [%s]",.k2="c",.k3="C"},
 	{.descr=tcol1,.t="Toggle showing TID [%s]",.k2="1"},
@@ -668,9 +670,13 @@ static inline void view_help(void) {
 				case 'T':
 					sprintf(p->descr,p->t,config.f.hideclock?"off":"on");
 					break;
-				case 0: { // only task_delayacct has no key
+				case 0: { // only grouping threads and task_delayacct have no letter key
 					char *tda;
 
+					if (p->descr==tflat) {
+						sprintf(p->descr,p->t,config.f.flat?"off":"on");
+						break;
+					}
 					if (has_task_delayacct())
 						tda=read_task_delayacct()?"dynamic on":"dynamic off";
 					else
@@ -827,6 +833,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 	char pg_t_w[HISTORY_POS*5]={0};
 	char pg_a_r[HISTORY_POS*5]={0};
 	char pg_a_w[HISTORY_POS*5]={0};
+	int flat=config.f.flat&&!config.f.processes; // list the threads alone, not below their process
 	int promptx=0,prompty=0,show=FALSE;
 	char *head1row_format="";
 	double maxvisible=0.0;
@@ -891,7 +898,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&config.f.unicode)?gr_width*2:gr_width));
 	if (cs->sort_gen!=view_gen||!cs->sor) { // count and sort only for new data or changed view
 		dispcount=count_visible(cs,filter_view,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
-		view_sort(cs,iotop_sort_proc_cb,is_main); // the processes by their totals, also when the threads are shown
+		if (flat)
+			view_sort(cs,iotop_sort_cb,NULL);
+		else
+			view_sort(cs,iotop_sort_proc_cb,is_main); // the processes by their totals, also when the threads are shown
 	}
 
 	calc_total(cs,&total_read,&total_write);
@@ -1148,10 +1158,10 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 		for (i=0;cs->sor&&i<cs->sor_length;i++) {
 			struct xxxid_stats *ms=cs->sor[i],*s;
 
-			if (ms->threads)
+			if (ms->threads&&!flat)
 				view_sort(ms->threads,iotop_sort_cb,NULL);
 			// show only processes, if configured
-			for (k=-1;k<(config.f.processes?0:(ms->threads?ms->threads->length:0));k++) {
+			for (k=-1;k<((config.f.processes||flat)?0:(ms->threads?ms->threads->length:0));k++) {
 				const double *rh,*wh; // the histories that are drawn: aggregated for processes
 
 				if (k<0)
@@ -1216,7 +1226,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 		char *pwt,*cmdt;
 		int hrevpos;
 
-		if (ms->threads)
+		if (ms->threads&&!flat)
 			if (!(masked_grtype(0)!=E_GR_IO&&masked_grtype(0)!=E_GR_SW&&!config.f.hidegraph))
 				view_sort(ms->threads,iotop_sort_cb,NULL);
 		// check if threads use the same prio as the main process
@@ -1225,7 +1235,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 		th_prio_diff=0;
 		th_have_filtered=0;
 		th_first_id=th_last_id=-2;
-		for (k=-1;ms->threads&&ms->threads->arr&&k<ms->threads->length;k++) {
+		for (k=-1;!flat&&ms->threads&&ms->threads->arr&&k<ms->threads->length;k++) {
 			if (k<0)
 				s=ms;
 			else {
@@ -1255,7 +1265,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 			}
 		}
 		// show only processes, if configured
-		for (k=-1;k<(config.f.processes?0:(ms->threads?ms->threads->length:0));k++) {
+		for (k=-1;k<((config.f.processes||flat)?0:(ms->threads?ms->threads->length:0));k++) {
 			if (k<0)
 				s=ms;
 			else {
@@ -1504,7 +1514,7 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 			if (!config.f.hidecmd) {
 				const char *ss=(has_unicode&&config.f.unicode)?th_lines_u[0]:th_lines_a[0];
 
-				if (ms->threads) {
+				if (ms->threads&&!flat) {
 					if (config.f.processes) {
 						if (k==-1&&ms->threads->length)
 							ss=(has_unicode&&config.f.unicode)?th_lines_u[1]:th_lines_a[1];
@@ -2675,6 +2685,9 @@ static inline int curses_key(int ch) {
 			break;
 		case KEY_CTRL_T:
 			write_task_delayacct(!read_task_delayacct());
+			break;
+		case KEY_CTRL_F:
+			config.f.flat=!config.f.flat;
 			break;
 		case KEY_CTRL_L: // Ctrl-L
 			clear_uid_cache();

@@ -86,6 +86,7 @@ typedef union {
 		int threshold; // 1..10
 		int norenice;
 		e_uid2name uid2name;
+		int flat; // list the threads alone, not below their process
 	} f;
 	int opts[26];
 } config_t;

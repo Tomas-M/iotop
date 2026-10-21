@@ -459,11 +459,11 @@ inline int count_visible(struct xxxid_stats_arr *cs,filter_callback_w cb,int wid
 	for (n=0;cs->arr&&n<cs->length;n++) {
 		struct xxxid_stats *c=cs->arr[n];
 
-		if (c->pid!=c->tid) // threads are shown only below their process
+		if (c->pid!=c->tid&&!config.f.flat) // threads are shown only below their process, unless listed alone
 			continue;
 		if (!cb(c,width))
 			cnt++;
-		if (config.f.processes)
+		if (config.f.processes||config.f.flat)
 			continue;
 		for (k=0;c->threads&&c->threads->arr&&k<c->threads->length;k++)
 			if (!cb(c->threads->arr[k],width))

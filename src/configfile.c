@@ -200,6 +200,9 @@ inline int config_file_save(int to_stdout) {
 	// --processes
 	if (config.f.processes)
 		fprintf(cf,"--processes\n");
+	// --flat
+	if (config.f.flat)
+		fprintf(cf,"--flat\n");
 	// --accumulated
 	if (config.f.accumulated)
 		fprintf(cf,"--accumulated\n");

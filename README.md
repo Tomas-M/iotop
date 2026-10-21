@@ -179,6 +179,8 @@ Use the following commands:
     -u USER, --user=USER   users to monitor [all]
     -P, --processes        only show processes, not all threads
         --threads          show all threads
+        --flat             list the threads alone, not grouped below their process
+        --no-flat          list the threads grouped below their process
     -a, --accumulated      show accumulated I/O instead of bandwidth
         --no-accumulated   show bandwidth
     -A, --accum-bw         show accumulated bandwidth
