@@ -88,16 +88,11 @@ static inline void view_batch(struct xxxid_stats_arr *cs,struct xxxid_stats_arr 
 		char *pw_name;
 		char *cmdt;
 
-		if (config.f.accumbw) {
-			read_val=config.f.processes?s->read_val_abw_p:s->read_val_abw;
-			write_val=config.f.processes?s->write_val_abw_p:s->write_val_abw;
-			vfs_read_val=config.f.processes?s->read_char_val_abw_p:s->read_char_val_abw;
-			vfs_write_val=config.f.processes?s->write_char_val_abw_p:s->write_char_val_abw;
-		} else if (config.f.accumulated) {
-			read_val=config.f.processes?s->read_val_acc_p:s->read_val_acc;
-			write_val=config.f.processes?s->write_val_acc_p:s->write_val_acc;
-			vfs_read_val=config.f.processes?s->read_char_val_acc_p:s->read_char_val_acc;
-			vfs_write_val=config.f.processes?s->write_char_val_acc_p:s->write_char_val_acc;
+		if (config.f.accumulated||config.f.accumbw) {
+			read_val=accum_val(s,E_ACC_READ,config.f.processes);
+			write_val=accum_val(s,E_ACC_WRITE,config.f.processes);
+			vfs_read_val=accum_val(s,E_ACC_VFS_READ,config.f.processes);
+			vfs_write_val=accum_val(s,E_ACC_VFS_WRITE,config.f.processes);
 		} else {
 			read_val=config.f.processes?s->read_val_p:s->read_val;
 			write_val=config.f.processes?s->write_val_p:s->write_val;

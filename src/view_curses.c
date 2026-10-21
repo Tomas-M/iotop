@@ -386,7 +386,7 @@ static inline int filter_view(struct xxxid_stats *s,int gr_width) {
 			return 1;
 	}
 	// visible history is non-zero, or in the accumulated modes the shown totals
-	if (config.f.only&&!((config.f.accumulated||config.f.accumbw)&&accum_read(s,config.f.processes)+accum_write(s,config.f.processes)>0)) {
+	if (config.f.only&&!((config.f.accumulated||config.f.accumbw)&&accum_val(s,E_ACC_READ,config.f.processes)+accum_val(s,E_ACC_WRITE,config.f.processes)>0)) {
 		if (config.f.hidegraph) {
 			if ((config.f.processes?s->blkio_val_p:s->blkio_val)<=0&&
 				(config.f.processes?s->swapin_val_p:s->swapin_val)<=0&&
@@ -1281,16 +1281,11 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,
 				continue;
 			}
 
-			if (config.f.accumbw) {
-				read_val=config.f.processes?s->read_val_abw_p:s->read_val_abw;
-				write_val=config.f.processes?s->write_val_abw_p:s->write_val_abw;
-				vfs_read_val=config.f.processes?s->read_char_val_abw_p:s->read_char_val_abw;
-				vfs_write_val=config.f.processes?s->write_char_val_abw_p:s->write_char_val_abw;
-			} else if (config.f.accumulated) {
-				read_val=config.f.processes?s->read_val_acc_p:s->read_val_acc;
-				write_val=config.f.processes?s->write_val_acc_p:s->write_val_acc;
-				vfs_read_val=config.f.processes?s->read_char_val_acc_p:s->read_char_val_acc;
-				vfs_write_val=config.f.processes?s->write_char_val_acc_p:s->write_char_val_acc;
+			if (config.f.accumulated||config.f.accumbw) {
+				read_val=accum_val(s,E_ACC_READ,config.f.processes);
+				write_val=accum_val(s,E_ACC_WRITE,config.f.processes);
+				vfs_read_val=accum_val(s,E_ACC_VFS_READ,config.f.processes);
+				vfs_write_val=accum_val(s,E_ACC_VFS_WRITE,config.f.processes);
 			} else {
 				if (s->exited) {
 					read_val=0.0;

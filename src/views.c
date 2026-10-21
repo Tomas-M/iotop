@@ -188,10 +188,6 @@ static inline void stats_new(struct xxxid_stats *c,uint64_t ts_c) {
 	c->write_val_acc=0;
 	c->read_char_val_acc=0;
 	c->write_char_val_acc=0;
-	c->read_val_abw=0;
-	c->write_val_abw=0;
-	c->read_char_val_abw=0;
-	c->write_char_val_abw=0;
 	c->ts_s=ts_c; // keep start ts
 	c->ts_e=ts_c; // keep end ts
 }
@@ -238,11 +234,6 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 	c->read_char_val_acc=p->read_char_val_acc+rcv;
 	c->write_char_val_acc=p->write_char_val_acc+wcv;
 
-	c->read_val_abw=c->read_val_acc/timediff_in_s(c->ts_s,c->ts_e);
-	c->write_val_abw=c->write_val_acc/timediff_in_s(c->ts_s,c->ts_e);
-	c->read_char_val_abw=c->read_char_val_acc/timediff_in_s(c->ts_s,c->ts_e);
-	c->write_char_val_abw=c->write_char_val_acc/timediff_in_s(c->ts_s,c->ts_e);
-
 	io=value2scale(c->blkio_val,100.0);
 	si=value2scale(c->swapin_val,100.0);
 
@@ -269,11 +260,6 @@ static inline void stats_diff(struct xxxid_stats *c,struct xxxid_stats *p,double
 		c->write_val_acc_p=p->write_val_acc_p+wvp;
 		c->read_char_val_acc_p=p->read_char_val_acc_p+rcv;
 		c->write_char_val_acc_p=p->write_char_val_acc_p+wcv;
-
-		c->read_val_abw_p=c->read_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
-		c->write_val_abw_p=c->write_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
-		c->read_char_val_abw_p=c->read_char_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
-		c->write_char_val_abw_p=c->write_char_val_acc_p/timediff_in_s(c->ts_s,c->ts_e);
 
 		iop=value2scale(c->blkio_val_p,100.0);
 		sip=value2scale(c->swapin_val_p,100.0);
@@ -493,17 +479,28 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 	snprintf(str,4,"%c%s",u[p],config.f.accumulated&&allow_accum?"  ":"/s");
 }
 
-// the read and write values that the columns show in the accumulated modes
-inline double accum_read(const struct xxxid_stats *s,int agg) {
-	if (config.f.accumbw)
-		return agg?s->read_val_abw_p:s->read_val_abw;
-	return agg?s->read_val_acc_p:s->read_val_acc;
-}
+// the value that a column shows in the accumulated modes: the total since the task was first seen,
+// or with accum-bw the average bandwidth over that time
+inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg) {
+	double acc=0;
 
-inline double accum_write(const struct xxxid_stats *s,int agg) {
+	switch (v) {
+		case E_ACC_READ:
+			acc=agg?s->read_val_acc_p:s->read_val_acc;
+			break;
+		case E_ACC_WRITE:
+			acc=agg?s->write_val_acc_p:s->write_val_acc;
+			break;
+		case E_ACC_VFS_READ:
+			acc=agg?s->read_char_val_acc_p:s->read_char_val_acc;
+			break;
+		case E_ACC_VFS_WRITE:
+			acc=agg?s->write_char_val_acc_p:s->write_char_val_acc;
+			break;
+	}
 	if (config.f.accumbw)
-		return agg?s->write_val_abw_p:s->write_val_abw;
-	return agg?s->write_val_acc_p:s->write_val_acc;
+		return acc/timediff_in_s(s->ts_s,s->ts_e);
+	return acc;
 }
 
 static int grlen=0; // count of the newest history values that the graph shows
@@ -537,8 +534,8 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					if (config.f.accumulated||config.f.accumbw) {
-						da=accum_read(pa,agg);
-						db=accum_read(pb,agg);
+						da=accum_val(pa,E_ACC_READ,agg);
+						db=accum_val(pb,E_ACC_READ,agg);
 					} else {
 						da=HIST_SUM(pa->hist,read,agg,grlen);
 						db=HIST_SUM(pb->hist,read,agg,grlen);
@@ -554,8 +551,8 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					if (config.f.accumulated||config.f.accumbw) {
-						da=accum_write(pa,agg);
-						db=accum_write(pb,agg);
+						da=accum_val(pa,E_ACC_WRITE,agg);
+						db=accum_val(pb,E_ACC_WRITE,agg);
 					} else {
 						da=HIST_SUM(pa->hist,write,agg,grlen);
 						db=HIST_SUM(pb->hist,write,agg,grlen);
@@ -571,8 +568,8 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 					if (grlen==0)
 						grlen=HISTORY_CNT;
 					if (config.f.accumulated||config.f.accumbw) {
-						da=accum_read(pa,agg)+accum_write(pa,agg);
-						db=accum_read(pb,agg)+accum_write(pb,agg);
+						da=accum_val(pa,E_ACC_READ,agg)+accum_val(pa,E_ACC_WRITE,agg);
+						db=accum_val(pb,E_ACC_READ,agg)+accum_val(pb,E_ACC_WRITE,agg);
 					} else {
 						da=HIST_SUM(pa->hist,read,agg,grlen)+HIST_SUM(pa->hist,write,agg,grlen);
 						db=HIST_SUM(pb->hist,read,agg,grlen)+HIST_SUM(pb->hist,write,agg,grlen);
@@ -607,45 +604,33 @@ static inline int sort_cmp(const void *a,const void *b,int agg) {
 			res=strcmp(pa->pw_name,pb->pw_name);
 			break;
 		case SORT_BY_READ:
-			if (config.f.accumbw)
-				res=(agg?pa->read_val_abw_p:pa->read_val_abw)>(agg?pb->read_val_abw_p:pb->read_val_abw)?1:
-					(agg?pa->read_val_abw_p:pa->read_val_abw)<(agg?pb->read_val_abw_p:pb->read_val_abw)?-1:0;
-			else if (config.f.accumulated)
-				res=(agg?pa->read_val_acc_p:pa->read_val_acc)>(agg?pb->read_val_acc_p:pb->read_val_acc)?1:
-					(agg?pa->read_val_acc_p:pa->read_val_acc)<(agg?pb->read_val_acc_p:pb->read_val_acc)?-1:0;
+			if (config.f.accumulated||config.f.accumbw)
+				res=accum_val(pa,E_ACC_READ,agg)>accum_val(pb,E_ACC_READ,agg)?1:
+					accum_val(pa,E_ACC_READ,agg)<accum_val(pb,E_ACC_READ,agg)?-1:0;
 			else
 				res=(agg?pa->read_val_p:pa->read_val)>(agg?pb->read_val_p:pb->read_val)?1:
 					(agg?pa->read_val_p:pa->read_val)<(agg?pb->read_val_p:pb->read_val)?-1:0;
 			break;
 		case SORT_BY_WRITE:
-			if (config.f.accumbw)
-				res=(agg?pa->write_val_abw_p:pa->write_val_abw)>(agg?pb->write_val_abw_p:pb->write_val_abw)?1:
-					(agg?pa->write_val_abw_p:pa->write_val_abw)<(agg?pb->write_val_abw_p:pb->write_val_abw)?-1:0;
-			else if (config.f.accumulated)
-				res=(agg?pa->write_val_acc_p:pa->write_val_acc)>(agg?pb->write_val_acc_p:pb->write_val_acc)?1:
-					(agg?pa->write_val_acc_p:pa->write_val_acc)<(agg?pb->write_val_acc_p:pb->write_val_acc)?-1:0;
+			if (config.f.accumulated||config.f.accumbw)
+				res=accum_val(pa,E_ACC_WRITE,agg)>accum_val(pb,E_ACC_WRITE,agg)?1:
+					accum_val(pa,E_ACC_WRITE,agg)<accum_val(pb,E_ACC_WRITE,agg)?-1:0;
 			else
 				res=(agg?pa->write_val_p:pa->write_val)>(agg?pb->write_val_p:pb->write_val)?1:
 					(agg?pa->write_val_p:pa->write_val)<(agg?pb->write_val_p:pb->write_val)?-1:0;
 			break;
 		case SORT_BY_VFS_READ:
-			if (config.f.accumbw)
-				res=(agg?pa->read_char_val_abw_p:pa->read_char_val_abw)>(agg?pb->read_char_val_abw_p:pb->read_char_val_abw)?1:
-					(agg?pa->read_char_val_abw_p:pa->read_char_val_abw)<(agg?pb->read_char_val_abw_p:pb->read_char_val_abw)?-1:0;
-			else if (config.f.accumulated)
-				res=(agg?pa->read_char_val_acc_p:pa->read_char_val_acc)>(agg?pb->read_char_val_acc_p:pb->read_char_val_acc)?1:
-					(agg?pa->read_char_val_acc_p:pa->read_char_val_acc)<(agg?pb->read_char_val_acc_p:pb->read_char_val_acc)?-1:0;
+			if (config.f.accumulated||config.f.accumbw)
+				res=accum_val(pa,E_ACC_VFS_READ,agg)>accum_val(pb,E_ACC_VFS_READ,agg)?1:
+					accum_val(pa,E_ACC_VFS_READ,agg)<accum_val(pb,E_ACC_VFS_READ,agg)?-1:0;
 			else
 				res=(agg?pa->read_char_val_p:pa->read_char_val)>(agg?pb->read_char_val_p:pb->read_char_val)?1:
 					(agg?pa->read_char_val_p:pa->read_char_val)<(agg?pb->read_char_val_p:pb->read_char_val)?-1:0;
 			break;
 		case SORT_BY_VFS_WRITE:
-			if (config.f.accumbw)
-				res=(agg?pa->write_char_val_abw_p:pa->write_char_val_abw)>(agg?pb->write_char_val_abw_p:pb->write_char_val_abw)?1:
-					(agg?pa->write_char_val_abw_p:pa->write_char_val_abw)<(agg?pb->write_char_val_abw_p:pb->write_char_val_abw)?-1:0;
-			else if (config.f.accumulated)
-				res=(agg?pa->write_char_val_acc_p:pa->write_char_val_acc)>(agg?pb->write_char_val_acc_p:pb->write_char_val_acc)?1:
-					(agg?pa->write_char_val_acc_p:pa->write_char_val_acc)<(agg?pb->write_char_val_acc_p:pb->write_char_val_acc)?-1:0;
+			if (config.f.accumulated||config.f.accumbw)
+				res=accum_val(pa,E_ACC_VFS_WRITE,agg)>accum_val(pb,E_ACC_VFS_WRITE,agg)?1:
+					accum_val(pa,E_ACC_VFS_WRITE,agg)<accum_val(pb,E_ACC_VFS_WRITE,agg)?-1:0;
 			else
 				res=(agg?pa->write_char_val_p:pa->write_char_val)>(agg?pb->write_char_val_p:pb->write_char_val)?1:
 					(agg?pa->write_char_val_p:pa->write_char_val)<(agg?pb->write_char_val_p:pb->write_char_val)?-1:0;
