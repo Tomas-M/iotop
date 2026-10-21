@@ -2063,10 +2063,8 @@ static inline int curses_key_search(int ch) {
 
 	switch (ch) {
 		case KEY_ESCAPE: // ESC
-			nocbreak();
+			timeout(0); // only what came with the ESC, an Alt key sends both at once
 			k2=getch();
-			cbreak();
-			halfdelay(2);
 			key_log(k2,1);
 			if (k2!=ERR) {
 				switch (k2) {
@@ -2508,10 +2506,8 @@ static inline int curses_key(int ch) {
 			config.f.hideclock=!config.f.hideclock;
 			break;
 		case KEY_ESCAPE: // ESC
-			nocbreak();
+			timeout(0); // only what came with the ESC, an Alt key sends both at once
 			k2=getch();
-			cbreak();
-			halfdelay(2);
 			key_log(k2,1);
 			if (k2!=ERR) {
 				switch (k2) {
@@ -2744,7 +2740,6 @@ inline void view_curses_init(void) {
 	keypad(stdscr,TRUE);
 	nonl();
 	cbreak();
-	halfdelay(2);
 	noecho();
 	curs_set(FALSE);
 	nodelay(stdscr,TRUE);
@@ -2832,6 +2827,7 @@ inline void view_curses_loop(void) {
 
 	for (;;) {
 		uint64_t now=monotime();
+		int64_t wait;
 
 		if (!read_task_delayacct()) {
 			if (has_tda)
@@ -2890,6 +2886,9 @@ inline void view_curses_loop(void) {
 				redraw=0;
 			}
 		}
+		// wait for a key until the next refresh is due, but at most 200 ms, so a change of task_delayacct shows soon
+		wait=(int64_t)(bef+params.delay_ms+1)-(int64_t)monotime();
+		timeout(wait<0?0:wait>200?200:(int)wait);
 		k=getch();
 	}
 	clear_uid_cache();
