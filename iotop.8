@@ -123,7 +123,11 @@ Show all processes or threads
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
 Turn on non\-interactive mode.
-Useful for logging I/O usage over time
+Useful for logging I/O usage over time.
+The columns of non\-interactive mode are fixed so that its output can be
+parsed: the options that hide or show columns, also from the config file,
+apply only to the interactive view, except for the VFS READ and VFS WRITE
+columns
 .TP
 \fB\-n\fR \fINUM\fR, \fB\-\-iter\fR=\fINUM\fR
 Set the number of iterations before quitting (never quit by default).
