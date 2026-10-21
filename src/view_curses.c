@@ -817,7 +817,7 @@ static inline void color_print_pc(double v) {
 	printw(" %% ");
 }
 
-static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,struct act_stats *act,int roll) {
+static inline void view_curses(struct xxxid_stats_arr *cs,struct act_stats *act,int roll) {
 	const char *base_lbl=config.f.base==1000?"SI 1000":"IEC 1024";
 	char str_read[4],str_write[4],str_a_read[4],str_a_write[4];
 	double total_read,total_write,total_a_read,total_a_write;
@@ -886,7 +886,6 @@ static inline void view_curses(struct xxxid_stats_arr *cs,struct xxxid_stats_arr
 	if (maxcmdline<0)
 		maxcmdline=0;
 
-	create_diff(cs,ps,time_s,act->ts_c,HISTORY_CNT); // the longest any view setting can show them
 	hist_window(cs,(has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 	view_key_check((has_unicode&&config.f.unicode)?gr_width*2:gr_width);
 	iotop_sort_cb(NULL,(void *)(long)((has_unicode&&config.f.unicode)?gr_width*2:gr_width));
@@ -2836,6 +2835,9 @@ inline void view_curses_loop(void) {
 			}
 			get_vm_counters(&act.read_bytes,&act.write_bytes);
 			act.ts_c=now;
+			// here and not on redraw: keys that do not redraw may come until the next refresh, and the next cycle
+			// needs this one done; keep the exited tasks the longest any view setting can show them
+			create_diff(cs,ps,timediff_in_s(act.ts_o,act.ts_c),act.ts_c,HISTORY_CNT);
 			refresh=1;
 		} else if (bef+params.delay_ms<now&&dontrefresh&&!config.f.hideclock) {
 			bef=now;
@@ -2849,7 +2851,7 @@ inline void view_curses_loop(void) {
 			if ((kres=curses_key(k))>0)
 				break;
 			if (kres==0) {
-				view_curses(cs,ps,&act,refresh);
+				view_curses(cs,&act,refresh);
 				refresh=0;
 			}
 		}
