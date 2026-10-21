@@ -185,6 +185,8 @@ Use the following commands:
         --no-accumulated   show bandwidth
     -A, --accum-bw         show accumulated bandwidth
         --no-accum-bw      show last iteration bandwidth
+        --lifetime         accumulate I/O since each task started [default]
+        --no-lifetime      accumulate I/O since iotop first saw each task
     -k, --kilobytes        use kilobytes instead of a human friendly unit
         --no-kilobytes     use human friendly unit
     -t, --time             add a timestamp on each line (implies --batch)

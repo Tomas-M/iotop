@@ -60,6 +60,8 @@ You should have received a copy of the GNU General Public License along with thi
 #define OPT_DEBUG_WRITE 0x121
 #define OPT_FLAT 0x122
 #define OPT_NO_FLAT 0x123
+#define OPT_LIFETIME 0x124
+#define OPT_NO_LIFETIME 0x125
 
 static const char *progname=NULL;
 int maxpidlen=5;
@@ -177,6 +179,8 @@ static inline void print_help(void) {
 		"      --no-accumulated   show bandwidth\n"
 		"  -A, --accum-bw         show accumulated bandwidth\n"
 		"      --no-accum-bw      show last iteration bandwidth\n"
+		"      --lifetime         accumulate I/O since each task started [default]\n"
+		"      --no-lifetime      accumulate I/O since iotop first saw each task\n"
 		"  -k, --kilobytes        use kilobytes instead of a human friendly unit\n"
 		"      --no-kilobytes     use human friendly unit\n"
 		"  -t, --time             add a timestamp on each line (implies --batch)\n"
@@ -285,6 +289,8 @@ static inline void parse_args(int clac,char **clav) {
 				{"no-accumulated",no_argument,NULL,OPT_NO_ACCUMULATED},
 				{"accum-bw",no_argument,NULL,'A'},
 				{"no-accum-bw",no_argument,NULL,OPT_NO_ACCUM_BW},
+				{"lifetime",no_argument,NULL,OPT_LIFETIME},
+				{"no-lifetime",no_argument,NULL,OPT_NO_LIFETIME},
 				{"kilobytes",no_argument,NULL,'k'},
 				{"no-kilobytes",no_argument,NULL,OPT_NO_KILOBYTES},
 				{"time",no_argument,NULL,'t'},
@@ -552,6 +558,12 @@ static inline void parse_args(int clac,char **clav) {
 					break;
 				case OPT_SHOW_EXITED:
 					config.f.hideexited=0;
+					break;
+				case OPT_LIFETIME:
+					config.f.nolifetime=0;
+					break;
+				case OPT_NO_LIFETIME:
+					config.f.nolifetime=1;
 					break;
 				case OPT_FLAT:
 					config.f.flat=1;

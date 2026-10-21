@@ -158,7 +158,8 @@ List the threads grouped below their process
 .TP
 \fB\-a\fR, \fB\-\-accumulated\fR
 Show accumulated I/O instead of bandwidth. In this mode, \fBiotop\fR shows the
-amount of I/O processes have done since the process or \fBiotop\fR started.
+amount of I/O processes have done since they started, or with
+\fB\-\-no\-lifetime\fR since \fBiotop\fR first saw them.
 Note that this option and \-\-accum\-bw are exclusive and they will turn each
 other off
 .TP
@@ -168,12 +169,23 @@ Show bandwidth (useful when changing config file with \fB\-\-write\fR)
 \fB\-A\fR, \fB\-\-accum-bw\fR
 Show accumulated I/O as bandwidth for the whole sampling period. In this mode,
 \fBiotop\fR shows the amount of I/O per second for the whole period since the
-process or \fBiotop\fR started.
+process started, or with \fB\-\-no\-lifetime\fR since \fBiotop\fR first saw it.
 Note that this option and \-\-accumulated are exclusive and they will turn each
 other off
 .TP
 \fB\-\-no\-accum-bw\fR
 Show bandwidth (useful when changing config file with \fB\-\-write\fR)
+.TP
+\fB\-\-lifetime\fR
+Accumulate the I/O of each process or thread since it started. This is the
+default. The kernel counts the I/O of each thread, so the total of a process
+includes its threads that iotop saw, but not the threads that exited before.
+The start time needed for \fB\-\-accum\-bw\fR is known since taskstats
+version 12; with older kernels the average is since \fBiotop\fR first saw the
+process
+.TP
+\fB\-\-no\-lifetime\fR
+Accumulate the I/O of each process or thread since \fBiotop\fR first saw it
 .TP
 \fB\-k\fR, \fB\-\-kilobytes\fR
 Use kilobytes instead of a human friendly unit.
@@ -431,6 +443,10 @@ Toggle grouping threads below their process
 .TP
 \fBa\fR, \fBA\fR
 Cycle showing accumulated/accum-bw/current values
+.TP
+\fBCtrl\-A\fR
+Toggle accumulating since the processes started or since \fBiotop\fR first saw
+them
 .TP
 \fB?\fR
 Toggle showing inline help

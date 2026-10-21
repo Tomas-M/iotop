@@ -94,6 +94,7 @@ typedef union {
 		int norenice;
 		e_uid2name uid2name;
 		int flat; // list the threads alone, not below their process
+		int nolifetime; // the accumulated modes count since the task was first seen, not since it started
 	} f;
 	int opts[26];
 } config_t;

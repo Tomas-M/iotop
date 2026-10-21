@@ -209,6 +209,9 @@ inline int config_file_save(int to_stdout) {
 	// --accum-bw
 	if (config.f.accumbw)
 		fprintf(cf,"--accum-bw\n");
+	// --no-lifetime
+	if (config.f.nolifetime)
+		fprintf(cf,"--no-lifetime\n");
 	// --kilobytes
 	if (config.f.kilobytes)
 		fprintf(cf,"--kilobytes\n");

@@ -13,9 +13,12 @@ You should have received a copy of the GNU General Public License along with thi
 
 #include "iotop.h"
 
+#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+static double wall_off; // the wall clock minus the monotonic clock in seconds, for the start times of the tasks
 
 inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write) {
 	int i;
@@ -27,8 +30,8 @@ inline void calc_total(struct xxxid_stats_arr *cs,double *read,double *write) {
 			*read+=cs->arr[i]->read_val;
 			*write+=cs->arr[i]->write_val;
 		} else {
-			*read+=cs->arr[i]->read_val_acc;
-			*write+=cs->arr[i]->write_val_acc;
+			*read+=accum_val(cs->arr[i],E_ACC_READ,0);
+			*write+=accum_val(cs->arr[i],E_ACC_WRITE,0);
 		}
 	}
 }
@@ -355,6 +358,7 @@ static int exited_thread_cmp(const void *a,const void *b) {
 inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,double time_s,uint64_t ts_c,int keep_exited) {
 	struct xxxid_stats **ex=NULL; // the processes and tasks that exited, moved from ps
 	struct xxxid_stats **et=NULL; // the exited threads in cs
+	struct timespec rt;
 	int exn=0,etn=0;
 	int ncs,nps;
 	int n,x,y,e;
@@ -362,6 +366,9 @@ inline int create_diff(struct xxxid_stats_arr *cs,struct xxxid_stats_arr *ps,dou
 	if (cs->diffed) // the data of this cycle is already done; redraws do not need it again
 		return cs->length;
 	cs->diffed=1;
+
+	clock_gettime(CLOCK_REALTIME,&rt);
+	wall_off=(double)rt.tv_sec+(double)rt.tv_nsec/1000000000.0-(double)monotime()/1000.0;
 
 	ncs=cs->arr?cs->length:0;
 	nps=ps&&ps->arr?ps->length:0;
@@ -479,27 +486,42 @@ inline void humanize_val(double *value,char *str,int allow_accum) {
 	snprintf(str,4,"%c%s",u[p],config.f.accumulated&&allow_accum?"  ":"/s");
 }
 
-// the value that a column shows in the accumulated modes: the total since the task was first seen,
-// or with accum-bw the average bandwidth over that time
+// the value that a column shows in the accumulated modes: the total since the task started, or with
+// --no-lifetime since it was first seen; with accum-bw the average bandwidth over that time
 inline double accum_val(const struct xxxid_stats *s,e_accum v,int agg) {
+	double age=timediff_in_s(s->ts_s,s->ts_e);
+	uint64_t cnt=0; // the counter of the kernel, from the start of the task
 	double acc=0;
 
 	switch (v) {
 		case E_ACC_READ:
 			acc=agg?s->read_val_acc_p:s->read_val_acc;
+			cnt=agg?s->read_bytes_p:s->read_bytes;
 			break;
 		case E_ACC_WRITE:
 			acc=agg?s->write_val_acc_p:s->write_val_acc;
+			cnt=agg?s->write_bytes_p:s->write_bytes;
 			break;
 		case E_ACC_VFS_READ:
 			acc=agg?s->read_char_val_acc_p:s->read_char_val_acc;
+			cnt=agg?s->read_char_p:s->read_char;
 			break;
 		case E_ACC_VFS_WRITE:
 			acc=agg?s->write_char_val_acc_p:s->write_char_val_acc;
+			cnt=agg?s->write_char_p:s->write_char;
 			break;
 	}
+	if (!config.f.nolifetime) {
+		if (!config.f.accumbw)
+			return (double)cnt;
+		if (s->btime) { // the start time is known since taskstats v12, else average since first seen
+			double life=(double)s->ts_e/1000.0-((double)s->btime-wall_off);
+
+			return (double)cnt/(life>age?life:age);
+		}
+	}
 	if (config.f.accumbw)
-		return acc/timediff_in_s(s->ts_s,s->ts_e);
+		return acc/age;
 	return acc;
 }
 

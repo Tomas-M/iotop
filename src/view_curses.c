@@ -151,6 +151,7 @@ static char tonly[200]="Toggle showing only processes with IO activity [only]";
 static char tproc[200]="Toggle showing processes/threads [proc]";
 static char tflat[200]="Toggle grouping threads below their process [off]";
 static char caccu[200]="Cycle accumulated/accum-bw/current values [accum-bw]";
+static char tlife[200]="Toggle accumulating since tasks started/first seen [first seen]";
 static char tcomm[200]="Toggle showing full command line [off]";
 static char tcol1[200]="Toggle showing TID [off]";
 static char tcol2[200]="Toggle showing PRIO [off]";
@@ -192,6 +193,7 @@ const s_helpitem thelp[]={
 	{.descr=tproc,.t="Toggle showing processes/threads [%s]",.k2="p",.k3="P"},
 	{.descr=tflat,.t="Toggle grouping threads below their process [%s]",.k1="<Ctrl-F>",.k2="",.k3=""},
 	{.descr=caccu,.t="Cycle accumulated/accum-bw/current values [%s]",.k2="a",.k3="A"},
+	{.descr=tlife,.t="Toggle accumulating since tasks started/first seen [%s]",.k1="<Ctrl-A>",.k2="",.k3=""},
 	{.descr=tcomm,.t="Toggle showing full command line [%s]",.k2="c",.k3="C"},
 	{.descr=tcol1,.t="Toggle showing TID [%s]",.k2="1"},
 	{.descr=tcol2,.t="Toggle showing PRIO [%s]",.k2="2"},
@@ -670,9 +672,13 @@ static inline void view_help(void) {
 				case 'T':
 					sprintf(p->descr,p->t,config.f.hideclock?"off":"on");
 					break;
-				case 0: { // only grouping threads and task_delayacct have no letter key
+				case 0: { // only lifetime, grouping threads and task_delayacct have no letter key
 					char *tda;
 
+					if (p->descr==tlife) {
+						sprintf(p->descr,p->t,config.f.nolifetime?"first seen":"started");
+						break;
+					}
 					if (p->descr==tflat) {
 						sprintf(p->descr,p->t,config.f.flat?"off":"on");
 						break;
@@ -2683,6 +2689,9 @@ static inline int curses_key(int ch) {
 			break;
 		case KEY_CTRL_F:
 			config.f.flat=!config.f.flat;
+			break;
+		case KEY_CTRL_A:
+			config.f.nolifetime=!config.f.nolifetime;
 			break;
 		case KEY_CTRL_L: // Ctrl-L
 			clear_uid_cache();
